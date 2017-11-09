@@ -115,13 +115,17 @@ needs to account for this, for example to get user information:
 
 ```
 var handle = "k33g";
-githubCli.users.getForUser({username: handle})
-  .then(response => {
+githubCli.users.getForUser({username: handle}).then(response => {
     console.log(response.data);
 });
 ```
 
-Read the [documentation on the API provided by this package](https://kaizensoze.github.io/node-github/)
+The general pattern is `githubCli.noun.verb()` - essentially every entity and
+action possible on GitHub is accessible in this fashion, so you can explore and
+use your imagination. You can retrieve stars, followers, repositories, or other
+things on a user basis, and if you're authorized you can also take actions
+(check stars on things, create repositories or gists, follow users, etc.). Read
+the [documentation on the API provided by this package](https://kaizensoze.github.io/node-github/)
 for more details.
 
 ## Adding client-side encryption
