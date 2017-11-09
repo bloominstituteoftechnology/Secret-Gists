@@ -1,6 +1,7 @@
 /******************************************************************************
  * LS - Secret-Gists
- *
+ * let users authenticate with GitHub (rather than maintaining your own user data)
+ * and save/retrieve gists
  * Patrick Kennedy
  ******************************************************************************/
 'use-strict';
