@@ -57,7 +57,8 @@ curl -u username https://api.github.com/user
 Replace `username` with your GitHub username (keep the /user in the path the
 same), and after running that command you'll be asked for your password.
 Enter it and you should see returned some JSON with information about you as a
-GitHub user.
+GitHub user. If you have [Postman](https://www.getpostman.com) or similar
+installed you can also try this workflow using a GUI.
 
 Interactively typing your password is burdensome and not a great practice - a
 better way to authorize is with an OAuth token. The simplest way to do this is
@@ -81,3 +82,9 @@ API interactions "from scratch." This is a good exercise, but in practice most
 well-supported APIs have official libraries that build the requests for you and
 expose objects and methods so you can interact with them naturally in your code.
 
+We will build our application using Express.
+
+
+## Adding client-side encryption
+
+We will be using [TweetNaCL](https://github.com/dchest/tweetnacl-js#usage).
