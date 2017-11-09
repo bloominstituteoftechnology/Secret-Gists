@@ -13,4 +13,13 @@ console.log(github); // <~~~ just making linter happy for now by using github va
 
 const server = express();
 
+server.post('/login', (req, res) => {
+  const { username, oauth_token } = req.body;
+  // TODO log in to GitHub, return success/failure response
+});
+
+server.get('/gists', (req, res) => {
+  // TODO retrieve a list of gists for the currently authed user
+});
+
 server.listen(3000);
