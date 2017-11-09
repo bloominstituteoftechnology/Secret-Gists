@@ -94,7 +94,7 @@ into code and checked in, as others would be able to use it to take over your
 GitHub account. Instead, you should set it as an environment variable:
 
 ```
-export GITHUB_TOKEN=xxx
+export GITHUB_TOKEN="yourclientsecret"
 ```
 
 Then the token will be accessible within node as `process.env.GITHUB_TOKEN`, and
