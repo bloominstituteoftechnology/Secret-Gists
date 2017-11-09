@@ -82,8 +82,47 @@ API interactions "from scratch." This is a good exercise, but in practice most
 well-supported APIs have official libraries that build the requests for you and
 expose objects and methods so you can interact with them naturally in your code.
 
-We will build our application using Express.
+We will build our application using Express. The first step will be to register
+a new OAuth application. [Do so from the GitHub webpage](https://github.com/settings/developers) -
+you can name it something like "Secret Gists" and should provide `http://localhost:3000`
+as the homepage URL and `http://localhost:3000/callback` as the authorization
+callback URL.
 
+You will then see a settings page for your application - the client secret is
+your token for authorization. Treat it as private! It should *not* be pasted
+into code and checked in, as others would be able to use it to take over your
+GitHub account. Instead, you should set it as an environment variable:
+
+```
+export GITHUB_TOKEN=xxx
+```
+
+Then the token will be accessible within node as `process.env.GITHUB_TOKEN`, and
+can be used to make a GitHub client:
+
+```
+let githubCli = new github({
+  baseUri:"https://api.github.com",
+  token: process.env.GITHUB_TOKEN
+});
+```
+
+Inspect the client you get back, and you'll see that it supports a variety of
+operations. Most of these return promises - this is because performing API
+requests means asking for data from a machine you don't immediately control over
+a network, and you can't depend on the timing (when it will return). Your code
+needs to account for this, for example to get user information:
+
+```
+var handle = "k33g";
+githubCli.users.getForUser({username: handle})
+  .then(response => {
+    console.log(response.data);
+});
+```
+
+Read the [documentation on the API provided by this package](https://kaizensoze.github.io/node-github/)
+for more details.
 
 ## Adding client-side encryption
 
