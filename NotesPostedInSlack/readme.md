@@ -111,7 +111,7 @@ And why do we need to store our username and passwords as environment variables?
 ## [3:23PM EST](https://lambdaschoolpro.slack.com/archives/G5TDU61DE/p1510345406000103)
 Storing your username/password as environment variables is just an alternative to storing the auth token as an environment variable - I'd mostly recommend the latter, since it can have tighter permissions. But yes, it's a way to set your auth info to send it to GitHub via post, and to not have to stick it directly in your code so you can still commit/push.
 
-## [QUESTION 3:28PM EST](https://lambdaschoolpro.slack.com/archives/G5TDU61DE/p1510345731000049)
+## Jake [QUESTION 3:28PM EST](https://lambdaschoolpro.slack.com/archives/G5TDU61DE/p1510345731000049)
 for the authentication example would you use
 ```github.authenticate```
 or
@@ -251,7 +251,7 @@ or
 </p></details>
 
 
-## [QUESTION 3:40PM EST](https://lambdaschoolpro.slack.com/archives/G5TDU61DE/p1510346437000238)
+## Wesley [QUESTION 3:40PM EST](https://lambdaschoolpro.slack.com/archives/G5TDU61DE/p1510346437000238)
 I’m trying to understand the REST API v3 page: The owner of the server  registers the application, and creates the server.  When a browser hits the root ‘/’, the server redirects the browser to GitHub’s `login/oauth/authorize` site with a query parameter of `user:email` and includes the `client_id`, which is the registered app’s id.  What does the user enter at GitHub at this point?  The client_secret?  GitHub then redirects the browser to the callback URL, in the example’s case ‘/callback’, and includes a temporary code, that the server then posts back to GitHub, along with both the client_id  and client_secret.  GitHub then sends an access token to the server.  Is this correct?  The document then says:
 
 ```
