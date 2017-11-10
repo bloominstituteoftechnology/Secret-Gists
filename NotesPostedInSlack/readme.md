@@ -60,7 +60,7 @@ github.gists.create({
 });
 ```
 
-## [QUESTION](https://lambdaschoolpro.slack.com/archives/G5TDU61DE/p1510345006000030)
+## Jake [QUESTION](https://lambdaschoolpro.slack.com/archives/G5TDU61DE/p1510345006000030)
 So we can authenticate just using
 `github.authenticate`
 without creating the new github?
@@ -96,7 +96,7 @@ But the client id/secret method in particular seems aspirational, despite them d
 
 But if you create a token (https://github.com/settings/tokens) that has permission to create gists, auth with that, then you should be able to do the `github.gist.create` command.
 
-## [QUESTION](https://lambdaschoolpro.slack.com/archives/G5TDU61DE/p1510345207000156)
+## Ely [QUESTION](https://lambdaschoolpro.slack.com/archives/G5TDU61DE/p1510345207000156)
 so is this suppose to handle only our logins, or also other persons?
 
 ## [3:21PM EST](https://lambdaschoolpro.slack.com/archives/G5TDU61DE/p1510345318000452)
@@ -105,7 +105,7 @@ And I'd actually like to get to that, but don't expect to today certainly. It re
 
 That said, next week I'll be talking about devops, deployment, relational databases, and things like that - so we'll definitely get to these sorts of issues, and later today I'd actually like to chat with you all about interests and what you'd like to see in the upcoming material.
 
-## [QUESTION](https://lambdaschoolpro.slack.com/archives/G5TDU61DE/p1510345349000124)
+## Jake [QUESTION](https://lambdaschoolpro.slack.com/archives/G5TDU61DE/p1510345349000124)
 And why do we need to store our username and passwords as environment variables? Is that just a way to hardcode our account information without getting it from a post request?
 
 ## [3:23PM EST](https://lambdaschoolpro.slack.com/archives/G5TDU61DE/p1510345406000103)
