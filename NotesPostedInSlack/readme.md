@@ -243,10 +243,16 @@ or
 - Jake Cooley [1 minute ago]
   - Here is what it returned: https://pastebin.com/tu1aHj9F Does that look like it returned the correct information?
 
-- I think what it did is it treated you as unauthenticated, and returned a list of the few most recent public gists across all of GitHub. There are definitely interesting uses for that (some sort of "What's new on GitHub?" app), but yeah if you want to get back *your* gists try the `gist.getForUser({username: "yourusername"}).then(...` call. Also, though it was definitely helpful to see your output, I'd suggest deleting that pastebin as it does have your access_token in it.
+- Aaron Gallant [< 1 minute ago]
+  - I think what it did is it treated you as unauthenticated, and returned a list of the few most recent public gists across all of GitHub. There are definitely interesting uses for that (some sort of "What's new on GitHub?" app), but yeah if you want to get back *your* gists try the `gist.getForUser({username: "yourusername"}).then(...` call. Also, though it was definitely helpful to see your output, I'd suggest deleting that pastebin as it does have your access_token in it.
 
 - Jake Cooley [2 minutes ago]
   - Whoops, thanks. I deleted the token from my github so it should be fine.
+  - Yeah I just authenticated in the global scope and then created a '/' get request where it returns all gists and I'm getting an unauthorized error from postman
+  - Maybe I'll try a few other authentication methods and see if I can get anything to work
+
+- Aaron Gallant [< 1 minute ago]
+  - K, I also do think authentication should actually work inside the route, but will be looking at this more myself and make sure we have a reference to go over Monday.
 
 </p></details>
 
