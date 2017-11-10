@@ -39,10 +39,13 @@ server.post('/login', (req, res) => {
   const { username, oauth_token } = req.body;
   console.log(username, oauth_token);
   // TODO log in to GitHub, return success/failure response
+  // githubCli.gists.getALL
+  // githubCli.gists.getForUser
+  // nacl.util methods for encryption encodebase64
 });
 
 server.get('/gists', (req, res) => {
-  // TODO retrieve a list of gists for the currently authed user
+  // TODO retrieve a list of gists for the currently authed user secretbox & secretboxOpen
 });
 
 server.listen(3000);
