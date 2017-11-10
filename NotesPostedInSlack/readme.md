@@ -221,6 +221,27 @@ or
   - Then go to gist.github.com as yourself and see if you see it.
   - And you can run that code either manually in node, in the top level of app.js for testing, or actually put it in a route and trigger it by sending a request to express (e.g. a post to /gist or such).
 
+- Jake Cooley [3 minutes ago]
+  - I'm guessing it worked. Does this link work for you?  https://gist.github.com/97fb6f58bd1257b0e1dbe5701ac3982e
+
+- Aaron Gallant [< 1 minute ago]
+- Yep, it does! You should now also try the `gist.getForUser` call and see if you can get a list that includes that gist.
+
+- Jake Cooley [< 1 minute ago]
+  - Would there be an easier way to do this where we throw it all in a get request and res.json everything?
+
+- Aaron Gallant [2 minutes ago]
+  - This can definitely be refined - as you noticed, the gist.create call takes JSON, so for actually wiring it up to express you can make a route that listens for a request with a JSON body and passes that on to the GitHub API. As far as res.json, you can also take the success/failure response from GitHub (which it returns as JSON) and give that to express to render as you want. I definitely encourage trying to do both of those things, so you can interact with it more naturally and see the output. (edited)
+
+- Jake Cooley [2 minutes ago]
+  - and the gists getAll function seems to work and returns a list of gists. Thanks for the help!
+
+- Aaron Gallant [1 minute ago]
+  - gist.getAll works for you? I actually only got gist.getForUser to work, so that's interesting. Glad it's working though, and looking forward to seeing your code!
+
+- Jake Cooley [1 minute ago]
+  - Here is what it returned: https://pastebin.com/tu1aHj9F Does that look like it returned the correct information?
+
 ## [QUESTION 3:40PM EST](https://lambdaschoolpro.slack.com/archives/G5TDU61DE/p1510346437000238)
 I’m trying to understand the REST API v3 page: The owner of the server  registers the application, and creates the server.  When a browser hits the root ‘/’, the server redirects the browser to GitHub’s `login/oauth/authorize` site with a query parameter of `user:email` and includes the `client_id`, which is the registered app’s id.  What does the user enter at GitHub at this point?  The client_secret?  GitHub then redirects the browser to the callback URL, in the example’s case ‘/callback’, and includes a temporary code, that the server then posts back to GitHub, along with both the client_id  and client_secret.  GitHub then sends an access token to the server.  Is this correct?  The document then says:
 
