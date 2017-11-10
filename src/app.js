@@ -32,7 +32,11 @@ const githubCli = new Github({
 // let handle = 'k33g';
 const handle = 'mixelpixel';
 githubCli.users.getForUser({ username: handle }).then((response) => {
-  console.log('\n1.) response.data\n', response.data);
+  console.log('\n1.) getForUser response.data:\n', response.data);
+});
+
+githubCli.gists.getAll({}).then((response) => {
+  console.log('2.) getAll response data:\n', response);
 });
 
 server.post('/login', (req, res) => {
@@ -42,10 +46,12 @@ server.post('/login', (req, res) => {
   // githubCli.gists.getALL
   // githubCli.gists.getForUser
   // nacl.util methods for encryption encodebase64
+  // secretbox & secretboxOpen
 });
 
 server.get('/gists', (req, res) => {
-  // TODO retrieve a list of gists for the currently authed user secretbox & secretboxOpen
+  // TODO retrieve a list of gists for the currently authed user
+
 });
 
 server.listen(3000);
