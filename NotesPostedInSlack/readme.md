@@ -118,7 +118,8 @@ or
 ```GitHubApi.authenticate```
 ?
 
-### Sub Thread
+<details><summary>SUB THREAD</summary><p>
+
 - Aaron Gallant [32 minutes ago]
   - Probably `github.authenticate` - `GitHubApi` is the name assigned to importing the library, while `github` is assigned to the instance that is created with `GitHubApi()`.
 
@@ -242,6 +243,14 @@ or
 - Jake Cooley [1 minute ago]
   - Here is what it returned: https://pastebin.com/tu1aHj9F Does that look like it returned the correct information?
 
+- I think what it did is it treated you as unauthenticated, and returned a list of the few most recent public gists across all of GitHub. There are definitely interesting uses for that (some sort of "What's new on GitHub?" app), but yeah if you want to get back *your* gists try the `gist.getForUser({username: "yourusername"}).then(...` call. Also, though it was definitely helpful to see your output, I'd suggest deleting that pastebin as it does have your access_token in it.
+
+- Jake Cooley [2 minutes ago]
+  - Whoops, thanks. I deleted the token from my github so it should be fine.
+
+</p></details>
+
+
 ## [QUESTION 3:40PM EST](https://lambdaschoolpro.slack.com/archives/G5TDU61DE/p1510346437000238)
 I’m trying to understand the REST API v3 page: The owner of the server  registers the application, and creates the server.  When a browser hits the root ‘/’, the server redirects the browser to GitHub’s `login/oauth/authorize` site with a query parameter of `user:email` and includes the `client_id`, which is the registered app’s id.  What does the user enter at GitHub at this point?  The client_secret?  GitHub then redirects the browser to the callback URL, in the example’s case ‘/callback’, and includes a temporary code, that the server then posts back to GitHub, along with both the client_id  and client_secret.  GitHub then sends an access token to the server.  Is this correct?  The document then says:
 
@@ -251,7 +260,8 @@ In the future, users will be able to edit the scopes you requested, and your app
 
 I’m confused who the `user` is in that sentence and who `you` is.  I thought we were in charge of these things in this scenario.
 
-### Sub Thread
+<details><summary>SUB THREAD</summary><p>
+
 - Aaron Gallant [40 minutes ago]
   - This Stack Overflow link may help a bit overall: https://stackoverflow.com/questions/24238888/how-to-authenticate-with-github-with-node-and-express
 
@@ -267,6 +277,9 @@ I’m confused who the `user` is in that sentence and who `you` is.  I thought w
 
 - Aaron Gallant [37 minutes ago]
   - Yep - storing the token in the environment is a form of authentication really, but just the shortest and simplest one.
+
+</p></details>
+
 
 ## [3:50PM PST](https://lambdaschoolpro.slack.com/archives/G5TDU61DE/p1510347031000229)
 One other GitHub API clarification - for getting gists I suggest:
