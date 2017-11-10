@@ -160,9 +160,7 @@ or
   - That was the specific error
 
 - Aaron Gallant [16 minutes ago]
-  - Okay, did some testing and actually `const` seems to work for fine (at least I don't get that error on authenticate).
-
-  - Try starting `node` from the command line in your project path and running:
+  - Okay, did some testing and actually `const` seems to work for fine (at least I don't get that error on authenticate). Try starting `node` from the command line in your project path and running:
 
   ```
   const GitHubApi = require('github');
@@ -203,6 +201,51 @@ or
 - Jake Cooley [3 minutes ago]
   - Oh, gotcha. How do I test if I'm authenticated then?
   - When I ran those commands through node it let me enter everything without any errors but is there a way to confirm it worked? Or does the lack of errors mean that it worked?
+
+- Aaron Gallant [1 minute ago]
+  - The lack of errors probably means it worked, but a way to test would be to run something that will have a side effect, e.g. create a gist:
+  ```
+  github.gists.create({
+    "description": "the description for this gist",
+    "public": false,
+    "files": {
+      "TEST.md": {
+        "content": "<html><h1>This is a Test!</h1><b>Hello</b></html>"
+      }
+    }
+  }).then(response => {
+    console.log(response);
+  });
+  ```
+
+  - Then go to gist.github.com as yourself and see if you see it.
+  - And you can run that code either manually in node, in the top level of app.js for testing, or actually put it in a route and trigger it by sending a request to express (e.g. a post to /gist or such).
+
+## [QUESTION 3:40PM EST](https://lambdaschoolpro.slack.com/archives/G5TDU61DE/p1510346437000238)
+I’m trying to understand the REST API v3 page: The owner of the server  registers the application, and creates the server.  When a browser hits the root ‘/’, the server redirects the browser to GitHub’s `login/oauth/authorize` site with a query parameter of `user:email` and includes the `client_id`, which is the registered app’s id.  What does the user enter at GitHub at this point?  The client_secret?  GitHub then redirects the browser to the callback URL, in the example’s case ‘/callback’, and includes a temporary code, that the server then posts back to GitHub, along with both the client_id  and client_secret.  GitHub then sends an access token to the server.  Is this correct?  The document then says:
+
+```
+In the future, users will be able to edit the scopes you requested, and your application might be granted less access than you originally asked for.
+```
+
+I’m confused who the `user` is in that sentence and who `you` is.  I thought we were in charge of these things in this scenario.
+
+### Sub Thread
+- Aaron Gallant [40 minutes ago]
+  - This Stack Overflow link may help a bit overall: https://stackoverflow.com/questions/24238888/how-to-authenticate-with-github-with-node-and-express
+
+  - But in general, yeah there is supposed to be a different `you` versus the `user` in this model - the client_id/client_secret are basically `you` (the developer), authorizing the application to interact with GitHub. For the specific `user` then they also need to interact with GitHub to get an OAuth token and use that for further things (e.g. create gists, whatever).
+
+  - In the specific code we're working on this is a little confused because you haven't worked on applications that really combine the back-end and front-end, so `you` and `user` end up being the same, even though in practice it can/should be different.
+
+  - For now I'd suggest getting an OAuth token directly from https://github.com/settings/tokens rather than worrying about the client id/secret, and essentially just being a single user from the server. This can and should be extended to let other users log in, but we won't get to that in this particular app.
+
+
+- Wesley Harvey [37 minutes ago]
+  - Ok; so basically skip everything about getting authenticated, and start with making authenticated requests because the token will be stored in our environment?
+
+- Aaron Gallant [37 minutes ago]
+  - Yep - storing the token in the environment is a form of authentication really, but just the shortest and simplest one.
 
 ## [3:50PM PST](https://lambdaschoolpro.slack.com/archives/G5TDU61DE/p1510347031000229)
 One other GitHub API clarification - for getting gists I suggest:
