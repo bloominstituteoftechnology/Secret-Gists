@@ -82,9 +82,105 @@ API interactions "from scratch." This is a good exercise, but in practice most
 well-supported APIs have official libraries that build the requests for you and
 expose objects and methods so you can interact with them naturally in your code.
 
-We will build our application using Express.
+We will build our application using Express. The first step will be to register
+a new OAuth application. [Do so from the GitHub webpage](https://github.com/settings/developers) -
+you can name it something like "Secret Gists" and should provide `http://localhost:3000`
+as the homepage URL and `http://localhost:3000/callback` as the authorization
+callback URL.
 
+You will then see a settings page for your application - the client secret is
+your token for authorization. Treat it as private! It should *not* be pasted
+into code and checked in, as others would be able to use it to take over your
+GitHub account. Instead, you should set it as an environment variable:
+
+```
+export GITHUB_TOKEN="yourclientsecret"
+```
+
+Then the token will be accessible within node as `process.env.GITHUB_TOKEN`, and
+can be used to make a GitHub client:
+
+```
+let githubCli = new github({
+  baseUri:"https://api.github.com",
+  token: process.env.GITHUB_TOKEN
+});
+```
+
+Inspect the client you get back, and you'll see that it supports a variety of
+operations. Most of these return promises - this is because performing API
+requests means asking for data from a machine you don't immediately control over
+a network, and you can't depend on the timing (when it will return). Your code
+needs to account for this, for example to get user information:
+
+```
+let handle = "k33g";
+githubCli.users.getForUser({username: handle}).then(response => {
+    console.log(response.data);
+});
+```
+
+The general pattern is `githubCli.noun.verb()` - essentially every entity and
+action possible on GitHub is accessible in this fashion, so you can explore and
+use your imagination. You can retrieve stars, followers, repositories, or other
+things on a user basis, and if you're authorized you can also take actions
+(check stars on things, create repositories or gists, follow users, etc.). Read
+the [documentation on the API provided by this package](https://kaizensoze.github.io/node-github/)
+for more details.
 
 ## Adding client-side encryption
 
-We will be using [TweetNaCL](https://github.com/dchest/tweetnacl-js#usage).
+We will be using [TweetNaCL](https://github.com/dchest/tweetnacl-js#usage). nacl
+is a fairly simple cryptosystem - it makes good default decisions using modern
+but well-tested algorithms. The included package.json also installs
+tweetnacl-util, which provides utilities for encoding between strings and bytes.
+You can load both in your code as follows:
+
+```
+let nacl = require('tweetnacl');
+nacl.util = require('tweetnacl-util');
+```
+
+Note that nacl prefers handling things as `Uint8Array` - that is, a bunch of
+numbers. You'll want to take a look at the nacl.util functions to translate
+between these and more user-friendly strings.
+
+```
+> nacl.util = require('tweetnacl-util');
+{ decodeUTF8: [Function],
+  encodeUTF8: [Function],
+  encodeBase64: [Function],
+  decodeBase64: [Function] }
+```
+
+Generally, the UTF8 functions are meant for the messages (UTF8 is a common
+encoding for human readable text), and the Base64 functions are meant for keys
+(you can encode the secret key to Base64 before giving it to the user to save
+"offline", and then decode it back from Base64 when reinitializing their
+keypair).
+
+### Symmetric crypto
+
+Symmetric cryptography is done using `nacl.secretbox()`, and requires a single
+secret key as well as a unique random nonce on each execution. The output blob
+should be saved along with the nonce, which will then be used to decrypt it
+later.
+
+Both the key and nonce need to use good randomness - `nacl.randomBytes(length)`
+will provide this. You will also want to give the secret key to the user so
+they can save it ("offline" - assume they can keep it safe, like a passphrase)
+and use it later to decrypt things. Since asking users to save an array of
+numbers isn't great, use the utility functions to encode it for them.
+
+
+### Asymmetric crypto (optional)
+
+The first thing you'll have to do is use `nacl.box.keyPair()` to generate a new
+public/private keypair. To regenerate the same keypair later, you should let the
+user retrieve their own private key (referred to as `secretKey` in nacl), and
+then when they start the application again setup with
+`nacl.box.keyPair.fromSecretKey(secretKey)`.
+
+Once set up, nacl supports the standard range of asymmetric crypto operations -
+sign, encrypt, verify, decrypt. The "box/unbox" methods combine sign/encrypt
+and verify/decrypt, to make your life as a developer a bit easier.
