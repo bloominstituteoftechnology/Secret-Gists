@@ -83,26 +83,32 @@ well-supported APIs have official libraries that build the requests for you and
 expose objects and methods so you can interact with them naturally in your code.
 
 We will build our application using Express. The first step will be to register
-a new OAuth application. [Do so from the GitHub webpage](https://github.com/settings/developers) -
-you can name it something like "Secret Gists" and should provide `http://localhost:3000`
-as the homepage URL and `http://localhost:3000/callback` as the authorization
-callback URL.
+a new OAuth token. [Do so from the GitHub webpage](https://github.com/settings/tokens) -
+you should set it to have permission to create gists.
 
-You will then see a settings page for your application - the client secret is
-your token for authorization. Treat it as private! It should *not* be pasted
-into code and checked in, as others would be able to use it to take over your
-GitHub account. Instead, you should set it as an environment variable:
+You will then see a page with a personal access token that will only ever
+display once - copy it somewhere safe, and treat it as a password! That it,
+don't paste it into your code to check in, don't send over chat/email, etc.
+Instead, you should set it as an environment variable:
 
 ```
-export GITHUB_TOKEN="yourclientsecret"
+export GITHUB_TOKEN="yourtoken"
 ```
 
-Then the token will be accessible within node as `process.env.GITHUB_TOKEN`, and
-can be used to make a GitHub client:
+If you prefer, you can set the token in a `.env` file in the repository and add
+the [dotenv-node](https://www.npmjs.com/package/dotenv-node) package to the
+project. Be sure to not check in the `.env` file! It's already in `.gitignore`
+but could still end up explicitly added if you really try to push it.
+
+The token will be accessible within node as `process.env.GITHUB_TOKEN`, and can
+be used to authenticate the GitHub client:
 
 ```
-let githubCli = new github({
-  baseUri:"https://api.github.com",
+const GitHubApi = require('github');
+const github = new GitHubApi({ debug: true });
+
+github.authenticate({
+  type: 'oauth',
   token: process.env.GITHUB_TOKEN
 });
 ```
@@ -115,17 +121,17 @@ needs to account for this, for example to get user information:
 
 ```
 let handle = "k33g";
-githubCli.users.getForUser({username: handle}).then(response => {
+github.users.getForUser({username: handle}).then(response => {
     console.log(response.data);
 });
 ```
 
-The general pattern is `githubCli.noun.verb()` - essentially every entity and
+The general pattern is `github.noun.verb()` - essentially every entity and
 action possible on GitHub is accessible in this fashion, so you can explore and
 use your imagination. You can retrieve stars, followers, repositories, or other
 things on a user basis, and if you're authorized you can also take actions
 (check stars on things, create repositories or gists, follow users, etc.). Read
-the [documentation on the API provided by this package](https://kaizensoze.github.io/node-github/)
+the [documentation on the API provided by this package](https://octokit.github.io/node-github/)
 for more details.
 
 ## Adding client-side encryption
@@ -137,7 +143,7 @@ tweetnacl-util, which provides utilities for encoding between strings and bytes.
 You can load both in your code as follows:
 
 ```
-let nacl = require('tweetnacl');
+const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 ```
 
@@ -159,19 +165,39 @@ encoding for human readable text), and the Base64 functions are meant for keys
 "offline", and then decode it back from Base64 when reinitializing their
 keypair).
 
+Getting this to work will require some experimentation - start `node` from the
+command line, require the modules, and interact with them. In general, you'll
+need `encodeUTF8 / decodeUTF8` functions to translate between human-readable
+text (the gist content you care about) and the
+[Uint8Array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array)
+that nacl works with natively. You'll also need the
+`encodeBase64 / decodeBase64` functions to translate keys/nonces/ciphertext
+into representations that can be returned as a string (but aren't intended to
+be human readable).
+
 ### Symmetric crypto
 
 Symmetric cryptography is done using `nacl.secretbox()`, and requires a single
 secret key as well as a unique random nonce on each execution. The output blob
 should be saved along with the nonce, which will then be used to decrypt it
-later.
+later. The nonce should be 24 bytes long and the key should be 32 bytes (the
+default values for nacl).
 
 Both the key and nonce need to use good randomness - `nacl.randomBytes(length)`
 will provide this. You will also want to give the secret key to the user so
 they can save it ("offline" - assume they can keep it safe, like a passphrase)
 and use it later to decrypt things. Since asking users to save an array of
-numbers isn't great, use the utility functions to encode it for them.
+numbers isn't great, use the utility functions to encode it for them. To read
+it back, for now you can just set it as an environment variable similar to the
+OAuth token.
 
+Once you've encrypted the content of the gist, make sure to also include the
+nonce, otherwise you won't be able to decrypt it. The nonce can just be
+prepended to the encrypted content, and then the whole thing can be encoded and
+returned/saved as appropriate.
+
+To decrypt, reverse the process - pick off the nonce, decode both nonce and
+encrypted content, decrypt the content with the nonce and the key, and return.
 
 ### Asymmetric crypto (optional)
 
@@ -183,4 +209,20 @@ then when they start the application again setup with
 
 Once set up, nacl supports the standard range of asymmetric crypto operations -
 sign, encrypt, verify, decrypt. The "box/unbox" methods combine sign/encrypt
-and verify/decrypt, to make your life as a developer a bit easier.
+and verify/decrypt, to make your life as a developer a bit easier. The main
+difference you'll have to worry about is returning both the public and private
+key to the user, and reinitializing the keypair from the private one.
+
+At first box/unbox with the whole keypair, but you can add methods/routes to
+support passing in the public keys of other users - this would let you encrypt
+for them (so only they can decrypt), while signing with your private key (so
+they can verify the message really came from you by using your public key).
+
+### Going further
+
+There is a stubbed `/login` route and some suggestive comments at bottom of
+`app.js` - if you are interested, it's highly encouraged to take this app even
+further. In general, this could grow into a secure pastebin, where users can
+share notes and secrets with each other and not have to trust the host. This
+exploration is beyond the scope of your initial work, but is good to think
+about and absolutely worth exploring if you are so inclined.
