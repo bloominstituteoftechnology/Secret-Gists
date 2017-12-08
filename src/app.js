@@ -10,7 +10,7 @@ const server = express();
 
 const urlencodedParser = bodyParser.urlencoded({ extended: false })
 
-// export const GITHUB_TOKEN = "42386d06a73e346213babd96648992afe3bc52be";
+// export const GITHUB_TOKEN = "";
 
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
