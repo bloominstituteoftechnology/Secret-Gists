@@ -4,6 +4,8 @@ import axios from 'axios'
 
 import { NavBar } from './components/NavBar'
 
+import './App.css'
+
 export default class App extends Component {
   constructor(props) {
     super(props)
@@ -11,7 +13,6 @@ export default class App extends Component {
       posts: []
     }
     this.getGists = this.getGists.bind(this)
-    this.getGist = this.getGists.bind(this)
     this.createListItems = this.createListItems.bind(this)
   }
 
@@ -31,10 +32,6 @@ export default class App extends Component {
     }))
   }
 
-  async getGist(id) {
-    const post = await axios.get(`http://localhost:8000/secretgist/${id}`)
-  }
-
   createListItems(items) {
     return items.map((v, i) => (
       <ListGroupItem key={i} header={v.filename}>
@@ -48,10 +45,10 @@ export default class App extends Component {
       <Grid>
         <Row>
           <Col lg={20}>
-            <NavBar getGists={this.getGists} />
-            <Jumbotron>
-              <h1>Welcome 👋</h1>
+            <Jumbotron id="top">
+              <h1>Secret Gists 🤐</h1>
             </Jumbotron>
+            <NavBar getGists={this.getGists} />
           </Col>
         </Row>
         <Row>
