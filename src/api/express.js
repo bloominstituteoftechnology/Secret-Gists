@@ -9,7 +9,7 @@ const options = {
   optionsSuccessStatus: 204
 }
 
-module.exports = (server, config) => {
+module.exports = (server) => {
   server.use(bodyParser.json())
   server.use(logger('dev'))
   server.use(cors(options))

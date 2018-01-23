@@ -39,7 +39,10 @@ module.exports = {
 
   gists: async (req, res) => {
     try {
-    const list = await gh.gists.getAll({})
+    // const list = await gh.gists.getAll({})
+    let x = storage.getItemSync('token')
+    console.log(x);
+
     res.status(200).json(list)
     } catch (err) {
       res.status(422).json(err)
