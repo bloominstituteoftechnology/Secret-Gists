@@ -2,9 +2,41 @@
   margin-top: 10px;
 }
 
-.nav_form {
-  display: flex;
-  justify-content: space-between;
-  margin-top: -20px;
+#jumbo {
+  margin-top: 10px;
   margin-bottom: 10px;
+}
+
+#alert {
+  height: 34px;
+  width: 95%;
+  float: right;
+  margin-bottom: 0px;
+  line-height: 34px;
+  padding: 0px 17px;
+}
+
+#gistbtn {
+  margin-right: 10px;
+}
+
+#bot {
+  margin-bottom: 5px;
+}
+
+#gistcontent {
+  height: 300px;
+}
+
+.btngroup {
+  display: flex;
+  flex-direction: row;
+}
+
+#btngist {
+  margin-right: 5px;
+}
+
+#input-dropdown-addon {
+  margin-bottom: 5px;
 }

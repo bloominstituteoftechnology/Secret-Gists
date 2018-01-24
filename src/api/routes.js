@@ -8,4 +8,5 @@ module.exports = (server) => {
   server.post('/create', controller.create)
   server.post('/createsecret', controller.createsecret)
   server.post('/login', controller.login)
+  server.get('/logout', controller.logout)
 }

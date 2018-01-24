@@ -3,6 +3,7 @@ const GitHubApi = require('github')
 const nacl = require('tweetnacl')
 nacl.util = require('tweetnacl-util')
 
+storage.initSync()
 const gh = new GitHubApi({ debug: true })
 
 module.exports = {
@@ -23,7 +24,6 @@ module.exports = {
     try {
       const { username, token } = req.body
       const key = nacl.util.encodeBase64(nacl.randomBytes(32))
-      storage.initSync()
       storage.setItemSync('username', username)
       storage.setItemSync('token', token)
       storage.setItemSync('secret', key)
@@ -34,9 +34,14 @@ module.exports = {
     }
   },
 
+  logout: (req, res) => {
+    storage.clearSync()
+    res.status(200).json({ Success: 'You\'ve been logged out' })
+  },
+
   gists: async (req, res) => {
     try {
-    const list = await gh.gists.getAll({})
+      const list = await gh.gists.getAll({})
     res.status(200).json(list)
     } catch (err) {
       res.status(422).json(err)
@@ -65,8 +70,8 @@ module.exports = {
 
   create: async (req, res) => {
     try {
-      const { name, content } = req.body
-      const post = await gh.gists.create({ files: { [name]: { content } }, public: false })
+      const { name, content, desc } = req.body
+      const post = await gh.gists.create({ files: { [name]: { content } }, public: false, description: desc })
       res.status(200).json({ Success: 'Secret Gist posted!' })
     } catch (err) {
       res.status(422).json(err)
@@ -75,12 +80,12 @@ module.exports = {
 
   createsecret: async (req, res) => {
     try {
-      const { name, content } = req.body
+      const { name, content, desc } = req.body
       const key = nacl.util.decodeBase64(storage.getItemSync('secret'))
       const nonce = nacl.randomBytes(24)
       const encrypted = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, key)
       const post = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encrypted)
-      await gh.gists.create({ files: { [name]: { content: post } }, public: false })
+      await gh.gists.create({ files: { [name]: { content: post } }, public: false, description: desc })
       res.status(200).json({ Success: 'Super Secret Gist posted!', Secret: post })
     } catch (err) {
       res.status(422).json(err)
