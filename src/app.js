@@ -10,9 +10,10 @@ const username = '47analogy'; // TODO: your GitHub username here
 const github = new GitHubApi({ debug: true });
 const server = express();
 
-const urlencodedParser = server.use(bodyParser.urlencoded({ extended: false }));
+const urlencodedParser = bodyParser.urlencoded({ extended: false });
 server.use(bodyParser.json());
 server.use(morgan('dev'));
+server.use(require('express-promise')());
 
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
@@ -36,7 +37,6 @@ if (process.env.SECRET_KEY) {
   key = nacl.randomBytes(32);
 }
 */
-
 
 server.get('/', (req, res) => {
   // *TODO Return a response that documents the other routes/operations available
@@ -67,15 +67,14 @@ server.get('/secretgist/:id', (req, res) => {
 server.post('/create', urlencodedParser, (req, res) => {
   // TODO Create a private gist with name and content given in post request
   //  BUG - RangeError: Maximum call stack size exceeded
+  const { name, content } = req.body;
+
   if (!req.body.name || !req.body.content) {
     res.json({ success: false, msg: 'Needs a name and content' });
   } else {
-    const newGist = ({
-      name: req.body.name,
-      content: req.body.content
-    });
     // create the gist
-    github.gists.create({ newGist, public: false })
+    const files = { name: { content } }; // https://developer.github.com/v3/gists/#create-a-gist
+    github.gists.create({ files, public: false })
       .then((response) => {
         res.json(response.data);
       })
