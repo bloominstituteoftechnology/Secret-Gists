@@ -1,5 +1,3 @@
-// import { urlencoded } from '../../../../AppData/Local/Microsoft/TypeScript/2.6/node_modules/@types/express';
-
 const bodyParser = require('body-parser');
 const express = require('express');
 const GitHubApi = require('github');
@@ -68,6 +66,7 @@ server.get('/secretgist/:id', (req, res) => {
 
 server.post('/create', urlencodedParser, (req, res) => {
   // TODO Create a private gist with name and content given in post request
+  //  BUG - RangeError: Maximum call stack size exceeded
   if (!req.body.name || !req.body.content) {
     res.json({ success: false, msg: 'Needs a name and content' });
   } else {
