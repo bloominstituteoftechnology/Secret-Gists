@@ -1,0 +1,17 @@
+Use OAuth to get a token via a callback url and then use that
+token to make calls to the facebook API to get their use data until the token
+expires. Websites rely on it because it allows programmers to access their data without 
+the user having to directly disclose their information and spread their credentials around
+online but still provide a level of protection to the data. 
+
+AUTHORIZES BUT DOES NOT AUTHENTICATE
+
+The process in which a website obtains a token is called a flow, and in the OAuth flow, 
+there are three key players: the user, the consumer, and the service provider.
+
+All API access is over HTTPS, and accessed from the https://api.github.com. All data is sent
+and received as JSON.
+
+https://api.github.com
+
+export GITHUB_TOKEN="token"
