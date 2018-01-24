@@ -1,65 +1,216 @@
-const bodyParser = require('body-parser');
-const express = require('express');
-const GitHubApi = require('github');
-const nacl = require('tweetnacl');
-nacl.util = require('tweetnacl-util');
+import React, { Component } from 'react';
+import './App.css';
+import axios from 'axios';
+import { Button, Input, FormGroup, Label } from 'reactstrap';
+import { AvForm, AvField, AvGroup, AvInput } from 'availity-reactstrap-validation';
+import { BrowserRouter as Router, Route, Link } from 'react-router-dom';
 
-const username = 'yourusername';  // TODO: your GitHub username here
-const github = new GitHubApi({ debug: true });
-const server = express();
+import 'bootstrap/dist/css/bootstrap.css';
 
-// Generate an access token: https://github.com/settings/tokens
-// Set it to be able to create gists
-github.authenticate({
-  type: 'oauth',
-  token: process.env.GITHUB_TOKEN
-});
+const URL = 'http://localhost:3000';
 
-// Set up the encryption - use process.env.SECRET_KEY if it exists
-// TODO either use or generate a new 32 byte key
+class CreateGist extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      home: null,
+      description: '',
+      filename: '',
+      boolean: true,
+      content: '',
+    }
+  }
 
-server.get('/', (req, res) => {
-  // TODO Return a response that documents the other routes/operations available
-});
+  componentDidMount() {
+    axios
+      .get(`${URL}/`)
+        .then(res => {
+          this.setState({ home: res.data });
+        })
+        .catch(err => {
+          console.log(err);
+        });
+  }
 
-server.get('/gists', (req, res) => {
-  // TODO Retrieve a list of all gists for the currently authed user
-});
 
-server.get('/key', (req, res) => {
-  // TODO Return the secret key used for encryption of secret gists
-});
+  handleChangeContent(event) {
+    this.setState({ content: event.target.value })
+    event.preventDefault();
+    console.log(this.state.content)
+  }
 
-server.get('/secretgist/:id', (req, res) => {
-  // TODO Retrieve and decrypt the secret gist corresponding to the given ID
-});
+  handleChangeDescription(event) {
+    this.setState({ description: event.target.value })
+    event.preventDefault();
+    console.log(this.state.description)
+  }
 
-server.post('/create', (req, res) => {
-  // TODO Create a private gist with name and content given in post request
-});
+  handleChangeFilename(event) {
+    this.setState({ filename: event.target.value })
+    event.preventDefault();
+    console.log(this.state.filename)
+  }
 
-server.post('/createsecret', (req, res) => {
-  // TODO Create a private and encrypted gist with given name/content
-  // NOTE - we're only encrypting the content, not the filename
-  // To save, we need to keep both encrypted content and nonce
-});
+  handleClickSecret(event) {
+    let b = !this.state.boolean;
+    this.setState({ boolean: b });
+    console.log(this.state.boolean);
+  }
 
-/* OPTIONAL - if you want to extend functionality */
-server.post('/login', (req, res) => {
-  // TODO log in to GitHub, return success/failure response
-  // This will replace hardcoded username from above
-  // const { username, oauth_token } = req.body;
-  res.json({ success: false });
-});
+  handleSubmit() {
+    const url = this.state.boolean === true ? `${URL}/create` : `${URL}/createsecret`;
+    const name = this.state.filename;
+    const obj = {
+      description: this.state.description,
+      public: this.state.boolean,
+      files: {
+          [name]: {
+            content: this.state.content,
+        }
+      },
+      filename: name
+    }
+    
+    axios
+      .post(url,  obj )
+        .then((res) => {
+          console.log(res.data);
+        })
+        .catch((err) => {
+          console.log(err)
+        });
 
-/*
-Still want to write code? Some possibilities:
--Pretty templates! More forms!
--Better management of gist IDs, use/display other gist fields
--Support editing/deleting existing gists
--Switch from symmetric to asymmetric crypto
--Exchange keys, encrypt messages for each other, share them
--Let the user pass in their private key via POST
-*/
+    this.setState({ filename: '', content: '', description: '' });
+  }
 
-server.listen(3000);
+  render() {
+    return (
+        <div className="CreateGist">
+          <div className="Form1">
+            <AvForm onSubmit={() => this.handleSubmit()}>
+              <AvGroup>
+                <Label check>
+                  <AvInput type="checkbox" name="checkbox" onClick={(e) => this.handleClickSecret(e)}/> Encrypt
+                </Label>
+              </AvGroup>
+                <AvField name="text" label="Description" style={{ width: 600 }} required value={this.state.description} onChange={(e) => this.handleChangeDescription(e)}/>
+                <AvField name="file" label="Filename" style={{ width: 600 }} required  value={this.state.filename} onChange={(e) => this.handleChangeFilename(e)}/>
+                <FormGroup>
+                  <Label for="exampleText">Content</Label>
+                  <Input type="textarea" name="text" id="exampleText" style={{height: 200, width: 600 }} value={this.state.content} onChange={(e) => this.handleChangeContent(e)}/>
+                </FormGroup>
+                <Button className="textButton" color="primary" >Submit</Button>
+            </AvForm>
+          </div>
+        </div>
+    );
+  }
+}
+
+
+class DecryptGist extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      id: '',
+      filename: '',
+      text: null
+    }
+  }
+
+  getGists(filename) {
+    axios
+      .get(`${URL}/gists`)
+        .then((response) => {
+          for (let obj of response.data.data) {
+            if (Object.keys(obj.files)[0] === filename) {
+              this.setState({ id: obj.id })
+              return;
+            }
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        })
+  }
+
+  handleFilenameChange(event) {
+    this.setState({ filename: event.target.value })
+    event.preventDefault();
+    console.log(this.state.filename)
+  }
+
+  handleSubmit() {
+    console.log(this.state.filename)
+    this.getGists(this.state.filename);
+    console.log(this.state.id)
+    axios
+      .get(`${URL}/secretgist/${this.state.id}`)
+        .then((response) => {
+          this.setState({ text: response.data })
+          console.log(response.data);
+        })
+        .catch((err) => {
+          console.log(err);
+        })
+    this.setState({ filename: '' });
+  }
+
+  render() {
+    let text = JSON.stringify(this.state.text) === JSON.stringify({}) ? null : this.state.text;
+    console.log(text);
+    return (
+      <div className="DecryptGist">
+        <div className="Form2">
+          <AvForm onSubmit={() => this.handleSubmit()}>
+            <AvField name="file" label="Filename" style={{ width: 600 }} required  value={this.state.filename} onChange={(e) => this.handleFilenameChange(e)}/>
+            <h6>{text}</h6>
+            <Button className="textButton" color="primary" >Submit</Button>
+          </AvForm>
+        </div>
+      </div>
+    )
+  }
+
+}
+
+// class Login extends Component {
+
+//   render() {
+//     <div className="DecryptGist">
+//       <div className="Form2">
+
+//       </div>
+//     </div>
+//   }
+// }
+
+class App extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      display: true
+    }
+  }
+  
+  render() {
+    return (
+      <Router >
+        <div className="App">
+          <header className="App-header">
+            <ul>
+              <li><Link to="/">Create Gist</Link></li>
+              <li><Link to="/decrypt">Decrypt Gist</Link></li>
+            </ul>
+          </header>
+          <Route exact path="/" component={CreateGist}/>
+          <Route path="/decrypt" component={DecryptGist} />
+          {/* <CreateGist /> */}
+          {/* <DecryptGist /> */}
+        </div>
+      </Router >
+    );
+  }
+}
+
+export default App;
