@@ -1,55 +1,109 @@
+require('dotenv').config();
 const bodyParser = require('body-parser');
 const express = require('express');
 const GitHubApi = require('github');
 const nacl = require('tweetnacl');
+
 nacl.util = require('tweetnacl-util');
 
-const username = 'yourusername';  // TODO: your GitHub username here
+// const username = 'jproland';
 const github = new GitHubApi({ debug: true });
 const server = express();
 
+server.use(bodyParser.json());
+
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
-github.authenticate({
-  type: 'oauth',
-  token: process.env.GITHUB_TOKEN
-});
+// github.authenticate({
+//   type: 'oauth',
+//   token: process.env.GITHUB_TOKEN
+// });
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
-// TODO either use or generate a new 32 byte key
+const key = process.env.KEY
+  ? nacl.util.decodeBase64(process.env.KEY)
+  : nacl.randomBytes(32);
 
 server.get('/', (req, res) => {
-  // TODO Return a response that documents the other routes/operations available
+  res.send(
+    'Usage:<br /> GET /gists retrieve a list of all gists for current user<br />' +
+      'GET /key return secret key for encryption of gists<br />' +
+      'GET /secretgist/:id Retrieve and decrypt the gist with the given id <br />' +
+      'POST /create create a private gist witha name and content in post request <br />' +
+      'POST /createsecret create an encrypted gist with name and content' +
+      'POST /login authenticate with github using Oauth token passed in from the request body'
+  );
 });
 
-server.get('/gists', (req, res) => {
-  // TODO Retrieve a list of all gists for the currently authed user
+server.get('/gists', async (req, res) => {
+  try {
+    const result = await github.gists.getAll({});
+    res.json(result.data);
+  } catch (error) {
+    res.json(error);
+  }
 });
 
 server.get('/key', (req, res) => {
-  // TODO Return the secret key used for encryption of secret gists
+  res.json({ key: nacl.util.encodeBase64(key) });
 });
 
-server.get('/secretgist/:id', (req, res) => {
-  // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+server.get('/secretgist/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await github.gists.get({ id });
+    const fName = Object.keys(result.data.files)[0];
+    const blob = result.data.files[fName].content;
+    const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
+    const cipherText = nacl.util.decodeBase64(blob.slice(32, blob.length));
+    const plaintext = nacl.secretbox.open(cipherText, nonce, key);
+    res.json({ text: nacl.util.encodeUTF8(plaintext) });
+  } catch (error) {
+    return res.json(error);
+  }
 });
 
-server.post('/create', (req, res) => {
-  // TODO Create a private gist with name and content given in post request
+server.post('/create', async (req, res) => {
+  const { name, content } = req.body;
+
+  try {
+    const result = await github.gists.create({
+      files: { [name]: { content } },
+      public: false
+    });
+    res.json(result.data);
+  } catch (error) {
+    return res.json(error);
+  }
 });
 
-server.post('/createsecret', (req, res) => {
-  // TODO Create a private and encrypted gist with given name/content
-  // NOTE - we're only encrypting the content, not the filename
-  // To save, we need to keep both encrypted content and nonce
+server.post('/createsecret', async (req, res) => {
+  const { name, content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const cipherText = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, key);
+  const blob =
+    nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(cipherText);
+
+  try {
+    const result = await github.gists.create({
+      files: { [name]: { content: blob } },
+      public: false
+    });
+    res.json(result.data);
+  } catch (error) {
+    return res.json(error);
+  }
 });
 
 /* OPTIONAL - if you want to extend functionality */
-server.post('/login', (req, res) => {
-  // TODO log in to GitHub, return success/failure response
-  // This will replace hardcoded username from above
-  // const { username, oauth_token } = req.body;
-  res.json({ success: false });
+server.post('/login', async (req, res) => {
+  const { oauth_token } = req.body;
+  github.authenticate({
+    type: 'oauth',
+    token: oauth_token
+  });
+  res.json({ success: true });
 });
 
 /*
