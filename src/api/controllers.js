@@ -27,10 +27,7 @@ module.exports = {
       storage.setItemSync('username', username)
       storage.setItemSync('token', token)
       storage.setItemSync('secret', key)
-      const response = await gh.authenticate({
-        type: 'oauth',
-        token: storage.getItemSync('token')
-      })
+      const response = await gh.authenticate({ type: 'oauth', token })
       res.status(200).json({ Success: `Ready to create Gists! Write your secret some where safe (${key})` })
     } catch (err) {
       res.status(422).json(err)
@@ -39,10 +36,7 @@ module.exports = {
 
   gists: async (req, res) => {
     try {
-    // const list = await gh.gists.getAll({})
-    let x = storage.getItemSync('token')
-    console.log(x);
-
+    const list = await gh.gists.getAll({})
     res.status(200).json(list)
     } catch (err) {
       res.status(422).json(err)
@@ -50,7 +44,6 @@ module.exports = {
   },
 
   key: (req, res) => {
-    storage.initSync()
     const key = storage.getItemSync('secret')
     res.status(200).json({ key })
   },
@@ -58,8 +51,7 @@ module.exports = {
   secretgist: async (req, res) => {
     try {
       const { id } = req.params
-      storage.initSync()
-      const key = storage.getItemSync('secret')
+      const key = nacl.util.decodeBase64(storage.getItemSync('secret'))
       const gist = await gh.gists.get({ id })
       const encrypted = Object.values(gist.data.files)[0].content
       const nonce = nacl.util.decodeBase64(encrypted.substring(0, 32))
@@ -84,8 +76,7 @@ module.exports = {
   createsecret: async (req, res) => {
     try {
       const { name, content } = req.body
-      storage.initSync()
-      const key = storage.getItemSync('secret')
+      const key = nacl.util.decodeBase64(storage.getItemSync('secret'))
       const nonce = nacl.randomBytes(24)
       const encrypted = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, key)
       const post = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encrypted)
