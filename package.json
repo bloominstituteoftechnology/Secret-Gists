@@ -3,17 +3,32 @@
   "version": "0.0.0",
   "private": true,
   "dependencies": {
-    "babel-preset-es2015": "^6.24.0",
+    "axios": "^0.17.1",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-react": "^6.24.1",
     "body-parser": "^1.18.2",
-    "eslint": "^3.17.1",
-    "eslint-config-airbnb": "^14.1.0",
-    "eslint-plugin-import": "^2.2.0",
+    "cors": "^2.8.4",
+    "css-loader": "^0.28.9",
     "express": "^4.15.4",
     "github": "^12.0.1",
+    "html-webpack-plugin": "^2.30.1",
+    "morgan": "^1.9.0",
+    "node-persist": "^2.1.0",
+    "react": "^16.2.0",
+    "react-bootstrap": "^0.32.0",
+    "react-dom": "^16.2.0",
+    "style-loader": "^0.19.1",
     "tweetnacl": "^1.0.0",
-    "tweetnacl-util": "^0.15.0"
+    "tweetnacl-util": "^0.15.0",
+    "webpack": "^3.10.0",
+    "webpack-dev-server": "^2.11.1"
   },
   "scripts": {
-    "start": "eslint src/*.js && nodemon src/app.js"
+    "start": "nodemon src/app.js --watch & webpack-dev-server --watch --open",
+    "build": "webpack -p"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.2"
   }
 }
