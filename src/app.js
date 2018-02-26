@@ -20,6 +20,11 @@ github.authenticate({
 
 server.get('/', (req, res) => {
   // TODO Return a response that documents the other routes/operations available
+  let handle  = 'invegat';
+  github.users.getForUser({ username: handle }).then(response => {
+    res.json(response.data);
+    // console.log(response.data)
+  })
 });
 
 server.get('/gists', (req, res) => {
