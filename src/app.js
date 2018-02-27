@@ -1,30 +1,33 @@
-const bodyParser = require('body-parser');
-const express = require('express');
-const GitHubApi = require('github');
-const nacl = require('tweetnacl');
-nacl.util = require('tweetnacl-util');
+const bodyParser = require("body-parser");
+const express = require("express");
+const GitHubApi = require("github");
+const nacl = require("tweetnacl");
+nacl.util = require("tweetnacl-util");
 
-require('dotenv').config();
+require("dotenv").config();
 
-const username = 'Lambdarines';  // TODO: your GitHub username here
+const username = "Lambdarines"; // TODO: your GitHub username here
 const github = new GitHubApi({ debug: true });
 const server = express();
 const token = process.env.GITHUB_TOKEN;
-let client_id = '';
-console.log('token', token);
+let client_id = "";
+// console.log('token', token);
+
+server.use(bodyParser.json());
+
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
 github.authenticate({
-  type: 'oauth',
+  type: "oauth",
   token
 });
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO either use or generate a new 32 byte key
 
-server.get('/', (req, res) => {
+server.get("/", (req, res) => {
   // TODO Return a response that documents the other routes/operations available
-  github.users.getForUser({ username }).then((response) => {
+  github.users.getForUser({ username }).then(response => {
     res.json(response.data);
     console.log("client id", response.data.id);
     client_id = response.data.id;
@@ -32,43 +35,57 @@ server.get('/', (req, res) => {
   });
 });
 
-server.get('/gists', (req, res) => {
+server.get("/gists", (req, res) => {
   // TODO Retrieve a list of all gists for the currently authed user
-  github.gists.getForUser({ username })
-    .then(response => {
+  github.gists.getForUser({ username }).then(response => {
+    res.json(response.data);
+  });
+});
+
+server.get("/key", (req, res) => {
+  // TODO Return the secret key used for encryption of secret gists
+  github.authorization
+    .check({ access_token: token, client_id: client_id })
+    .then(result => {
       res.json(response.data);
     });
+  console.log();
 });
 
-server.get('/key', (req, res) => {
-  // TODO Return the secret key used for encryption of secret gists
-  github.authorization.check({ access_token: token, client_id: client_id }).then(result => {
-    res.json(response.data)
-  })
-  console.log()
-});
-
-server.get('/secretgist/:id', (req, res) => {
+server.get("/secretgist/:id", (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
 });
 
-server.post('/create', (req, res) => {
-  github.gists.create({key: "key", public: true, description: 'My first gist', files: { "file1.txt": { content: "Aren't gists great!" } } },
-                  () => res.json({status: "done"}));
+server.post("/create", (req, res) => {
+  github.gists.create(
+    {
+      key: "key",
+      public: true,
+      description: "My first gist",
+      files: { "file1.txt": { content: "Aren't gists great!" } }
+    },
+    () => res.json({ status: "done" })
+  );
 });
 
-server.post('/createsecret', (req, res) => {
+server.post("/createsecret", (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
 });
 
 /* OPTIONAL - if you want to extend functionality */
-server.post('/login', (req, res) => {
+server.post("/login", (req, res) => {
   // TODO log in to GitHub, return success/failure response
   // This will replace hardcoded username from above
-  const { username, oauth_token } = req.body;
-  github.authorization.check({access_token: oauth_token, client_id: username}).then(result => {res.json({success: result})})
+  const { userName, oauth_token } = req.body;
+  console.log(req.body);
+  github.authorization
+    .check({ access_token: oauth_token, client_id: userName })
+    .then(result => {
+      res.json({ success: result });
+    })
+    .catch(err => res.json(err));
 });
 
 /*
