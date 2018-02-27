@@ -15,6 +15,9 @@ const token = process.env.GITHUB_TOKEN;
 let client_id = "";
 // console.log('token', token);
 
+let myPublicKey;
+
+
 server.use(bodyParser.json());
 
 // Generate an access token: https://github.com/settings/tokens
@@ -69,8 +72,21 @@ server.get("/key", (req, res) => {
 });
 
 server.get("/secretgist/:id", (req, res) => {
-  // TODO Retrieve and decrypt the secret gist corresponding to the given ID
-
+  try {
+    // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+    let id = '44be398986b3e2d5936ee133dcce62d2';
+    github.gists.get({
+      id
+    }).then(response => {
+      let signedMessage = new Uint8Array(res.json(response.data.files['file4.txt'].content));
+      nacl.sign.open(signedMessage, myPublicKey);
+    });
+  } catch (error) {
+    res.json({
+      catchError: true,
+      error
+    })
+  }
 });
 
 server.post("/create", (req, res) => {
@@ -95,9 +111,10 @@ server.post("/createsecret", (req, res) => {
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
   let pair = nacl.sign.keyPair();
-  // console.log(pair.secretKey);
+
   let publicKey = nacl.sign.keyPair.fromSecretKey(pair.secretKey);
-  // let nonce = Uint8Array.from(nacl.box.nonceLength = 24);
+  myPublicKey = publicKey;
+
   let message = new Uint8Array('encrypt the stupid thing!');
   let encMessage = nacl.sign(message, pair.secretKey);
   // nacl.sign(message, pair.secretKey);
@@ -105,7 +122,7 @@ server.post("/createsecret", (req, res) => {
       public: false,
       description: "a secret gist",
       files: {
-        'file3.txt': {
+        'file4.txt': {
           content: encMessage.toString()
         }
       }
@@ -114,10 +131,6 @@ server.post("/createsecret", (req, res) => {
       status: 'done'
     })
   )
-  // catch(err => {
-  //   res.json(err);
-  //   console.log('error', err);
-  // });
 })
 
 /* OPTIONAL - if you want to extend functionality */
