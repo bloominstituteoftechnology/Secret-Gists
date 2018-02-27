@@ -53,7 +53,8 @@ server.get('/secretgist/:id', (req, res) => {
 });
 
 server.post('/create', (req, res) => {
-  // TODO Create a private gist with name and content given in post request
+  github.gists.create({key: "key", public: true, description: 'My first gist', files: { "file1.txt": { content: "Aren't gists great!" } } },
+                  () => res.json({status: "done"}));
 });
 
 server.post('/createsecret', (req, res) => {
@@ -66,8 +67,8 @@ server.post('/createsecret', (req, res) => {
 server.post('/login', (req, res) => {
   // TODO log in to GitHub, return success/failure response
   // This will replace hardcoded username from above
-  // const { username, oauth_token } = req.body;
-  res.json({ success: false });
+  const { username, oauth_token } = req.body;
+  github.authorization.check({access_token: oauth_token, client_id: username}).then(result => {res.json({success: result})})
 });
 
 /*
