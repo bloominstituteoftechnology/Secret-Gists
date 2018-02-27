@@ -82,10 +82,12 @@ server.post('/createsecret', (req, res) => {
 
 /* OPTIONAL - if you want to extend functionality */
 server.post('/login', (req, res) => {
-  // TODO log in to GitHub, return success/failure response
-  // This will replace hardcoded username from above
-  // const { username, oauth_token } = req.body;
-  res.json({ success: false });
+  const { oauth_token } = req.body;
+  github.authenticate({
+    type: 'oauth',
+    token: oauth_token
+  });
+  res.json({ success: true });
 });
 
 /*
