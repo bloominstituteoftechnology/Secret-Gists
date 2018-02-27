@@ -46,9 +46,13 @@ server.get('/', (req, res) => {
 
 server.get('/gists', (req, res) => {
   // TODO Retrieve a list of all gists for the currently authed user
-  github.users.getForUser({ username }).then(response => {
-    console.log(response.data);
-  });
+  github.gists
+    .getForUser({
+      username,
+    })
+    .then(response => {
+      res.json(response.data);
+    });
 });
 
 server.get('/key', (req, res) => {
@@ -66,8 +70,15 @@ server.get('/secretgist/:id', (req, res) => {
 
 server.post('/create', (req, res) => {
   // TODO Create a private gist with name and content given in post request
-  const test = { key, content: 'test', name: 'test name' };
-  github.gists.create(test, true, 'Test Gist');
+  github.gists.create(
+    {
+      key: 'key',
+      public: true,
+      description: 'My first gist',
+      files: { 'files.txt': { content: "Aren't gists great!" } },
+    },
+    () => res.json({ status: 'done' })
+  );
 });
 
 server.post('/createsecret', (req, res) => {
@@ -80,8 +91,28 @@ server.post('/createsecret', (req, res) => {
 server.post('/login', (req, res) => {
   // TODO log in to GitHub, return success/failure response
   // This will replace hardcoded username from above
-  // const { username, oauth_token } = req.body;
-  res.json({ success: false });
+  try {
+    // console.log(`req.body.access_token: ${req.body.access_token} keys: ${Object.keys(res.body)})}`);
+    const { access_token } = req.body;
+    github.authenticate({
+      type: 'oauth',
+      token: access_token,
+    });
+    github.authorization
+      .check({
+        access_token,
+      })
+      .then(result => {
+        res.json({
+          success: result,
+        });
+      });
+  } catch (error) {
+    res.json({
+      catchError: true,
+      error,
+    });
+  }
 });
 
 /*
