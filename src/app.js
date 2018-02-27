@@ -4,7 +4,7 @@ const GitHubApi = require('github');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'yourusername';  // TODO: your GitHub username here
+const username = 'lorinfields';  // TODO: your GitHub username here
 const github = new GitHubApi({ debug: true });
 const server = express();
 
