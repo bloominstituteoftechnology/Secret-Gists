@@ -1,4 +1,4 @@
-const bodyParser = require('body-parser');
+
 const express = require('express');
 const GitHubApi = require('github');
 const nacl = require('tweetnacl');
@@ -8,7 +8,12 @@ require('dotenv').config();
 
 const username = 'Lambdarines';  // TODO: your GitHub username here
 const github = new GitHubApi({ debug: true });
+const loginGithub = new GitHubApi({ debug: true });
 const server = express();
+const bodyParser = require('body-parser');
+server.use(bodyParser.json());
+
+
 const token = process.env.GITHUB_TOKEN;
 let client_id = '';
 console.log('token', token);
@@ -53,8 +58,8 @@ server.get('/secretgist/:id', (req, res) => {
 });
 
 server.post('/create', (req, res) => {
-  github.gists.create({key: "key", public: true, description: 'My first gist', files: { "file1.txt": { content: "Aren't gists great!" } } },
-                  () => res.json({status: "done"}));
+  github.gists.create({ key: "key", public: true, description: 'My first gist', files: { "file1.txt": { content: "Aren't gists great!" } } },
+    () => res.json({ status: "done" }));
 });
 
 server.post('/createsecret', (req, res) => {
@@ -67,8 +72,14 @@ server.post('/createsecret', (req, res) => {
 server.post('/login', (req, res) => {
   // TODO log in to GitHub, return success/failure response
   // This will replace hardcoded username from above
-  const { username, oauth_token } = req.body;
-  github.authorization.check({access_token: oauth_token, client_id: username}).then(result => {res.json({success: result})})
+  try {
+    console.log(`req.body.access_token: ${req.body.access_token}`);
+    const { access_token } = req.body;
+    loginGithub.authorization.check({ access_token }).then(result => { res.json({ success: result }) })
+  }
+  catch (error) {
+    res.json({catchError: true, success: false, error})
+  }
 });
 
 /*
