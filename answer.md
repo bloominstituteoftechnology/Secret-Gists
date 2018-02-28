@@ -21,3 +21,4 @@ Some Solutions to consider:
     1. 2 factor authentication with phone or email
     2. stronger and longer password requirements 
     3. password manager
+    4. educating employees about password management and selection

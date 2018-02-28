@@ -21,8 +21,6 @@ github.authenticate({
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO either use or generate a new 32 byte key
-console.log(process.env.GITHUB_TOKEN);
-
 const key = process.env.SECRET_KEY ?
   nacl.util.decodeBase64(process.env.SECRET_KEY) : nacl.randomBytes(32);
 
