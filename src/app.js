@@ -7,7 +7,7 @@ nacl.util = require('tweetnacl-util');
 // add file path if .env file is moved elsewhere from the root folder
 require('dotenv').config();
 
-const username = 'yourusername';  // TODO: your GitHub username here
+const username = 'IllSmithDa';  // TODO: your GitHub username here
 const github = new GitHubApi({ debug: true });
 const server = express();
 
@@ -23,29 +23,56 @@ github.authenticate({
 // TODO either use or generate a new 32 byte key
 console.log(process.env.GITHUB_TOKEN);
 
+const key = process.env.SECRET_KEY ?
+  nacl.util.decodeBase64(process.env.SECRET_KEY) : nacl.randomBytes(32);
+
 server.get('/', (req, res) => {
   // TODO Return a response that documents the other routes/operations available
-
+  res.send(`
+  <html>
+    <body>
+      <ul> 
+        <li> Get:/gists </li>
+        <li>GET: /key</li>
+        <li>GET: /secretgist/:id</li>
+        <li>POST: /create</li>
+        <li>POST: /createsecret</li>
+        <li>POST: /login</li>
+      </ul>
+    <body>
+  </html>
+  `);
 });
 
 server.get('/gists', (req, res) => {
   // TODO Retrieve a list of all gists for the currently authed user
-  console.log(github.gists);
-  github.gists.getAll()
+  github.gists.getForUser({ username })
     .then((response) => {
-      res.json(response);
+      res.json(response.data);
     })
-    .catch(() => {
-      throw new Error('Could not find gist list');
+    .catch((err) => {
+      res.json({ error: err.message });
     });
 });
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
+  res.send(nacl.util.encodeBase64(key));
 });
 
 server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.params.id;
+  github.gists.get({ id })
+    .then((response) => {
+      const gist = response.data;
+      const filename = Object.keys(gist.files)[0];
+      const blob = gist.files[filename].content;
+      const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
+      const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
+      const plainText = nacl.secretbox.open(ciphertext, nonce, key);
+      res.send(nacl.util.encodeUTF8(plainText));
+    });
 });
 
 server.post('/create', (req, res) => {
@@ -53,23 +80,49 @@ server.post('/create', (req, res) => {
  // req.rawHeaders
  // req.headers
  // req.app
-  console.log(req.body);
-  github.gists.create()
+  const { name, content } = req.body;
+  const files = { [name]: { content } };
+
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json({ error: err.message });
+    });
 });
 
 server.post('/createsecret', (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
-  github.gists.create()
+  const { name, content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, key);
+  const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(ciphertext);
+  const files = { [name]: { content: blob } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response);
+    })
+    .catch((err) => {
+      res.json({ error: err.message });
+    });
 });
 
 /* OPTIONAL - if you want to extend functionality */
 server.post('/login', (req, res) => {
   // TODO log in to GitHub, return success/failure response
   // This will replace hardcoded username from above
-  // const { username, oauth_token } = req.body;
-  res.json({ success: false });
+  const { oauth_token } = req.body;
+  // github.
+  github.users.get({ username })
+    .then((data) => {
+      res.json({ sucess: true });
+    })
+    .catch((err) => {
+      res.json({ error: err.message });
+    });
 });
 
 /*
