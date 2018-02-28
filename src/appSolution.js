@@ -19,6 +19,8 @@ github.authenticate({
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO either use or generate a new 32 byte key
+const key = process.env.SECRET_KEY ?
+    nacl.util.decodeBase64(process.env.SECRET_KEY) : nacl.randomBytes(32);
 
 server.get('/', (req, res) => {
   // TODO Return a response that documents the other routes/operations available
@@ -27,40 +29,46 @@ server.get('/', (req, res) => {
 server.get('/gists', (req, res) => {
   // TODO Retrieve a list of all gists for the currently authed user
   github.gists.getForUser({ username }).then((response) => {
-    res.json(response.data);
+      res.json(response.data);
   }).catch((err) => {
-    res.json(err);
+      res.json(err);
   });
 });
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
-  res.send(nacl.util.encodeBase64(key));
+  res.send(nacl.util.encodeBase6(key));
 });
 
 server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
   const id = req.params.id;
   github.gists.get({ id }).then((response) => {
-    const gist = response.data;
-    const filename = Object.keys(gist.files)[0];
-    // grabbing the first file of the gist
-    const blob = gist.files[filename].content;
-    // Nonce?
-    const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
-    const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
-    const plaintext = nacl.secretbox.open(ciphertext, nonce, key);
-    res.send(nacl.util.encodeUTF8(plaintext));
+      const gist = response.data;
+      // Assuming gists has only 1 file and/or we only about that file
+      const filename = Object.keys(gist.files)[0];
+      const blob = gist.files[filename].content;
+      // Assume nonce is first 24 bytes of blob, split and decrypt remainder
+      // N.B. 24 byte nonce == 32 characters encoded in Base64
+      const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
+      const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
+      const plaintext = nacl.secretbox.open(ciphertext, nonce, key);
+      res.send(nacl.util.encodeUTF8(plaintext));
   });
 });
 
-server.post('/create', (req, res) => {
+server.post('/create', urlencodedParser, (req, res) => {
   // TODO Create a private gist with name and content given in post request
-  const result = await github.gists.create({ files: req, public: false });
-  res.json(result);
+  const { name, content } = req.body;
+  const files = { [name]: { content } };
+  github.gists.create({ files, public: false }).then((response) => {
+      res.json(response.data);
+  }).catch((err) => {
+      res.json(err);
+  });
 });
 
-server.post('/createsecret', (req, res) => {
+server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
@@ -69,10 +77,10 @@ server.post('/createsecret', (req, res) => {
   const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, key);
   const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(ciphertext);
   const files = { [name]: { content: blob } };
-  github.gists.create({ files, public: false }).then((response) => {
+  github.gist.create({ files, public: false }).then((response) => {
     res.json(response.data);
   }).catch((err) => {
-    res.json(err);
+      res.json(err);
   });
 });
 
