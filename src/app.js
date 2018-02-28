@@ -13,11 +13,10 @@ const github = new GitHubApi({
 const server = express();
 const token = process.env.GITHUB_TOKEN;
 let client_id = "";
+
 console.log('token', token);
 
-let myPublicKey;
-
-
+let boxKey, nonce;
 server.use(bodyParser.json());
 
 // Generate an access token: https://github.com/settings/tokens
@@ -56,32 +55,24 @@ server.get("/gists", (req, res) => {
 
 server.get("/key", (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
-  try {
-    github.users
-      .getKey({
-        id: '36865507'
-      })
-  } catch (error) {
-    console.log(error);
-  }
-  // {
-  //   res.json({
-  //     catchError: true,
-  //     error
-  //   })
-  // }
+  res.json(boxKey.toString());
 });
 
 server.get("/secretgist/:id", (req, res) => {
   try {
     // make a change
     // TODO Retrieve and decrypt the secret gist corresponding to the given ID
-    let id = '44be398986b3e2d5936ee133dcce62d2';
+    let id = req.params.id;
+    console.log("params!!!!!!!!!!", req.params.id);
     github.gists.get({
       id
     }).then(response => {
-      let signedMessage = new Uint8Array(res.json(response.data.files['file4.txt'].content));
-      nacl.sign.open(signedMessage, myPublicKey);
+      let signedMessage = [];
+      let temp = response.data.files['file6.txt'].content;
+      let finalArray = nacl.util.decodeBase64(temp);
+      let decode = nacl.secretbox.open(finalArray, nonce, boxKey);
+      console.log('decode!!!!!!!!!!!!!!!', nacl.util.encodeUTF8(decode));
+      res.json(nacl.util.encodeUTF8(decode));
     });
   } catch (error) {
     res.json({
@@ -93,15 +84,15 @@ server.get("/secretgist/:id", (req, res) => {
 
 server.post("/create", (req, res) => {
   github.gists.create({
-      key: "key",
-      public: true,
-      description: "My first gist",
-      files: {
-        "file1.txt": {
-          content: "Aren't gists great!"
-        }
+    key: "key",
+    public: true,
+    description: "My first gist",
+    files: {
+      "file1.txt": {
+        content: "Aren't gists great!"
       }
-    },
+    }
+  },
     () => res.json({
       status: "done"
     })
@@ -112,24 +103,27 @@ server.post("/createsecret", (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
+
   let pair = nacl.sign.keyPair();
-
-  let publicKey = nacl.sign.keyPair.fromSecretKey(pair.secretKey);
-  myPublicKey = publicKey;
-
-  let message = new Uint8Array('encrypt the stupid thing!');
-  let encMessage = nacl.sign(message, pair.secretKey);
-  // nacl.sign(message, pair.secretKey);
+  myPublicKey = pair.publicKey;
+  let newNonce = () => nacl.randomBytes(24);
+  let newBoxKey = () => nacl.randomBytes(32);
+  nonce = newNonce();
+  boxKey = newBoxKey();
+  console.log("nonce", nonce, boxKey);
+  let message = nacl.util.decodeUTF8('encrypt the stupid thing!');
+  let encMessage = nacl.secretbox(message, nonce, boxKey);
   github.gists.create({
-      public: false,
-      description: "a secret gist",
-      files: {
-        'file4.txt': {
-          content: encMessage.toString()
-        }
+    public: false,
+    description: "THE secret gist",
+    files: {
+      'file6.txt': {
+        content: nacl.util.encodeBase64(encMessage)
       }
-    },
+    }
+  },
     () => res.json({
+      content: nacl.util.encodeBase64(encMessage),
       status: 'done'
     })
   )
@@ -140,7 +134,6 @@ server.post('/login', (req, res) => {
   // TODO log in to GitHub, return success/failure response
   // This will replace hardcoded username from above
   try {
-    // console.log(`req.body.access_token: ${req.body.access_token} keys: ${Object.keys(res.body)})}`);
     const {
       access_token
     } = req.body;
