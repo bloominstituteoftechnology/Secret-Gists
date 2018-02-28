@@ -15,7 +15,7 @@ const token = process.env.GITHUB_TOKEN;
 let client_id = "";
 // console.log('token', token);
 
-let myPublicKey;
+let boxKey, nonce;
 
 
 server.use(bodyParser.json());
@@ -71,16 +71,52 @@ server.get("/key", (req, res) => {
   // }
 });
 
+// server.get("/secretgist/:id", (req, res) => {
+//   try {
+//     // make a change
+//     // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+//     console.log("params!!!!!!!!!!", req.params.id);
+//     let id = req.params.id;
+//     console.log("myPublicKey!!!!!!!!!!", myPublicKey)
+//     github.gists.get({
+//       id
+//     }).then(response => {
+//       let signedMessage = new Uint8Array(response.data.files['file6.txt'].content);
+//       nacl.sign.open(signedMessage, myPublicKey)
+//       console.log(nacl.sign.open(signedMessage, myPublicKey));
+//     });
+//   } catch (error) {
+//     res.json({
+//       catchError: true,
+//       error
+//     })
+//   }
+// });
 server.get("/secretgist/:id", (req, res) => {
   try {
     // make a change
     // TODO Retrieve and decrypt the secret gist corresponding to the given ID
-    let id = '44be398986b3e2d5936ee133dcce62d2';
+    let id = req.params.id;
+    console.log("params!!!!!!!!!!", req.params.id);
     github.gists.get({
       id
     }).then(response => {
-      let signedMessage = new Uint8Array(res.json(response.data.files['file4.txt'].content));
-      nacl.sign.open(signedMessage, myPublicKey);
+      let signedMessage = [];
+      let temp = response.data.files['file6.txt'].content;
+      //signedMessage = (temp.split(',').map(Number));
+      // console.log("signed message!!!!!!!!!!!!!!!!!", signedMessage);
+      //Uint8Array.from(signedMessage);
+      // console.log('signed message', Uint8Array.from(signedMessage));
+      //let finalArray = Uint8Array.from(signedMessage);
+      // console.log("final Array!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", finalArray);
+      let finalArray = nacl.util.decodeBase64(temp);
+      // console.log("nonce and key", nonce, boxKey);
+      // console.log("final array", finalArray);
+      //console.log(nacl.util.encodeUTF8(finalArray));
+      //console.log(nacl.secretbox.open(finalArray, nonce, boxKey));
+      let decode = () => nacl.secretbox.open(finalArray, nonce, boxKey);
+      console.log('decode!!!!!!!!!!!!!!!', decode());
+      res.json(nacl.util.encodeUTF8(decode()));
     });
   } catch (error) {
     res.json({
@@ -92,15 +128,15 @@ server.get("/secretgist/:id", (req, res) => {
 
 server.post("/create", (req, res) => {
   github.gists.create({
-      key: "key",
-      public: true,
-      description: "My first gist",
-      files: {
-        "file1.txt": {
-          content: "Aren't gists great!"
-        }
+    key: "key",
+    public: true,
+    description: "My first gist",
+    files: {
+      "file1.txt": {
+        content: "Aren't gists great!"
       }
-    },
+    }
+  },
     () => res.json({
       status: "done"
     })
@@ -111,24 +147,28 @@ server.post("/createsecret", (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
+
   let pair = nacl.sign.keyPair();
-
-  let publicKey = nacl.sign.keyPair.fromSecretKey(pair.secretKey);
-  myPublicKey = publicKey;
-
+  myPublicKey = pair.publicKey;
+  let newNonce = () => nacl.randomBytes(24);
+  let newBoxKey = () => nacl.randomBytes(32);
+  nonce = newNonce();
+  boxKey = newBoxKey();
+  console.log("nonce", nonce, boxKey);
   let message = new Uint8Array('encrypt the stupid thing!');
-  let encMessage = nacl.sign(message, pair.secretKey);
+  let encMessage = nacl.secretbox(message, nonce, boxKey);
   // nacl.sign(message, pair.secretKey);
   github.gists.create({
-      public: false,
-      description: "a secret gist",
-      files: {
-        'file4.txt': {
-          content: encMessage.toString()
-        }
+    public: false,
+    description: "THE secret gist",
+    files: {
+      'file6.txt': {
+        content: nacl.util.encodeBase64(encMessage)
       }
-    },
+    }
+  },
     () => res.json({
+      content: nacl.util.encodeBase64(encMessage),
       status: 'done'
     })
   )
