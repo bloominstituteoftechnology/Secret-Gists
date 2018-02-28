@@ -71,27 +71,6 @@ server.get("/key", (req, res) => {
   // }
 });
 
-// server.get("/secretgist/:id", (req, res) => {
-//   try {
-//     // make a change
-//     // TODO Retrieve and decrypt the secret gist corresponding to the given ID
-//     console.log("params!!!!!!!!!!", req.params.id);
-//     let id = req.params.id;
-//     console.log("myPublicKey!!!!!!!!!!", myPublicKey)
-//     github.gists.get({
-//       id
-//     }).then(response => {
-//       let signedMessage = new Uint8Array(response.data.files['file6.txt'].content);
-//       nacl.sign.open(signedMessage, myPublicKey)
-//       console.log(nacl.sign.open(signedMessage, myPublicKey));
-//     });
-//   } catch (error) {
-//     res.json({
-//       catchError: true,
-//       error
-//     })
-//   }
-// });
 server.get("/secretgist/:id", (req, res) => {
   try {
     // make a change
@@ -103,20 +82,10 @@ server.get("/secretgist/:id", (req, res) => {
     }).then(response => {
       let signedMessage = [];
       let temp = response.data.files['file6.txt'].content;
-      //signedMessage = (temp.split(',').map(Number));
-      // console.log("signed message!!!!!!!!!!!!!!!!!", signedMessage);
-      //Uint8Array.from(signedMessage);
-      // console.log('signed message', Uint8Array.from(signedMessage));
-      //let finalArray = Uint8Array.from(signedMessage);
-      // console.log("final Array!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", finalArray);
       let finalArray = nacl.util.decodeBase64(temp);
-      // console.log("nonce and key", nonce, boxKey);
-      // console.log("final array", finalArray);
-      //console.log(nacl.util.encodeUTF8(finalArray));
-      //console.log(nacl.secretbox.open(finalArray, nonce, boxKey));
-      let decode = () => nacl.secretbox.open(finalArray, nonce, boxKey);
-      console.log('decode!!!!!!!!!!!!!!!', decode());
-      res.json(nacl.util.encodeUTF8(decode()));
+      let decode = nacl.secretbox.open(finalArray, nonce, boxKey);
+      console.log('decode!!!!!!!!!!!!!!!', nacl.util.encodeUTF8(decode));
+      res.json(nacl.util.encodeUTF8(decode));
     });
   } catch (error) {
     res.json({
@@ -155,9 +124,8 @@ server.post("/createsecret", (req, res) => {
   nonce = newNonce();
   boxKey = newBoxKey();
   console.log("nonce", nonce, boxKey);
-  let message = new Uint8Array('encrypt the stupid thing!');
+  let message = nacl.util.decodeUTF8('encrypt the stupid thing!');
   let encMessage = nacl.secretbox(message, nonce, boxKey);
-  // nacl.sign(message, pair.secretKey);
   github.gists.create({
     public: false,
     description: "THE secret gist",
@@ -179,7 +147,6 @@ server.post('/login', (req, res) => {
   // TODO log in to GitHub, return success/failure response
   // This will replace hardcoded username from above
   try {
-    // console.log(`req.body.access_token: ${req.body.access_token} keys: ${Object.keys(res.body)})}`);
     const {
       access_token
     } = req.body;
