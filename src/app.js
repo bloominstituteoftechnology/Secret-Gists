@@ -4,38 +4,69 @@ const GitHubApi = require('github');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'yourusername';  // TODO: your GitHub username here
+require('dotenv').config();
+
+const username = 'tacolim';  // TODO: your GitHub username here
 const github = new GitHubApi({ debug: true });
 const server = express();
+const token = process.env.GITHUB_TOKEN;
+let clientID = '';
+console.log('token:', token);
+
+server.use(bodyParser.json());
 
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
 github.authenticate({
   type: 'oauth',
-  token: process.env.GITHUB_TOKEN
+  token
 });
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO either use or generate a new 32 byte key
+const key = process.env.SECRET_KEY ? nacl.util.decodeBase64(process.env.SECRET_KEY) : nacl.randomBytes(32);
 
 server.get('/', (req, res) => {
   // TODO Return a response that documents the other routes/operations available
+  github.users.getForUser({ username })
+    .then((response) => {
+      res.json(response.data);
+      clientID = response.data.id;
+    }).catch((err) => { throw new Error('Error', err.message) })
 });
 
 server.get('/gists', (req, res) => {
   // TODO Retrieve a list of all gists for the currently authed user
+  // https://api.github.com/users/tacolim/gists/starred
+  github.gists.getForUser({ username })
+    .then((response) => { res.json(response.data) })
+    .catch((err) => { throw new Error('Error', err.message) })
 });
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
+  // github.authorization.check({ access_token: token, client_id: clientID }).then((result) => {
+  //   res.json(response.data);
+  // });
+  // console.log(response.data)
+  res.send({ key: nacl.util.encodeBase64(key) });
 });
 
 server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+  const { id } = req.params;
+
+  github.gists.get({ id })
+    .then((response) => { res.json(response.data) })
+    .catch((err) => { throw new Error('Error', err.message) })
 });
 
 server.post('/create', (req, res) => {
   // TODO Create a private gist with name and content given in post request
+  const { name, content } = req.body;
+  github.gists.create({ files: { [name]: { content }}, public: false })
+    .then((response) => { res.json(response.data) })
+    .catch((err) => { throw new Error('Error', err.message) })
 });
 
 server.post('/createsecret', (req, res) => {
