@@ -13,11 +13,7 @@ const github = new GitHubApi({
 const server = express();
 const token = process.env.GITHUB_TOKEN;
 let client_id = "";
-// console.log('token', token);
-
 let boxKey, nonce;
-
-
 server.use(bodyParser.json());
 
 // Generate an access token: https://github.com/settings/tokens
@@ -55,20 +51,7 @@ server.get("/gists", (req, res) => {
 
 server.get("/key", (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
-  try {
-    github.users
-      .getKey({
-        id: '36865507'
-      })
-  } catch (error) {
-    console.log(error);
-  }
-  // {
-  //   res.json({
-  //     catchError: true,
-  //     error
-  //   })
-  // }
+  res.json(boxKey.toString());
 });
 
 server.get("/secretgist/:id", (req, res) => {
