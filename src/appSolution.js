@@ -68,7 +68,7 @@ server.post('/create', urlencodedParser, (req, res) => {
   });
 });
 
-server.post('/createsecret', (req, res) => {
+server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
@@ -77,7 +77,11 @@ server.post('/createsecret', (req, res) => {
   const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, key);
   const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(ciphertext);
   const files = { [name]: { content: blob } };
-  github
+  github.gist.create({ files, public: false }).then((response) => {
+    res.json(response.data);
+  }).catch((err) => {
+      res.json(err);
+  });
 });
 
 /* OPTIONAL - if you want to extend functionality */
