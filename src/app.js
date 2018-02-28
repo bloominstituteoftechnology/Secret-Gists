@@ -3,11 +3,13 @@ const express = require('express');
 const GitHubApi = require('github');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
+require('dotenv').config()
 
-const username = 'yourusername';  // TODO: your GitHub username here
+const username = 'vibe';  // TODO: your GitHub username here
 const github = new GitHubApi({ debug: true });
 const server = express();
-
+const key = process.env.SECRET_KEY ? nacl.util.decodeBase64(process.env.SECRET_KEY) : nacl.randomBytes(32);
+console.log(key);
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
 github.authenticate({
@@ -22,26 +24,64 @@ server.get('/', (req, res) => {
   // TODO Return a response that documents the other routes/operations available
 });
 
-server.get('/gists', (req, res) => {
+server.get('/gists', async (req, res) => {
   // TODO Retrieve a list of all gists for the currently authed user
+  try {
+    const { data:gists } = await github.gists.getForUser({ username });
+    res.json(gists);
+  } catch (e) {
+    res.status(422).json({ message: 'Failed to retrieve a list of user gists', error: e });
+  }
 });
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
+  res.json({ key: nacl.util.encodeBase64(key) });
 });
 
 server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+  const { id } = req.params;
+  const { data:gist } = github.gists.get({ id });
 });
 
-server.post('/create', (req, res) => {
+async function createGists(gists) {
+  try {
+    const { data:response } = await github.gists.create({ gists, public: false });
+    return response;
+  } catch (e) {
+    return new Error({ message: 'Failed to create gists', error: e });
+  }
+}
+
+server.post('/create', async (req, res) => {
   // TODO Create a private gist with name and content given in post request
+  const { name, content } = req.body;
+  const gists = { [name]: { content } };
+  try {
+    const response = await createGists(gists);
+    res.json(response);
+  } catch (e) {
+    res.json(e);
+  }
+
 });
 
-server.post('/createsecret', (req, res) => {
+server.post('/createsecret', async (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
+  const { name, content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const encryptedContent = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, key);
+  const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encryptedContent);
+  const gists = { [name]: { content: blob} };
+  try {
+    const response = await createGists(gists);
+    res.json(response);
+  } catch (e) {
+    res.json(e);
+  }
 });
 
 /* OPTIONAL - if you want to extend functionality */
