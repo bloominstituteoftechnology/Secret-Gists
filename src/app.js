@@ -15,8 +15,9 @@ server.use(bodyParser.json());
 
 
 const token = process.env.GITHUB_TOKEN;
-let client_id = '';
-console.log('token', token);
+let client_id = process.env.client_id;
+// "client_id": "abcde12345fghij67890"
+//console.log('token', token);
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
 github.authenticate({
@@ -32,7 +33,7 @@ server.get('/', (req, res) => {
   github.users.getForUser({ username }).then((response) => {
     res.json(response.data);
     console.log("client id", response.data.id);
-    client_id = response.data.id;
+    // client_id = response.data.id;
     // console.log(response.data);
   });
 });
@@ -73,9 +74,10 @@ server.post('/login', (req, res) => {
   // TODO log in to GitHub, return success/failure response
   // This will replace hardcoded username from above
   try {
-    console.log(`req.body.access_token: ${req.body.access_token}`);
-    const { access_token } = req.body;
-    loginGithub.authorization.check({ access_token }).then(result => { res.json({ success: result }) })
+    // console.log(`req.body.access_token: ${req.body.access_token}`);
+    // github.authorization.getAll({page: 1, per_page: 30}).then(result => {console.log(result)});
+    // const { access_token } = req.body;
+    loginGithub.authorization.check({ access_token: token, client_id }).then(result => { res.json({ success: result }) })
   }
   catch (error) {
     res.json({catchError: true, success: false, error})
