@@ -4,9 +4,14 @@ const GitHubApi = require('github');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'yourusername';  // TODO: your GitHub username here
+DotEnv = require('dotenv-node');
+new DotEnv();
+
+const username = 'frogr';
 const github = new GitHubApi({ debug: true });
 const server = express();
+server.use(bodyParser.json());
+const PORT = 8950;
 
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
@@ -19,11 +24,33 @@ github.authenticate({
 // TODO either use or generate a new 32 byte key
 
 server.get('/', (req, res) => {
-  // TODO Return a response that documents the other routes/operations available
+  res.send(`
+  <html>
+  <body>
+  <h2>GET:</h2>
+  <h3>/gists</h3>
+  <p>Retrieve a list of all gists for the currently authed user</p>
+  <h3>/key</h3>
+  <p>Return the secret key used for encryption of secret gists</p>
+  <h3>/secretgist/:id</h3>
+  <p>Create a private gist with name and content given in post request</p>
+
+  <h2>POST:</h2>
+  <h3>/create</h3>
+  <p>Create a private gist with name and content given in post request</p>
+  <h3>/createsecret</h3>
+  <p>Create a private and encrypted gist with given name/content</p>
+  <h3>/login</h3>
+  <p>log in to GitHub, return success/failure response</p>
+  </body>
+  </html>
+  `);
 });
 
 server.get('/gists', (req, res) => {
-  // TODO Retrieve a list of all gists for the currently authed user
+  github.gists.getForUser({ username }).then(gists => {
+    res.json(gists.data);
+  });
 });
 
 server.get('/key', (req, res) => {
@@ -35,7 +62,16 @@ server.get('/secretgist/:id', (req, res) => {
 });
 
 server.post('/create', (req, res) => {
-  // TODO Create a private gist with name and content given in post request
+  console.log(req.body);
+  const { name, content } = req.body;
+  github.gists
+    .create({ files: { [name]: { content } }, public: false })
+    .then(gists => {
+      res.json(gists.data);
+    })
+    .catch(e => {
+      res.json(e);
+    });
 });
 
 server.post('/createsecret', (req, res) => {
@@ -46,10 +82,12 @@ server.post('/createsecret', (req, res) => {
 
 /* OPTIONAL - if you want to extend functionality */
 server.post('/login', (req, res) => {
-  // TODO log in to GitHub, return success/failure response
-  // This will replace hardcoded username from above
-  // const { username, oauth_token } = req.body;
-  res.json({ success: false });
+  const { oauth_token } = req.body;
+  github.authenticate({
+    type: 'oauth',
+    token: oauth_token
+  });
+  res.json({ success: true });
 });
 
 /*
@@ -62,4 +100,6 @@ Still want to write code? Some possibilities:
 -Let the user pass in their private key via POST
 */
 
-server.listen(3000);
+server.listen(PORT, () => {
+  console.log(`server up and running on port ${PORT}`);
+});
