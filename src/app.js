@@ -1,12 +1,12 @@
 require('dotenv').config();
 const bodyParser = require('body-parser');
 const express = require('express');
-const octokit = require('@octokit/rest');
+const Octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'yourusername';  // TODO: your GitHub username here
-const github = new octokit({ debug: true });
+const username = 'atiffany';  // TODO: your GitHub username here
+const github = new Octokit({ debug: true });
 const server = express();
 
 // Generate an access token: https://github.com/settings/tokens
@@ -18,17 +18,27 @@ github.authenticate({
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO either use or generate a new 32 byte key
+// const SECRET_KEY = process.env.SECRET_KEY;
 
 server.get('/', (req, res) => {
   // TODO Return a response that documents the other routes/operations available
+  res.send(process.env.SECRET_KEY);
 });
 
 server.get('/gists', (req, res) => {
   // TODO Retrieve a list of all gists for the currently authed user
+  github.gists.getForUser({ username })
+    .then((response) => {
+      console.log(response.data);
+    })
+    .catch((err) => {
+      console.log(err);
+    });
 });
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
+
 });
 
 server.get('/secretgist/:id', (req, res) => {
@@ -63,4 +73,6 @@ Still want to write code? Some possibilities:
 -Let the user pass in their private key via POST
 */
 
-server.listen(3000);
+server.listen(3000, () => {
+  console.log('Server listening');
+});
