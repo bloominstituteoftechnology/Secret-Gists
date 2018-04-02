@@ -9,6 +9,9 @@ const username = process.env.GITHUB_USERNAME;  // TODO: your GitHub username her
 const github = new octokit({ debug: true });
 const server = express();
 
+const SUCCESS = 200;
+const ERROR = 422;
+
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
 github.authenticate({
@@ -25,6 +28,13 @@ server.get('/', (req, res) => {
 
 server.get('/gists', (req, res) => {
   // TODO Retrieve a list of all gists for the currently authed user
+  github.gists.getForUser({ username })
+    .then((response) => {
+      res.status(SUCCESS).json(response.data);
+    })
+    .catch((err) => {
+      res.status(ERROR).json(err);
+    });
 });
 
 server.get('/key', (req, res) => {
