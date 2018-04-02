@@ -19,6 +19,8 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
+const key = nacl.randomBytes(32);
+
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO either use or generate a new 32 byte key
 
@@ -39,6 +41,8 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
+  const secretKey = nacl.util.encodeBase64(key);
+  res.status(SUCCESS).json({ key: secretKey });
 });
 
 server.get('/secretgist/:id', (req, res) => {
