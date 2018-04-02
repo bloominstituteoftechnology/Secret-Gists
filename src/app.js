@@ -1,12 +1,12 @@
 require('dotenv').config();
 const bodyParser = require('body-parser');
 const express = require('express');
-const GitHubApi = require('github');
+const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
 const username = 'yourusername';  // TODO: your GitHub username here
-const github = new GitHubApi({ debug: true });
+const github = new octokit({ debug: true });
 const server = express();
 
 // Create application/x-www-form-urlencoded parser
