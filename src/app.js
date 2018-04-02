@@ -39,6 +39,13 @@ server.get('/', (req, res) => {
 
 server.get('/gists', (req, res) => {
   // TODO Retrieve a list of all gists for the currently authed user
+  github.gists.getForUser({ username })
+    .then((res) => {
+      res.json(res.data);
+    })
+    .catch((err) => {
+      res.json({ err });
+    });
 });
 
 server.get('/key', (req, res) => {
