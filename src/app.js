@@ -23,6 +23,18 @@ github.authenticate({
 
 server.get('/', (req, res) => {
   // TODO Return a response that documents the other routes/operations available
+  res.status(200).json(`Here are the routes available:
+  
+  GET /gists - Retrieve a list of all gists for the currently authed user
+  
+  GET /key - Return the secret key used for encryption of secret gists
+  
+  GET /secretgist/:id - Retrieve and decrypt the secret gist corresponding to the given ID
+  
+  POST /create - Create a private gist with name and content given in post request
+  
+  POST /createsecret - Create a private and encrypted gist with given name/content
+  `);
 });
 
 server.get('/gists', (req, res) => {
@@ -65,4 +77,4 @@ Still want to write code? Some possibilities:
 -Let the user pass in their private key via POST
 */
 
-server.listen(3000);
+server.listen(process.env.PORT);
