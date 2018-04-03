@@ -5,9 +5,12 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'yourusername';  // TODO: your GitHub username here
+const username = 'austie702';  // TODO: your GitHub username here
 const github = new octokit({ debug: true });
 const server = express();
+
+// Create application/x-www-form-urlencoded parser
+const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
@@ -19,12 +22,22 @@ github.authenticate({
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO either use or generate a new 32 byte key
 
+const key = process.env.SECRET_KEY ?
+  nacl.util.decodeBase64(process.env.SECRET_KEY) : nacl.randomBytes(32);
+
 server.get('/', (req, res) => {
   // TODO Return a response that documents the other routes/operations available
 });
 
 server.get('/gists', (req, res) => {
   // TODO Retrieve a list of all gists for the currently authed user
+  github.gists.getForUser({ username })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.get('/key', (req, res) => {
@@ -33,10 +46,20 @@ server.get('/key', (req, res) => {
 
 server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+
 });
 
 server.post('/create', (req, res) => {
   // TODO Create a private gist with name and content given in post request
+  const { name, content } = req.body;
+  const files = { [name]: { content } };
+  gihub.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/createsecret', (req, res) => {
@@ -64,3 +87,5 @@ Still want to write code? Some possibilities:
 */
 
 server.listen(3000);
+
+
