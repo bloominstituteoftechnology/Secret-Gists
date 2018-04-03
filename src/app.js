@@ -42,29 +42,34 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
-  res.json(boxKey.toString());
+  res.send(nacl.util.endcodeBase64(key));
 });
 
 server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.params.id;
+  github.gists.get({id}).then((response) => {
+    const gist = response.data;
+    const filename = Object.keys(gist.files)[0];
+    const blob = gist.files[filename].content;
+    const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
+    const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
+    const plaintext = nacl.secretbox.open(ciphertext, nonce, key);
+    res.send(nacl.util.encodeUTF8(plaintext));
+  })
 });
 
 server.post('/create', (req, res) => {
   // TODO Create a private gist with name and content given in post request
-  github.gists.create({
-    key: "key",
-    public: true,
-    description: "My first gist",
-    files: {
-      "file1.txt": {
-        content: "Aren't gists great!"
-      }
-    }
-  },
-    () => res.json({
-      status: "done"
+  const { name, content } = req.body;
+  const files = { [name]: { content } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
     })
-  );
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/createsecret', (req, res) => {
