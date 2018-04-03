@@ -5,9 +5,9 @@ const Octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
+
 const username = process.env.GITHUB_USERNAME;
 const github = new Octokit({ debug: true });
-
 const server = express();
 server.use(bodyParser.json());
 
