@@ -21,9 +21,8 @@ github.authenticate({
 
 server.get('/', (req, res) => {
   // TODO Return a response that documents the other routes/operations available
-  github.users.getForUser({
-    username
-  }).then(response => {
+  github.users.getForUser({ username })
+    .then(response => {
     res.json(response.data);
     console.log("client id", response.data.id);
     client_id = response.data.id;
@@ -33,10 +32,12 @@ server.get('/', (req, res) => {
 
 server.get('/gists', (req, res) => {
   // TODO Retrieve a list of all gists for the currently authed user
-  github.gists.getForUser({
-    username
-  }).then(response => {
+  github.gists.getForUser({ username })
+    .then(response => {
     res.json(response.data);
+  })
+  .catch((err) => {
+    res.json(err);
   });
 });
 
@@ -72,33 +73,23 @@ server.post('/create', (req, res) => {
     });
 });
 
-server.post('/createsecret', (req, res) => {
+server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
-  let pair = nacl.sign.keyPair();
-  myPublicKey = pair.publicKey;
-  let newNonce = () => nacl.randomBytes(24);
-  let newBoxKey = () => nacl.randomBytes(32);
-  nonce = newNonce();
-  boxKey = newBoxKey();
-  console.log("nonce", nonce, boxKey);
-  let message = nacl.util.decodeUTF8('encrypt the stupid thing!');
-  let encMessage = nacl.secretbox(message, nonce, boxKey);
-  github.gists.create({
-    public: false,
-    description: "THE secret gist",
-    files: {
-      'file6.txt': {
-        content: nacl.util.encodeBase64(encMessage)
-      }
-    }
-  },
-    () => res.json({
-      content: nacl.util.encodeBase64(encMessage),
-      status: 'done'
+  const { name, content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, key);
+  const blob = nacl.util.endcodeBase64(nonce) +
+        nacl.util.endcodeBase64(ciphertext);
+  const files = { [name]: { content: blob } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
     })
-  )
+    .catch(err) => {
+      res.json(err);
+    });
 });
 
 /* OPTIONAL - if you want to extend functionality */
