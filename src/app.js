@@ -18,27 +18,28 @@ github.authenticate({
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO either use or generate a new 32 byte key
-// const SECRET_KEY = process.env.SECRET_KEY;
+const key = process.env.SECRET_KEY ? nacl.util.decodeBase64(process.env.SECRET_KEY) : nacl.randomBytes(32);
 
 server.get('/', (req, res) => {
   // TODO Return a response that documents the other routes/operations available
-  res.send(process.env.SECRET_KEY);
+  res.send('List of Options:\nSee Gists\nGet Key\nCreate New Gist\nCreate New Secret Gist\n');
 });
 
 server.get('/gists', (req, res) => {
   // TODO Retrieve a list of all gists for the currently authed user
+  // res.send('NEXT');
   github.gists.getForUser({ username })
     .then((response) => {
-      console.log(response.data);
+      res.json(response.data);
     })
     .catch((err) => {
-      console.log(err);
+      res.json(err);
     });
 });
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
-
+  res.send(`The secret key is: ${nacl.util.encodeBase64(key)}`);
 });
 
 server.get('/secretgist/:id', (req, res) => {
@@ -47,6 +48,15 @@ server.get('/secretgist/:id', (req, res) => {
 
 server.post('/create', (req, res) => {
   // TODO Create a private gist with name and content given in post request
+  const { name, content } = req.body;
+  const files = { [name]: { content } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/createsecret', (req, res) => {
