@@ -52,10 +52,16 @@ server.get('/secretgist/:id', (req, res) => {
   github.gists.get({ id })
     .then((response) => {
       const gist = response.data;
+      const filename = Object.keys(gist.files)[0];
+      const blob = gist.files[filename].content;
+      const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
+      const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
+      const plaintext = nacl.secretbox.open(ciphertext, nonce, genKey);
+      res.send(nacl.util.encodeUTF8(plaintext));
     });
 });
 
-server.post('/create', (req, res) => {
+server.post('/create', urlencodedParser, (req, res) => {
   // TODO Create a private gist with name and content given in post request
   const { name, content } = req.body;
   const files = { name: content };
@@ -72,6 +78,18 @@ server.post('/createsecret', (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
+  const { name, content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, genKey);
+  const blob = nacl.util.encodeBase64(nonce) + nacl.encodeBase64(ciphertext);
+  const files = { [name]: { content: blob } };
+  github.gist.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+      .catch((err) => {
+        res.json(err);
+      });
 });
 
 /* OPTIONAL - if you want to extend functionality */
