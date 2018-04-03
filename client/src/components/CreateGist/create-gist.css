@@ -1,0 +1,14 @@
+.content-box {
+  width: 300px;
+  height: 200px;
+}
+
+.div {
+  display: flex;
+  align-items: center;
+  align-content: center;
+}
+
+.container {
+  align-items: center;
+}
