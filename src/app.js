@@ -29,11 +29,43 @@ const secret = process.env.SECRET_KEY
 
 server.get('/', (req, res) => {
   // TODO Return a response that documents the other routes/operations available
-  res.send(`Secret Gists</br>
-  /gist: to see a list of all of your gist</br>
-  /key : return the secret key used for encryption of secret gists
-  
-  `);
+  res.send(
+    `<h1>Secret Gists</h1>
+    <h2>Supported operations: </h2>
+    <ul>
+      <li><a href='/gist'>GET /gists:</a> to see a list of all of your gist </li>
+      <li><a href='/key'>Get /key :</a> return the secret key used for encryption of secret gists</li>
+      <li>GET /secretgist/:id : retrieves and decrypts the given secret gist</li>
+      <li>POST /create {name, content}creates a private gist for the authorized user with the given name/content </li>
+      <li>POST /createsecret {name, content}creates a private and encrypted gist for the authorized user with the given name/content </li>
+    </ul>
+       <h3>Create an *unencrypted* gist</h3>
+        <form action="/create" method="post">
+        <label>
+            Name: <input type="text" name="name" size=70 required>
+          </label><br>
+          <label >
+            Content:<br>
+            <textarea name="content" cols="100" rows="15" required>
+            </textarea>
+          </label><br>
+          <input type="submit" value="Submit">
+        </form>
+        
+        <h3>Create an *encrypted* gist</h3>
+        <form action="/createsecret" method="post">
+          <label>
+            Name: <input type="text" name="name" size=70 required>
+          </label><br>
+          <label >
+            Content:<br>
+            <textarea name="content" cols="100" rows="15" required>
+            </textarea>
+          </label><br>
+          <input type="submit" value="Submit">
+        </form>
+  `
+  );
 });
 
 server.get('/gists', (req, res) => {
@@ -50,6 +82,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
+  res.json(nacl.util.encodeBase64(secret));
 });
 
 server.get('/secretgist/:id', (req, res) => {
@@ -58,12 +91,14 @@ server.get('/secretgist/:id', (req, res) => {
 
 server.post('/create', (req, res) => {
   // TODO Create a private gist with name and content given in post request
+  res.send('Not a secret');
 });
 
 server.post('/createsecret', (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
+  res.send('a secret');
 });
 
 /* OPTIONAL - if you want to extend functionality */
