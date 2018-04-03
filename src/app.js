@@ -92,6 +92,26 @@ server.post('/createsecret', (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
+  const { name, content } = req.body;
+
+  const nonce = nacl.randomBytes(24);
+  const cipherText = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, key);
+  const contentHash = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(cipherText);
+  
+  const files = {
+    [name]: { content: contentHash },
+  };
+  const public = false;
+  const options = { files, public };
+  // console.log();
+  github.gists.create(options)
+    .then(response => {
+      res.status(SUCCESS).json(response);
+    })
+    .catch(error => {
+      res.status(ERROR).json(error);
+    });
+
 });
 
 /* OPTIONAL - if you want to extend functionality */
