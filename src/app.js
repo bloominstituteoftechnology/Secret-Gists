@@ -39,6 +39,7 @@ server.get('/', (req, res) => {
       <li>POST /create {name, content}creates a private gist for the authorized user with the given name/content </li>
       <li>POST /createsecret {name, content}creates a private and encrypted gist for the authorized user with the given name/content </li>
     </ul>
+
        <h3>Create an *unencrypted* gist</h3>
         <form action="/create" method="post">
         <label>
@@ -87,10 +88,20 @@ server.get('/key', (req, res) => {
 
 server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+  const { id } = req.params;
+  github.gists
+    .get({ id })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/create', (req, res) => {
   // TODO Create a private gist with name and content given in post request
+
   res.send('Not a secret');
 });
 
