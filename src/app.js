@@ -9,6 +9,8 @@ const username = 'atiffany';  // TODO: your GitHub username here
 const github = new Octokit({ debug: true });
 const server = express();
 
+server.use(bodyParser.json());
+
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
 github.authenticate({
@@ -44,6 +46,7 @@ server.get('/key', (req, res) => {
 
 server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+  const { id } = req.params;
 });
 
 server.post('/create', (req, res) => {
