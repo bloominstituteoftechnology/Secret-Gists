@@ -1,3 +1,4 @@
+/* eslint-disable */
 require('dotenv').config();
 const bodyParser = require('body-parser');
 const express = require('express');
@@ -16,23 +17,19 @@ function wrapAsync(fn) {
   };
 }
 
-const username = 'jessehood';  // TODO: your GitHub username here
+let username = '';
 const github = new Octokit({ debug: true });
 const server = express();
 server.use(bodyParser.json());
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
-github.authenticate({
-  type: 'oauth',
-  token: process.env.GITHUB_TOKEN
-});
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO either use or generate a new 32 byte key
 const key =
-  process.env.SECRET_KEY
-  ? nacl.util.decodeBase64(process.env.SECRET_KEY)
-  : nacl.randomBytes(32);
+process.env.SECRET_KEY
+? nacl.util.decodeBase64(process.env.SECRET_KEY)
+: nacl.randomBytes(32);
 
 server.get('/', (req, res) => {
   // TODO Return a response that documents the other routes/operations available
@@ -49,11 +46,10 @@ server.get('/key', (req, res) => {
 
 server.get('/secretgist/:id', wrapAsync(async (req, res) => {
   const { id } = req.params;
-  console.log(id);
   const { data } = await github.gists.get({ id });
   const filename = Object.keys(data.files)[0];
   const blob = data.files[filename].content;
-
+  
   const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
   const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
   const plaintext = nacl.secretbox.open(ciphertext, nonce, key);
@@ -65,7 +61,7 @@ server.post('/create', wrapAsync(async (req, res) => {
   const files = {};
   files[req.body.name] = { content: req.body.content };
   const { data } = await github.gists.create({ files, description: 'test', public: false });
-
+  
   res.status(200).json({ data });
 }));
 
@@ -76,17 +72,29 @@ server.post('/createsecret', wrapAsync(async (req, res) => {
   const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(ciphertext);
   files[req.body.name] = { content: blob };
   const { data } = await github.gists.create({ files, description: 'test-secret', public: false });
-
+  
   res.status(200).json({ data });
 }));
 
 /* OPTIONAL - if you want to extend functionality */
-server.post('/login', (req, res) => {
-  // TODO log in to GitHub, return success/failure response
+server.post('/login', wrapAsync(async (req, res) => {
   // This will replace hardcoded username from above
-  // const { username, oauth_token } = req.body;
-  res.json({ success: false });
-});
+  const { user, oauthToken } = req.body;
+  if (!user || !oauthToken) throw new Error('invalid name or token');
+
+  github.authenticate({
+    type: 'oauth',
+    token: oauthToken
+  });
+
+  try {
+    const { data } = await github.users.get();
+    username = data.login;
+    res.json({ success: true });
+  } catch(error) {
+    res.json({ success: false });
+  }
+}));
 
 /*
 Still want to write code? Some possibilities:
@@ -103,7 +111,7 @@ Still want to write code? Some possibilities:
  */
 server.use((error, req, res, next) => {
   console.log(error);
-  res.json({ error });
+  res.json({ error: error.stack });
   next();
 });
 
