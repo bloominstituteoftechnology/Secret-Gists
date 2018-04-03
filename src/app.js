@@ -21,7 +21,7 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
-const key = nacl.randomBytes(32);
+const key = nacl.util.decodeBase64(process.env.SECRET);
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO either use or generate a new 32 byte key
@@ -56,15 +56,15 @@ server.get('/secretgist/:id', (req, res) => {
       const filename = Object.keys(gist.files)[0];
       const contentHash = gist.files[filename].content;
 
-      const nonce = contentHash.slice(0, 32);
+      const nonce = nacl.util.decodeBase64(contentHash.slice(0, 32));
       const contentPart = contentHash.slice(32, contentHash.length);
-
       const cipherText = nacl.util.decodeBase64(contentPart);
-      const decrypted = nacl.secretbox(cipherText, nonce, key); 
-
-      res.status(SUCCESS).json({ content: decrypted });
+      const decrypted = nacl.secretbox.open(cipherText, nonce, key);
+      
+      res.status(SUCCESS).json({ content: nacl.util.encodeUTF8(decrypted) });
     })
     .catch(error => {
+      console.log(error);
       res.status(ERROR).json({ error });
     });
 });
