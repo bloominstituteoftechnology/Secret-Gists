@@ -63,6 +63,16 @@ server.get('/secretgist/:id', (req, res) => {
 
 server.post('/create', (req, res) => {
   // TODO Create a private gist with name and content given in post request
+  const { name, content } = req.body;
+  const gists = { [name]: { content } };
+  
+  github.gists.create({ gists, public: false })
+    .then(res => {
+      res.json(res.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/createsecret', (req, res) => {
