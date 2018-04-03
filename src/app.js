@@ -1,12 +1,14 @@
 require('dotenv').config();
 const bodyParser = require('body-parser');
 const express = require('express');
-const octokit = require('@octokit/rest');
+
+// GitHub official REST API client for Node.js
+const Octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'yourusername';  // TODO: your GitHub username here
-const github = new octokit({ debug: true });
+const username = 'cmoore4os'; // process.env.GITHUB_USERNAME; // TODO: your GitHub username here
+const github = new Octokit({ debug: true });
 const server = express();
 
 // Generate an access token: https://github.com/settings/tokens
@@ -15,16 +17,35 @@ github.authenticate({
   type: 'oauth',
   token: process.env.GITHUB_TOKEN
 });
+// TODO: add bodyParser
+server.use(bodyParser.urlencoded({ extened: true }));
+server.use(bodyParser.json());
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO either use or generate a new 32 byte key
+const secret = process.env.SECRET_KEY
+  ? nacl.util.encodeBase64(process.env.SECRET_KEY)
+  : nacl.randomBytes(32);
 
 server.get('/', (req, res) => {
   // TODO Return a response that documents the other routes/operations available
+  res.send(`Secret Gists</br>
+  /gist: to see a list of all of your gist</br>
+  /key : return the secret key used for encryption of secret gists
+  
+  `);
 });
 
 server.get('/gists', (req, res) => {
-  // TODO Retrieve a list of all gists for the currently authed user
+  // Done Retrieve a list of all gists for the currently authed user
+  github.gists
+    .getForUser({ username })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.get('/key', (req, res) => {
@@ -63,4 +84,6 @@ Still want to write code? Some possibilities:
 -Let the user pass in their private key via POST
 */
 
-server.listen(3000);
+server.listen(3000, () => {
+  console.log('server listening on port 3000');
+});
