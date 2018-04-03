@@ -4,9 +4,10 @@ const express = require('express');
 const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
+require('dotenv').config();
 
 
-const username = 'patsand24csu@yahoo.com';  // TODO: your GitHub username here
+const username = 'patsand24';  // TODO: your GitHub username here
 const github = new octokit({ debug: true });
 const server = express();
 
@@ -19,7 +20,8 @@ github.authenticate({
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO either use or generate a new 32 byte key
-// Genereated variable for key acessible with.env
+const key = process.env.SECRET_KEY ?
+  nacl.util.decodeBase64(process.env.SECRET_KEY) : nacl.randomBytes(32);
 
 server.get('/', (req, res) => {
   // TODO Return a response that documents the other routes/operations available
@@ -39,7 +41,7 @@ server.get('/', (req, res) => {
 
 server.get('/gists', (req, res) => {
   // TODO Retrieve a list of all gists for the currently authed user
-  github.gists.getForUser({ username })
+  github.gists.getForUser({ username: username })
     .then((res) => {
       res.json(res.data);
     })
@@ -50,10 +52,13 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
+  res.send(nacl.util.encodeBase64(key));
 });
 
 server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+  const { id } = req.params;
+  const { data:gist } = github.gists.get({ id });
 });
 
 server.post('/create', (req, res) => {
