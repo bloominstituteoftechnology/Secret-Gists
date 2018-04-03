@@ -9,6 +9,8 @@ const username = process.env.GITHUB_USERNAME;  // TODO: your GitHub username her
 const github = new octokit({ debug: true });
 const server = express();
 
+server.use(bodyParser.json());
+
 const SUCCESS = 200;
 const ERROR = 422;
 
@@ -51,6 +53,21 @@ server.get('/secretgist/:id', (req, res) => {
 
 server.post('/create', (req, res) => {
   // TODO Create a private gist with name and content given in post request
+  const { name, content, private } = req.body;
+  const files = {
+    [name]: { content },
+  };
+  const public = (private !== false);
+  const options = { files, public };
+
+  github.gists.create(options)
+    .then(response => {
+      res.status(SUCCESS).json(response);
+    })
+    .catch(error => {
+      res.status(ERROR).json(error);
+    });
+
 });
 
 server.post('/createsecret', (req, res) => {
