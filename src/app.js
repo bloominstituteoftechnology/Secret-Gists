@@ -21,13 +21,34 @@ github.authenticate({
 
 server.get('/', (req, res) => {
   // TODO Return a response that documents the other routes/operations available
-  github.users.getForUser({ username })
-    .then(response => {
-    res.json(response.data);
-    console.log("client id", response.data.id);
-    client_id = response.data.id;
-    // console.log(response.data);
-  });
+  res.send(`
+    <html>
+      <header><title>Secret Gists!</title></header>
+      <body>
+        <h1>Secret Gists!</h1>
+        <h2>Supported operations:</h2>
+        <ul>
+          <li><i><a href="/gists">GET /gists</a></i>: retrieve a list of gists for the authorized user (including private gists)</li>
+          <li><i><a href="/key">GET /key</a></i>: return the secret key used for encryption of secret gists</li>
+          <li><i>GET /secretgist/ID</i>: retrieve and decrypt a given secret gist
+          <li><i>POST /create { name, content }</i>: create a private gist for the authorized user with given name/content</li>
+          <li><i>POST /createsecret { name, content }</i>: create a private and encrypted gist for the authorized user with given name/content</li>
+        </ul>
+        <h3>Create an *unencrypted* gist</h3>
+        <form action="/create" method="post">
+          Name: <input type="text" name="name"><br>
+          Content:<br><textarea name="content" cols="80" rows="10"></textarea><br>
+          <input type="submit" value="Submit">
+        </form>
+        <h3>Create an *encrypted* gist</h3>
+        <form action="/createsecret" method="post">
+          Name: <input type="text" name="name"><br>
+          Content:<br><textarea name="content" cols="80" rows="10"></textarea><br>
+          <input type="submit" value="Submit">
+        </form>
+      </body>
+    </html>
+  `);
 });
 
 server.get('/gists', (req, res) => {
