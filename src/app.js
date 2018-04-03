@@ -5,6 +5,17 @@ const Octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
+/**
+ * wrapper to send unhandled async/await errors to error handling middleware
+ */
+function wrapAsync(fn) {
+  return (req, res, next) => {
+    // Make sure to `.catch()` any errors and pass them along to the `next()`
+    // middleware in the chain, in this case the error handler.
+    fn(req, res, next).catch(next);
+  };
+}
+
 const username = 'jessehood';  // TODO: your GitHub username here
 const github = new Octokit({ debug: true });
 const server = express();
@@ -18,49 +29,56 @@ github.authenticate({
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO either use or generate a new 32 byte key
-const key = process.env.SECRET_KEY;
+const key =
+  process.env.SECRET_KEY
+  ? nacl.util.decodeBase64(process.env.SECRET_KEY)
+  : nacl.randomBytes(32);
+
 server.get('/', (req, res) => {
   // TODO Return a response that documents the other routes/operations available
 });
 
-server.get('/gists', async (req, res) => {
-  // TODO Retrieve a list of all gists for the currently authed user
-  try {
-    const { data } = await github.gists.getForUser({ username });
-    res.status(200).json({ data });
-  } catch (error) {
-    res.status(500).json({ error });
-  }
-});
+server.get('/gists', wrapAsync(async (req, res) => {
+  const { data } = await github.gists.getForUser({ username });
+  res.status(200).json({ data });
+}));
 
 server.get('/key', (req, res) => {
-  // TODO Return the secret key used for encryption of secret gists
-
+  res.send(nacl.util.encodeBase64(key));
 });
 
-server.get('/secretgist/:id', (req, res) => {
-  // TODO Retrieve and decrypt the secret gist corresponding to the given ID
-});
+server.get('/secretgist/:id', wrapAsync(async (req, res) => {
+  const { id } = req.params;
+  console.log(id);
+  const { data } = await github.gists.get({ id });
+  const filename = Object.keys(data.files)[0];
+  const blob = data.files[filename].content;
 
-server.post('/create', async (req, res) => {
+  const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
+  const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
+  const plaintext = nacl.secretbox.open(ciphertext, nonce, key);
+  res.send(nacl.util.encodeUTF8(plaintext));
+}));
+
+server.post('/create', wrapAsync(async (req, res) => {
   // TODO Create a private gist with name and content given in post request
-  try {
-    const files = {};
-    files[req.body.name] = { content: req.body.content };
-    const { data } = await github.gists.create({ files, description: 'test', public: false });
+  const files = {};
+  files[req.body.name] = { content: req.body.content };
+  const { data } = await github.gists.create({ files, description: 'test', public: false });
 
-    res.status(200).json({ data });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ error });
-  }
-});
+  res.status(200).json({ data });
+}));
 
-server.post('/createsecret', (req, res) => {
-  // TODO Create a private and encrypted gist with given name/content
-  // NOTE - we're only encrypting the content, not the filename
-  // To save, we need to keep both encrypted content and nonce
-});
+server.post('/createsecret', wrapAsync(async (req, res) => {
+  const files = {};
+  const nonce = nacl.randomBytes(24);
+  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(req.body.content), nonce, key);
+  const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(ciphertext);
+  files[req.body.name] = { content: blob };
+  const { data } = await github.gists.create({ files, description: 'test-secret', public: false });
+
+  res.status(200).json({ data });
+}));
 
 /* OPTIONAL - if you want to extend functionality */
 server.post('/login', (req, res) => {
@@ -79,5 +97,14 @@ Still want to write code? Some possibilities:
 -Exchange keys, encrypt messages for each other, share them
 -Let the user pass in their private key via POST
 */
+
+/**
+ * error handling middleware
+ */
+server.use((error, req, res, next) => {
+  console.log(error);
+  res.json({ error });
+  next();
+});
 
 server.listen(3000, () => console.log('Server running on port 3000'));
