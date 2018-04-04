@@ -1,8 +1,8 @@
-const { frontEnd } = require('../controllers/Frontend.js');
+// const { FrontEnd } = require('../controllers/FrontendController.js');
 const { getList, secretKey, decryptGist, createGist, encryptGist } = require('../controllers/GetControllers.js');
 
 module.exports = (app) => {
-  app.get('/', frontEnd);
+  // app.get('/', frontEnd);
   app.get('/gists', getList);
   app.get('/key', secretKey);
   app.get('/secretgist/:id', decryptGist);
