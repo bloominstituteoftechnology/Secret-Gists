@@ -11,8 +11,6 @@
     "eslint-config-airbnb": "^14.1.0",
     "eslint-plugin-import": "^2.2.0",
     "express": "^4.15.4",
-    "react": "^16.3.1",
-    "react-server-boilerplate": "^1.0.2",
     "tweetnacl": "^1.0.0",
     "tweetnacl-util": "^0.15.0"
   },
