@@ -6,9 +6,9 @@ const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
 const username = 'FJF616';  // TODO: your GitHub username here
-const github = new octokit({ debug: true });
+const github = octokit({ debug: true });
 const server = express();
-
+server.use(bodyParser.json());
 // Generate an access token: https://github.com/settings/tokens
 
 // Set it to be able to create gists
@@ -37,7 +37,7 @@ server.get('/gists', (req, res) => {
     res.json(response.data);
   })
   .catch((err) => {
-    res.json(err);
+    res.json({ meassge: 'no gists found', err });
   });
 });
 
