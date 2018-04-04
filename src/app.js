@@ -9,7 +9,10 @@ const username = 'jamiemd';  // TODO: your GitHub username here
 const github = new Octokit({ debug: true });
 const server = express();
 
+// takes items from form and put them into parameters into http request in a way that express can get at them
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
+
+
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
 github.authenticate({
@@ -21,6 +24,7 @@ github.authenticate({
 // TODO either use or generate a new 32 byte key
 const key = process.env.SECRET_KEY ?
   nacl.util.decodeBase64(process.env.SECRET_KEY) : nacl.randomBytes(32);
+// assume it's a string and decode from base 64 a list of numbers, otherwise generate a new 32 byte key
 
 server.get('/', (req, res) => {
   // TODO Return a response that documents the other routes/operations available
@@ -46,7 +50,8 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
-  res.send(nacl.util.encodeBase64(key));
+  res.send(nacl.util.encodeBase64(key)); // encode the key from a number and into base 64 string, then return it to the user
+  // let's us use copy of key and set it is an environment variable so it persists so we can use it next time
 });
 
 server.get('/secretgist/:id', (req, res) => {
@@ -54,26 +59,28 @@ server.get('/secretgist/:id', (req, res) => {
   const id = req.params.id;
   github.gists.get({ id }).then((response) => {
     const gist = response.data;
-    const filename = Object.key(gist.files)[0];
-    const blob = gist.files[filename].content;
-    const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
-    const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
-    const plaintext = nacl.secretbox.open(ciphertext, nonce, key);
-    res.send(nacl.util.encodeUTF8(plaintext));
-  })
+    const filename = Object.key(gist.files)[0]; // get the 0th key for the files, key is name of file to use to retrieve content
+    const blob = gist.files[filename].content; // get filename and content of the filename, blob is the same blob as the one in /createsecret route
+    // blob corresponds assuming we gave id of secret gist that we made with /createsecret route
+    const nonce = nacl.util.decodeBase64(blob.slice(0, 32)); // slice off nonce, first 32 characters of 64 base encoded thing gives us 24 bytes of data, assume 24 bytes correspond to nonce
+    // slice off characters, base 64 blob and decode into nonce
+    const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length)); // from 32 to the end slice, still base 64, would be ciphertext
+    const plaintext = nacl.secretbox.open(ciphertext, nonce, key); // use nacl to open secretbox it created, give it ciphertext, nonce, and key, gets back plaintext which is numbers
+    res.send(nacl.util.encodeUTF8(plaintext)); // chance plaintext numbers into unicode UTF8 (human meaningful things) not base64 (base64 for non-human meaningful things)
+  });
 });
 
-server.post('/create', urlencodedParser, (req, res) => {
+server.post('/create', urlencodedParser, (req, res) => { // pass in urlencodedParser
   // TODO Create a private gist with name and content given in post request
-  const { name, content } = req.body;
-  const files = { [name]: { content } }; // bracketed name makes key and content is value
-  github.gists.create({ files, public: false })
+  const { name, content } = req.body; // parser let's us take out stuff from req.body of form (name and content of gist)
+  const files = { [name]: { content } }; // bracketed name(title) makes key and content(body) is value
+  github.gists.create({ files, public: false }) // make gist from files, make it private
     .then((response) => {
       res.json(response.data);
     })
     .catch((err) => {
       res.json(err);
-    })
+    });
   // const result = async () => {
   //   await Octokit.authorization.create({ files, private });
   // };
@@ -84,10 +91,11 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
   const { name, content } = req.body;
-  const nonce = nacl.randomBytes(24); // nonce adds uniqueness to each ciphertext
+  const nonce = nacl.randomBytes(24); // nonce (24 random bytes) adds uniqueness to each ciphertext, makes it harder to brute force
   const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, key);
-  const blob = nacl.util.encodeBase64(nonce) +
-    nacl.util.encodeBase64(ciphertext);
+  // content -assume it's a utf8 string, decoding it to a bunch of numbers, then use nonce and key which are more random numbers
+  // then nacl uses key and nonce to scramble the content and give us a ciphertext, also a bunch of numbers, which is secure and audited
+  const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(ciphertext); // nonce encoded to base64 and concatenate that with the ciphertext, so now it's a long string
   const files = { [name]: { content: blob } };
   github.gists.create({ files, public: false })
     .then((response) => {
