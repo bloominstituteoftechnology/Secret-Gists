@@ -17,5 +17,11 @@ github.authenticate({
 
 routes(server);
 
+server.get('/', (req, res) => {
+  // TODO Return a response that documents the other routes/operations available 
+});
+  // TODO Retrieve a list of all gists for the currently authed user
+
+
 server.listen(3000);
 
