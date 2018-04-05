@@ -1,5 +1,5 @@
-//const { frontEnd } = require('../controllers/Frontend.js');
-const { getList, secretKey, decryptGist, createGist, encryptGist } = require('../controllers/GetControllers.js');
+// const { frontEnd } = require('../controllers/Frontend.js');
+const { getList, secretKey, decryptGist, createGist, encryptGist } = require('../controllers/UserGistController.js');
 
 module.exports = (app) => {
  // app.get('/', frontEnd);

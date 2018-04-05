@@ -18,6 +18,7 @@ function keyHelper() {
   }
   return genKey;
 }
+
  // TODO Retrieve a list of all gists for the currently authed user
 exports.getList = (req, res) => {
   github.users.getForUser({ username: `${username}` })
