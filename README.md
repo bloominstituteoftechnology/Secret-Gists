@@ -10,6 +10,13 @@ Audience: Node.js developers, CS students, security enthusiasts
 * Learn how to use an authenticated REST API
 * Learn how to do simple client-side encryption/decryption using existing libraries
 
+## Tasks
+
+Run the provided code (yarn start then navigate to localhost:3000/ in your browser)
+
+Review and implement the functionality stubbed out in this temporary test page. 
+
+Stretch:  Imbed the functionality in a sleek react app with a nice UI.
 
 ## Getting started
 
