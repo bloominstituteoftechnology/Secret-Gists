@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 require('dotenv').config();
 const bodyParser = require('body-parser');
 const express = require('express');
@@ -11,10 +13,14 @@ const server = express();
 
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
+
+
 github.authenticate({
   type: 'oauth',
   token: process.env.GITHUB_TOKEN
 });
+
+const key = nacl.randomBytes(32);
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO either use or generate a new 32 byte key
@@ -28,11 +34,11 @@ server.get('/', (req, res) => {
         <h1>Secret Gists!</h1>
         <h2>Supported operations:</h2>
         <ul>
-          <li><i><a href="/gists">GET /gists</a></i>: retrieve a list of gists for the authorized user (including private gists)</li>
+          <li><i><a href="/gists">GET /gists</a></i>: retrieve a list of gists for the authorized user (including priv gists)</li>
           <li><i><a href="/key">GET /key</a></i>: return the secret key used for encryption of secret gists</li>
           <li><i>GET /secretgist/ID</i>: retrieve and decrypt a given secret gist
-          <li><i>POST /create { name, content }</i>: create a private gist for the authorized user with given name/content</li>
-          <li><i>POST /createsecret { name, content }</i>: create a private and encrypted gist for the authorized user with given name/content</li>
+          <li><i>POST /create { name, content }</i>: create a priv gist for the authorized user with given name/content</li>
+          <li><i>POST /createsecret { name, content }</i>: create a priv and encrypted gist for the authorized user with given name/content</li>
         </ul>
         <h3>Create an *unencrypted* gist</h3>
         <form action="/create" method="post">
@@ -64,6 +70,8 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
+  const secretKey = nacl.util.encodeBase64(key);
+  res.status(200).json({ key: secretKey })
 });
 
 server.get('/secretgist/:id', (req, res) => {
@@ -71,11 +79,11 @@ server.get('/secretgist/:id', (req, res) => {
 });
 
 server.post('/create', (req, res) => {
-  // TODO Create a private gist with name and content given in post request
+  // TODO Create a priv gist with name and content given in post request
 });
 
 server.post('/createsecret', (req, res) => {
-  // TODO Create a private and encrypted gist with given name/content
+  // TODO Create a priv and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
 });
@@ -95,7 +103,7 @@ Still want to write code? Some possibilities:
 -Support editing/deleting existing gists
 -Switch from symmetric to asymmetric crypto
 -Exchange keys, encrypt messages for each other, share them
--Let the user pass in their private key via POST
+-Let the user pass in their priv key via POST
 */
 
 server.listen(3000);
