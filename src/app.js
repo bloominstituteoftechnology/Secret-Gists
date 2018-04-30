@@ -5,9 +5,11 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'yourusername';  // TODO: your GitHub username here
+const username = 'clarakosi';  // TODO: your GitHub username here
 const github = octokit({ debug: true });
 const server = express();
+server.use(bodyParser.urlencoded({ extended: true}));
+server.use(bodyParser.json());
 
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
@@ -18,6 +20,9 @@ github.authenticate({
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO either use or generate a new 32 byte key
+
+const encryption = process.env.SECRET_KEY ? nacl.util.decodeBase64(process.env.SECRET_KEY) : nacl.randomBytes(32);
+
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -52,19 +57,38 @@ server.get('/', (req, res) => {
 });
 
 server.get('/gists', (req, res) => {
-  // TODO Retrieve a list of all gists for the currently authed user
+  // TODO Retrieve a list of all gists for the currently authed user  
+  github.gists.getAll().then((result) => {
+    res.json(result.data);
+  }).catch(error => {
+    res.json(error);
+  })
 });
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
+  res.send(nacl.util.encodeBase64(encryption));
 });
 
 server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+  // const id = req.params.id;
+  // github.gists.get({id}).then(result => {
+  //   res.json(result);
+  // }).catch(error => {
+  //   res.json(error);
+  // })
 });
 
 server.post('/create', (req, res) => {
   // TODO Create a private gist with name and content given in post request
+  const { name, content } = req.body;
+  const files = {[name]: { content } }
+  const public = false;
+
+  github.gists.create({ files, public }).then(result => {
+    res.json(result.data);
+  })
 });
 
 server.post('/createsecret', (req, res) => {
