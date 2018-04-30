@@ -6,18 +6,19 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'tdwilliams7'; // TODO: your GitHub username here
+let username = '';
 const github = octokit({ debug: true });
 const server = express();
+server.use(express.json());
 
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
-github.authenticate({
-  type: 'oauth',
-  token: process.env.GITHUB_TOKEN
-});
+// github.authenticate({
+//   type: 'oauth',
+//   token: process.env.GITHUB_TOKEN
+// });
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO either use or generate a new 32 byte key
@@ -136,10 +137,23 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
 server.post('/login', (req, res) => {
   // TODO log in to GitHub, return success/failure response
   // This will replace hardcoded username from above
-  // const { username, oauth_token } = req.body;
-  // login branch
+  const { user, oauth_token } = req.body;
+  github.authenticate({
+    type: 'oauth',
+    token: oauth_token
+  });
 
-  res.json({ success: false });
+  github.users
+    .get()
+    .then(({ data }) => {
+      if (user === data.login) {
+        username = data.login;
+        res.send({ success: true });
+      }
+    })
+    .catch(err => {
+      res.send({ success: false });
+    });
 });
 
 /*
