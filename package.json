@@ -6,7 +6,6 @@
     "@octokit/rest": "^15.2.6",
     "babel-preset-es2015": "^6.24.0",
     "body-parser": "^1.18.2",
-    "dotenv": "^5.0.1",
     "eslint": "^3.17.1",
     "eslint-config-airbnb": "^14.1.0",
     "eslint-plugin-import": "^2.2.0",
@@ -16,5 +15,8 @@
   },
   "scripts": {
     "start": "eslint src/*.js && node src/app.js"
+  },
+  "devDependencies": {
+    "dotenv": "^5.0.1"
   }
 }

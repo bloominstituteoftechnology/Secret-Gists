@@ -15,6 +15,7 @@ github.authenticate({
   type: 'oauth',
   token: process.env.GITHUB_TOKEN
 });
+console.log(GITHUB_TOKEN);
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO either use or generate a new 32 byte key
