@@ -5,7 +5,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'yourusername';  // TODO: your GitHub username here
+const username = 'gcode101';  // TODO: your GitHub username here
 const github = octokit({ debug: true });
 const server = express();
 
@@ -53,6 +53,13 @@ server.get('/', (req, res) => {
 
 server.get('/gists', (req, res) => {
   // TODO Retrieve a list of all gists for the currently authed user
+  github.gists.getAll()
+    .then((result) => {
+      res.send(result);
+    })
+    .catch((err) => {
+      res.send({ error: err });
+    });
 });
 
 server.get('/key', (req, res) => {
@@ -61,6 +68,14 @@ server.get('/key', (req, res) => {
 
 server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.params.id;
+  github.gists.get({id})
+    .then((result) => {
+      res.send(result);
+    })
+    .catch((err) => {
+      res.send({ error: err });
+    });
 });
 
 server.post('/create', (req, res) => {
