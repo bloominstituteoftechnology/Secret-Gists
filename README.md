@@ -103,7 +103,7 @@ export GITHUB_TOKEN="yourtoken"
 ```
 
 If you prefer, you can set the token in a `.env` file in the repository and add
-the [dotenv-node](https://www.npmjs.com/package/dotenv-node) package to the
+the [dotenv](https://www.npmjs.com/package/dotenv) package to the
 project. Be sure to not check in the `.env` file! It's already in `.gitignore`
 but could still end up explicitly added if you really try to push it.
 
