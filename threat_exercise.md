@@ -26,11 +26,11 @@ Adversaries - other girls (or students in general) who would want to defame Yola
 
 Attack surface - phone
 
-Attack vectors - phone
+Attack vectors - phone, grandma, William
 
 Risks (Confidentiality, Integrity, Availability, etc) - C: private dms, photos, texts, I: pretend to be Yolanda and embarass self, A: prevent access to phone
 
-Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - take physical phone, phising
+Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - take physical phone, phising, Man-in-the-middle at school
 
 Mitigation - use passlock / biometrics on phone, be weary of phising, security warnings about logins from unregistered devices
 
@@ -38,15 +38,15 @@ Zaida, 37, is a senior IT Security manager for the Washington, DC Embassy of a c
 
 Zaida is an expert in her field. At work, she and her team follow the latest best practices in account and network security. She keeps her work and home life private - using separate phones and computers for each. He job is high stress, so she values her time off as a chance to relax and step away from the high-stakes world of her job, and enjoys not having to worry about someone hacking her devices or accounts.
 
-Adversaries - enemies of her state, possibly the US
+Adversaries - enemies of her state, possibly the US such as the NSA, HSI
 
-Attack surface - phone, laptop
+Attack surface - phone, laptop (work and home)
 
 Attack vectors - phone, laptop, wifi/ethernet
 
 Risks (Confidentiality, Integrity, Availability, etc) - C: divulgence of state / embassy accounts, permission settings, access to embassy personnel, I: accounts, permission settings, A: denial of good comms / relations done via embassies
 
-Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - Man-in-the-middle, DDOS, backdoors, phising, keyloggers
+Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - Man-in-the-middle via i.e. iPhone, DDOS, backdoors, phising, keyloggers, blackmail
 
 Mitigation - no wifi for protected devices, robust / comprehensive AV/firewall, need-to-know basis for embassy personnel
 
