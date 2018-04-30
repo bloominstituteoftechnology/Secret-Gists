@@ -5,10 +5,9 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'yourusername';  // TODO: your GitHub username here
+const username = 'gakko1';  // TODO: your GitHub username here
 const github = octokit({ debug: true });
 const server = express();
-
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
 github.authenticate({
@@ -53,6 +52,14 @@ server.get('/', (req, res) => {
 
 server.get('/gists', (req, res) => {
   // TODO Retrieve a list of all gists for the currently authed user
+  github.gists
+    .getForUser({username})
+    .then((gist) => {
+      res.send(gist.data);
+    })
+    .catch((err) => {
+      res.send(err);
+    });
 });
 
 server.get('/key', (req, res) => {
@@ -78,7 +85,13 @@ server.post('/login', (req, res) => {
   // TODO log in to GitHub, return success/failure response
   // This will replace hardcoded username from above
   // const { username, oauth_token } = req.body;
+  // github.authenticate({
+  //   type: 'oauth',
+  //   token: oauth_token
+  // });
   res.json({ success: false });
+
+  // github.users
 });
 
 /*
