@@ -5,7 +5,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'yourusername';  // TODO: your GitHub username here
+const username = 'samscha';
 const github = octokit({ debug: true });
 const server = express();
 
@@ -13,11 +13,13 @@ const server = express();
 // Set it to be able to create gists
 github.authenticate({
   type: 'oauth',
-  token: process.env.GITHUB_TOKEN
+  token: process.env.GITHUB_TOKEN,
 });
 
-// Set up the encryption - use process.env.SECRET_KEY if it exists
-// TODO either use or generate a new 32 byte key
+const key = nacl.util.decodeBase64(process.env.SECRET_KEY);
+// const key = nacl.util.decodeBase64(secret);
+
+server.use(express.json());
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -52,25 +54,173 @@ server.get('/', (req, res) => {
 });
 
 server.get('/gists', (req, res) => {
-  // TODO Retrieve a list of all gists for the currently authed user
+  github.gists
+    .getAll()
+    .then(result => {
+      const ids = result.data.map(gist => gist.id);
+
+      res.send(ids);
+      // return;
+
+      //   Promise.all(
+      //     ids.map(
+      //       id =>
+      //         new Promise((resolve, reject) =>
+      //           github.gists
+      //             .get({ id })
+      //             .then(result => resolve(result))
+      //             .catch(err => reject(err)),
+      //         ),
+      //     ),
+      //   )
+      //     .then(values =>
+      //       res.send(
+      //         values.map(gist => Object.values(gist.data.files)[0].content),
+      //         // `<html>
+      //         // <header><title>All Gists!</title></header>
+      //         // <body>
+      //         // <ul>
+      //         //   <li>${values.map(
+      //         //     gist => Object.values(gist.data.files)[0].content,
+      //         //   )}</li>
+      //         // </ul>
+      //         // </body>
+      //         // </html>
+      //         // `,
+      //       ),
+      //     )
+      //     .catch(err => res.status(500).send({ err }));
+    })
+    .catch(err => res.status(500).send({ err }));
 });
 
 server.get('/key', (req, res) => {
-  // TODO Return the secret key used for encryption of secret gists
+  res.send({ key });
 });
 
 server.get('/secretgist/:id', (req, res) => {
-  // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.params.id;
+
+  if (!id) {
+    res.status(422).send({ message: `ID not supplied` });
+    return;
+  }
+
+  github.gists
+    .get({ id })
+    .then(result => {
+      // res.send(Object.values(result.data.files)[0].content)
+      const ciphertext = Object.values(result.data.files)[0].content;
+      // console.log('ciphertext', ciphertext);
+      const box = nacl.util.decodeBase64(ciphertext);
+      // console.log('box', box);
+      // console.log('box length', box.length);
+
+      const nonce = new Uint8Array(24);
+      const secretbox = new Uint8Array(box.length - nonce.length);
+
+      for (let i = 0; i < nonce.length; i++) {
+        nonce[i] = box[i];
+      }
+
+      for (let i = 0; i < secretbox.length; i++) {
+        secretbox[i] = box[i + nonce.length];
+      }
+
+      // console.log('nonce', nonce);
+      // console.log('nonce length', nonce.length);
+      // console.log('secretbox', secretbox);
+      // console.log('secretbox length', secretbox.length);
+
+      const message = nacl.secretbox.open(secretbox, nonce, key);
+
+      // console.log('message', message);
+
+      if (message === null) {
+        res.status(401).send({ message: `Authentication failed` });
+        return;
+      }
+
+      res.send(nacl.util.encodeUTF8(message));
+    })
+    .catch(err =>
+      res
+        .status(500)
+        .send({ message: `Error retrieving ID (${id}) from github`, err }),
+    );
 });
 
 server.post('/create', (req, res) => {
-  // TODO Create a private gist with name and content given in post request
+  const { name, content } = req.body;
+
+  if (!name || !content) {
+    res.status(422).send({ message: `name and/or content not supplied` });
+    return;
+  }
+
+  github.gists
+    .create({ files: { [name]: { content } }, public: false })
+    .then(result => res.send({ ID: result.data.id }))
+    .catch(err =>
+      res.status(500).send({ message: `Error creating gist`, err }),
+    );
 });
 
 server.post('/createsecret', (req, res) => {
-  // TODO Create a private and encrypted gist with given name/content
-  // NOTE - we're only encrypting the content, not the filename
-  // To save, we need to keep both encrypted content and nonce
+  const { name, content } = req.body;
+
+  if (!name || !content) {
+    res.status(422).send({ message: `name and/or content not supplied` });
+    return;
+  }
+
+  const nonce = nacl.randomBytes(24);
+  // console.log('content', content);
+  // console.log('nonce', nonce);
+  // console.log('key', key);
+
+  const encryptedContent = nacl.secretbox(
+    nacl.util.decodeUTF8(content),
+    nonce,
+    key,
+  );
+
+  const encrypedContent_with_nonce = new Uint8Array(
+    nonce.length + encryptedContent.length,
+  );
+
+  for (let i = 0; i < nonce.length; i++) {
+    encrypedContent_with_nonce[i] = nonce[i];
+  }
+
+  for (let i = 0; i < encryptedContent.length; i++) {
+    encrypedContent_with_nonce[i + nonce.length] = encryptedContent[i];
+  }
+
+  // console.log('encryped content w/ nonce', encrypedContent_with_nonce);
+  // console.log(
+  //   'encryped content w/ nonce length',
+  //   encrypedContent_with_nonce.length,
+  // );
+
+  github.gists
+    .create({
+      files: {
+        [name]: {
+          content: nacl.util.encodeBase64(encrypedContent_with_nonce),
+        },
+      },
+      public: false,
+    })
+    .then(result => res.send({ ID: result.data.id }))
+    .catch(err =>
+      res.status(500).send({ message: `Error creating gist`, err }),
+    );
+
+  // res.send({
+  //   message: nacl.util.encodeBase64(encrypted_content),
+  //   nonce: nacl.util.encodeBase64(nonce),
+  // });
 });
 
 /* OPTIONAL - if you want to extend functionality */
