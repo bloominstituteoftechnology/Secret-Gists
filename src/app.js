@@ -11,6 +11,9 @@ const username = process.env.GITHUB_USERNAME;  // TODO: your GitHub username her
 const github = octokit({ debug: true });
 const server = express();
 
+server.use(bodyParser.json());
+const parser = bodyParser.urlencoded({ extended : false });
+
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
 
@@ -61,6 +64,7 @@ server.get('/gists', (req, res) => {
   // TODO Retrieve a list of all gists for the currently authed user
   github.gists.getForUser({ username })
     .then((response) => {
+      console.log(response.data);
       res.status(200).json(response.data);
     })
     .catch((err) => {
@@ -78,8 +82,19 @@ server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
 });
 
-server.post('/create', (req, res) => {
+server.post('/create', parser, (req, res) => {
   // TODO Create a priv gist with name and content given in post request
+  const { name, content } = req.body;
+  const files = { [name]: { content } };
+
+
+  github.gists.create({ files, public: false })
+    .then(response => {
+      res.status(200).json(response.data);
+    })
+    .catch(error => {
+      res.status(422).json(error);
+    });
 });
 
 server.post('/createsecret', (req, res) => {
