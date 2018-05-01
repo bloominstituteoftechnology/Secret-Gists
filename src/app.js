@@ -1,3 +1,4 @@
+/* eslint-disable */
 require('dotenv').config();
 const bodyParser = require('body-parser');
 const express = require('express');
@@ -5,9 +6,11 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'yourusername';  // TODO: your GitHub username here
+const username = 'LordOrbnauticus'; // TODO: your GitHub username here
 const github = octokit({ debug: true });
 const server = express();
+
+server.use(bodyParser.json());
 
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
@@ -18,6 +21,9 @@ github.authenticate({
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO either use or generate a new 32 byte key
+const secretKey = process.env.SECRET_KEY
+  ? nacl.util.decodeBase64(process.env.SECRET_KEY)
+  : nacl.randomBytes(32);
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -53,6 +59,16 @@ server.get('/', (req, res) => {
 
 server.get('/gists', (req, res) => {
   // TODO Retrieve a list of all gists for the currently authed user
+  console.log(username);
+  github.gists
+    .getForUser({ username })
+    .then(result => {
+      res.json(result);
+      console.log(result);
+    })
+    .catch(err => {
+      res.json(err);
+    });
 });
 
 server.get('/key', (req, res) => {
@@ -91,4 +107,7 @@ Still want to write code? Some possibilities:
 -Let the user pass in their private key via POST
 */
 
-server.listen(3000);
+const port = process.env.PORT || 3000;
+server.listen(port, () => {
+  console.log(`API running on localhost:${port}.`);
+});
