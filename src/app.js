@@ -74,7 +74,8 @@ server.get('/key', (req, res) => {
 
 server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
-  github.gists.getAll({})
+  const id = req.params.id;
+  github.gists.get({ id })
               .then((response) => {
                 res.json(response.data);
               })
