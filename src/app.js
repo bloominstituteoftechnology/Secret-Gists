@@ -15,6 +15,8 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
+const parse = bodyParser.urlencoded({ extended: false });
+
 const secret = process.env.SECRET_KEY ? nacl.unit.decodeBase64(process.env.SECRET_KEY) : nacl.randomBytes(32);
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO either use or generate a new 32 byte key
@@ -87,14 +89,43 @@ server.get('/secretgist/:id', (req, res) => {
     });
 });
 
-server.post('/create', (req, res) => {
+server.post('/create', parse, (req, res) => {
   // TODO Create a private gist with name and content given in post request
+  const { name, content } = req.body;
+  const files = { [name]: { content } };
+
+  github.gists
+    .create({ files, public: false })
+    .then((response) => {
+      res.send(response.data);
+    }).catch((err) => {
+      res.send(err);
+    });
 });
 
-server.post('/createsecret', (req, res) => {
+server.post('/createsecret', parse, (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
+  const { name, content } = req.body;
+  
+  const nonce = nacl.randomBytes(24);
+  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secret);
+  const things = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(ciphertext);
+
+  const files = {
+    [name]: { content: things },
+  };
+  const public = false;
+  const options = { files, public };
+
+  github.gists
+    .create(options)
+    .then((response) => {
+      res.send(response);
+    }).catch((err) => {
+      res.send(err);
+    })
 });
 
 /* OPTIONAL - if you want to extend functionality */
