@@ -1,3 +1,4 @@
+/* eslint-disable */
 require('dotenv').config();
 const bodyParser = require('body-parser');
 const express = require('express');
@@ -8,6 +9,7 @@ nacl.util = require('tweetnacl-util');
 const username = 'gakko1';  // TODO: your GitHub username here
 const github = octokit({ debug: true });
 const server = express();
+server.use(express.json());
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
 github.authenticate({
@@ -17,9 +19,9 @@ github.authenticate({
 
 const parse = bodyParser.urlencoded({ extended: false });
 
-const secret = process.env.SECRET_KEY ? nacl.unit.decodeBase64(process.env.SECRET_KEY) : nacl.randomBytes(32);
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO either use or generate a new 32 byte key
+const secret =  process.env.SECRET_KEY ? nacl.util.decodeUTF8(process.env.SECRET_KEY) : nacl.randomBytes(32)
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -67,7 +69,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
-  res.send(nacl.unit.encodeBase64(secret));
+  res.send(nacl.util.encodeBase64(secret));
 });
 
 server.get('/secretgist/:id', (req, res) => {
@@ -116,8 +118,8 @@ server.post('/createsecret', parse, (req, res) => {
   const files = {
     [name]: { content: things },
   };
-  const public = false;
-  const options = { files, public };
+
+  const options = { files, public: false };
 
   github.gists
     .create(options)
