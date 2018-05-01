@@ -94,7 +94,7 @@ server.get('/gists', (req, res) => {
 });
 
 server.get('/key', (req, res) => {
-  res.send({ key });
+  res.send({ key: nacl.util.encodeBase64(key) });
 });
 
 server.get('/secretgist/:id', (req, res) => {
@@ -131,9 +131,13 @@ server.get('/secretgist/:id', (req, res) => {
       res.send(nacl.util.encodeUTF8(message));
     })
     .catch(err =>
-      res
-        .status(500)
-        .send({ message: `Error retrieving ID (${id}) from github`, err }),
+      res.status(500).send({
+        message:
+          Object.keys(err).length > 0
+            ? `Error retrieving ID (${id}) from github`
+            : `Not a secret gist.`,
+        err: Object.keys(err).length > 0 ? err : undefined,
+      }),
     );
 });
 
