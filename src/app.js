@@ -17,7 +17,6 @@ github.authenticate({
 });
 
 const key = nacl.util.decodeBase64(process.env.SECRET_KEY);
-// const key = nacl.util.decodeBase64(secret);
 
 server.use(express.json());
 
@@ -109,13 +108,8 @@ server.get('/secretgist/:id', (req, res) => {
   github.gists
     .get({ id })
     .then(result => {
-      // res.send(Object.values(result.data.files)[0].content)
       const ciphertext = Object.values(result.data.files)[0].content;
-      // console.log('ciphertext', ciphertext);
       const box = nacl.util.decodeBase64(ciphertext);
-      // console.log('box', box);
-      // console.log('box length', box.length);
-
       const nonce = new Uint8Array(24);
       const secretbox = new Uint8Array(box.length - nonce.length);
 
@@ -127,14 +121,7 @@ server.get('/secretgist/:id', (req, res) => {
         secretbox[i] = box[i + nonce.length];
       }
 
-      // console.log('nonce', nonce);
-      // console.log('nonce length', nonce.length);
-      // console.log('secretbox', secretbox);
-      // console.log('secretbox length', secretbox.length);
-
       const message = nacl.secretbox.open(secretbox, nonce, key);
-
-      // console.log('message', message);
 
       if (message === null) {
         res.status(401).send({ message: `Authentication failed` });
@@ -175,10 +162,6 @@ server.post('/createsecret', (req, res) => {
   }
 
   const nonce = nacl.randomBytes(24);
-  // console.log('content', content);
-  // console.log('nonce', nonce);
-  // console.log('key', key);
-
   const encryptedContent = nacl.secretbox(
     nacl.util.decodeUTF8(content),
     nonce,
@@ -197,12 +180,6 @@ server.post('/createsecret', (req, res) => {
     encrypedContent_with_nonce[i + nonce.length] = encryptedContent[i];
   }
 
-  // console.log('encryped content w/ nonce', encrypedContent_with_nonce);
-  // console.log(
-  //   'encryped content w/ nonce length',
-  //   encrypedContent_with_nonce.length,
-  // );
-
   github.gists
     .create({
       files: {
@@ -216,11 +193,6 @@ server.post('/createsecret', (req, res) => {
     .catch(err =>
       res.status(500).send({ message: `Error creating gist`, err }),
     );
-
-  // res.send({
-  //   message: nacl.util.encodeBase64(encrypted_content),
-  //   nonce: nacl.util.encodeBase64(nonce),
-  // });
 });
 
 /* OPTIONAL - if you want to extend functionality */
