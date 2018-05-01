@@ -21,8 +21,9 @@ github.authenticate({
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO either use or generate a new 32 byte key
-const key = process.env.GITHUB_TOKEN ?
-nacl.util.decodeBase64(process.env.GITHUB_TOKEN) : nacl.randomBytes(32);
+const key = process.env.GITHUB_TOKEN
+  ? nacl.util.decodeBase64(process.env.GITHUB_TOKEN)
+  : nacl.randomBytes(32);
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -35,7 +36,7 @@ server.get('/', (req, res) => {
         <ul>
           <li><i><a href="/gists">GET /gists</a></i>: retrieve a list of gists for the authorized user (including private gists)</li>
           <li><i><a href="/key">GET /key</a></i>: return the secret key used for encryption of secret gists</li>
-          <li><i><a href="/secretgist/:id">GET /secretgist/ID</a></i>: retrieve and decrypt a given secret gist
+          <li><i>GET /secretgist/ID</i>: retrieve and decrypt a given secret gist
           <li><i>POST /create { name, content }</i>: create a private gist for the authorized user with given name/content</li>
           <li><i>POST /createsecret { name, content }</i>: create a private and encrypted gist for the authorized user with given name/content</li>
         </ul>
@@ -58,7 +59,7 @@ server.get('/', (req, res) => {
 
 server.get('/gists', (req, res) => {
   // TODO Retrieve a list of all gists for the currently authed user
-  github.users.getForUser({ username })
+  github.gists.getAll({})
               .then((response) => {
                 res.json(response.data);
               })
@@ -74,10 +75,17 @@ server.get('/key', (req, res) => {
 
 server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
-  const id = req.params.id;
+  // pick off the nonce(24bytes), decode both nonce and encrypted content, decrypt the content with the nonce and the key(32bytes), and return.
+  const { id } = req.params;
   github.gists.get({ id })
               .then((response) => {
-                res.json(response.data);
+                const gist = response.data;
+                const filename = Object.keys(gist.files)[0];
+                const content = gist.files[filename].content;
+                const nonce = nacl.util.decodeBase64(content.slice(0, 32));
+                const encryptedContent = nacl.util.decodeBase64(content.slice(32, content.length));
+                const plainText = nacl.secretbox.open(encryptedContent, nonce, key);
+                res.send(nacl.util.encodeUTF8(plainText));
               })
               .catch((err) => {
                 res.json(err);
