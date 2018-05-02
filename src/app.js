@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 require('dotenv').config();
 const bodyParser = require('body-parser');
 const express = require('express');
@@ -19,6 +21,7 @@ github.authenticate({
 const key = nacl.util.decodeBase64(process.env.SECRET_KEY);
 
 server.use(express.json());
+server.use(bodyParser.urlencoded({ extended: false }));
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -58,37 +61,26 @@ server.get('/gists', (req, res) => {
     .then(result => {
       const ids = result.data.map(gist => gist.id);
 
-      res.send(ids);
+      // res.send(ids);
       // return;
 
-      //   Promise.all(
-      //     ids.map(
-      //       id =>
-      //         new Promise((resolve, reject) =>
-      //           github.gists
-      //             .get({ id })
-      //             .then(result => resolve(result))
-      //             .catch(err => reject(err)),
-      //         ),
-      //     ),
-      //   )
-      //     .then(values =>
-      //       res.send(
-      //         values.map(gist => Object.values(gist.data.files)[0].content),
-      //         // `<html>
-      //         // <header><title>All Gists!</title></header>
-      //         // <body>
-      //         // <ul>
-      //         //   <li>${values.map(
-      //         //     gist => Object.values(gist.data.files)[0].content,
-      //         //   )}</li>
-      //         // </ul>
-      //         // </body>
-      //         // </html>
-      //         // `,
-      //       ),
-      //     )
-      //     .catch(err => res.status(500).send({ err }));
+      Promise.all(
+        ids.map(
+          id =>
+            new Promise((resolve, reject) =>
+              github.gists
+                .get({ id })
+                .then(result => resolve(result))
+                .catch(err => reject(err)),
+            ),
+        ),
+      )
+        .then(values =>
+          res.send(
+            values.map(gist => Object.values(gist.data.files)[0].content),
+          ),
+        )
+        .catch(err => res.status(500).send({ err }));
     })
     .catch(err => res.status(500).send({ err }));
 });
@@ -166,29 +158,23 @@ server.post('/createsecret', (req, res) => {
   }
 
   const nonce = nacl.randomBytes(24);
-  const encryptedContent = nacl.secretbox(
-    nacl.util.decodeUTF8(content),
-    nonce,
-    key,
-  );
+  const secret = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, key);
 
-  const encrypedContent_with_nonce = new Uint8Array(
-    nonce.length + encryptedContent.length,
-  );
+  const secretWithNonce = new Uint8Array(nonce.length + secret.length);
 
   for (let i = 0; i < nonce.length; i++) {
-    encrypedContent_with_nonce[i] = nonce[i];
+    secretWithNonce[i] = nonce[i];
   }
 
-  for (let i = 0; i < encryptedContent.length; i++) {
-    encrypedContent_with_nonce[i + nonce.length] = encryptedContent[i];
+  for (let i = 0; i < secret.length; i++) {
+    secretWithNonce[i + nonce.length] = secret[i];
   }
 
   github.gists
     .create({
       files: {
         [name]: {
-          content: nacl.util.encodeBase64(encrypedContent_with_nonce),
+          content: nacl.util.encodeBase64(secretWithNonce),
         },
       },
       public: false,
