@@ -9,19 +9,18 @@ const username = 'groov1234';  // TODO: your GitHub username here
 const github = octokit({ debug: true });
 const server = express();
 
+const urlencodedParser = bodyParser.urlencoded({ extended: false });
+
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
-
-// github.authenticate({
-//   type: 'oauth',
-//   token: process.env.GITHUB_TOKEN
-// });
-
-const urlencodedParser = bodyParser.urlencoded({ extended: false });
+github.authenticate({
+  type: 'oauth',
+  token: process.env.GITHUB_TOKEN
+});
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO either use or generate a new 32 byte key
-const key = process.env.SECRET_KEY ?
+const secret = process.env.SECRET_KEY ?
       nacl.util.decodeBase64(process.env.SECRET_KEY) : nacl.randomBytes(32);
 
 server.get('/', (req, res) => {
@@ -69,7 +68,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
-  res.send(nacl.util.encodeBase64(key));
+  res.send(nacl.util.encodeBase64(secret));
 });
 
 server.get('/secretgist/:id', (req, res) => {
@@ -84,7 +83,7 @@ server.get('/secretgist/:id', (req, res) => {
 
     const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
     const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
-    const plaintext = nacl.secretbox.open(ciphertext, nonce, key);
+    const plaintext = nacl.secretbox.open(ciphertext, nonce, secret);
     res.send(nacl.util.encodeUTF8(plaintext));
   });
 });
@@ -104,7 +103,7 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   const { name, content } = req.body;
   const nonce = nacl.randomBytes(24);
-  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, key);
+  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secret);
   const blob = nacl.util.encodeBase64(nonce) +
         nacl.util.encodeBase64(ciphertext);
   const files = { [name]: { content: blob } };
