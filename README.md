@@ -12,11 +12,16 @@ Audience: Node.js developers, CS students, security enthusiasts
 
 ## Tasks
 
+Create a token with Github to access your gists and save it in the .env file (see below)
+
 Run the provided code (yarn start then navigate to localhost:3000/ in your browser)
 
-Review and implement the functionality stubbed out in this temporary test page. 
+Review the functionality implemented in this temporary test page. 
 
-Stretch:  Imbed the functionality in a sleek react app with a nice UI.
+Use the existing functionality as a guide to implement new features making use
+of encryption.
+
+Stretch:  Redo the test page so the user can access the same functionality in a sleek react app with a nice UI/UX.
 
 ## Getting started
 
