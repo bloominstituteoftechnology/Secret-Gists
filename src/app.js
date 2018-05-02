@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 require('dotenv').config();
 const bodyParser = require('body-parser');
 const express = require('express');
@@ -5,7 +7,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'yourusername';  // TODO: your GitHub username here
+const username = 'samscha';
 const github = octokit({ debug: true });
 const server = express();
 
@@ -13,11 +15,13 @@ const server = express();
 // Set it to be able to create gists
 github.authenticate({
   type: 'oauth',
-  token: process.env.GITHUB_TOKEN
+  token: process.env.GITHUB_TOKEN,
 });
 
-// Set up the encryption - use process.env.SECRET_KEY if it exists
-// TODO either use or generate a new 32 byte key
+const key = nacl.util.decodeBase64(process.env.SECRET_KEY);
+
+server.use(express.json());
+server.use(bodyParser.urlencoded({ extended: false }));
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -52,25 +56,133 @@ server.get('/', (req, res) => {
 });
 
 server.get('/gists', (req, res) => {
-  // TODO Retrieve a list of all gists for the currently authed user
+  github.gists
+    .getAll()
+    .then(result => {
+      const ids = result.data.map(gist => gist.id);
+
+      // res.send(ids);
+      // return;
+
+      Promise.all(
+        ids.map(
+          id =>
+            new Promise((resolve, reject) =>
+              github.gists
+                .get({ id })
+                .then(result => resolve(result))
+                .catch(err => reject(err)),
+            ),
+        ),
+      )
+        .then(values =>
+          res.send(
+            values.map(gist => Object.values(gist.data.files)[0].content),
+          ),
+        )
+        .catch(err => res.status(500).send({ err }));
+    })
+    .catch(err => res.status(500).send({ err }));
 });
 
 server.get('/key', (req, res) => {
-  // TODO Return the secret key used for encryption of secret gists
+  res.send({ key: nacl.util.encodeBase64(key) });
 });
 
 server.get('/secretgist/:id', (req, res) => {
-  // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.params.id;
+
+  if (!id) {
+    res.status(422).send({ message: `ID not supplied` });
+    return;
+  }
+
+  github.gists
+    .get({ id })
+    .then(result => {
+      const ciphertext = Object.values(result.data.files)[0].content;
+      const box = nacl.util.decodeBase64(ciphertext);
+      const nonce = new Uint8Array(24);
+      const secretbox = new Uint8Array(box.length - nonce.length);
+
+      for (let i = 0; i < nonce.length; i++) {
+        nonce[i] = box[i];
+      }
+
+      for (let i = 0; i < secretbox.length; i++) {
+        secretbox[i] = box[i + nonce.length];
+      }
+
+      const message = nacl.secretbox.open(secretbox, nonce, key);
+
+      if (message === null) {
+        res.status(401).send({ message: `Authentication failed` });
+        return;
+      }
+
+      res.send(nacl.util.encodeUTF8(message));
+    })
+    .catch(err =>
+      res.status(500).send({
+        message:
+          Object.keys(err).length > 0
+            ? `Error retrieving ID (${id}) from github`
+            : `Not a secret gist.`,
+        err: Object.keys(err).length > 0 ? err : undefined,
+      }),
+    );
 });
 
 server.post('/create', (req, res) => {
-  // TODO Create a private gist with name and content given in post request
+  const { name, content } = req.body;
+
+  if (!name || !content) {
+    res.status(422).send({ message: `name and/or content not supplied` });
+    return;
+  }
+
+  github.gists
+    .create({ files: { [name]: { content } }, public: false })
+    .then(result => res.send({ ID: result.data.id }))
+    .catch(err =>
+      res.status(500).send({ message: `Error creating gist`, err }),
+    );
 });
 
 server.post('/createsecret', (req, res) => {
-  // TODO Create a private and encrypted gist with given name/content
-  // NOTE - we're only encrypting the content, not the filename
-  // To save, we need to keep both encrypted content and nonce
+  const { name, content } = req.body;
+
+  if (!name || !content) {
+    res.status(422).send({ message: `name and/or content not supplied` });
+    return;
+  }
+
+  const nonce = nacl.randomBytes(24);
+  const secret = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, key);
+
+  const secretWithNonce = new Uint8Array(nonce.length + secret.length);
+
+  for (let i = 0; i < nonce.length; i++) {
+    secretWithNonce[i] = nonce[i];
+  }
+
+  for (let i = 0; i < secret.length; i++) {
+    secretWithNonce[i + nonce.length] = secret[i];
+  }
+
+  github.gists
+    .create({
+      files: {
+        [name]: {
+          content: nacl.util.encodeBase64(secretWithNonce),
+        },
+      },
+      public: false,
+    })
+    .then(result => res.send({ ID: result.data.id }))
+    .catch(err =>
+      res.status(500).send({ message: `Error creating gist`, err }),
+    );
 });
 
 /* OPTIONAL - if you want to extend functionality */
