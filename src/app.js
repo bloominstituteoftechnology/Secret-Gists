@@ -5,7 +5,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'TERR1E'; // TODO: Replace with your username
+const username = process.env.USERNAME; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -21,7 +21,7 @@ github.authenticate({
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO:  Use the existing key or generate a new 32 byte key
-const encryptor = nacl.util.decodeBase64(process.env.SECRET_KEY);
+const encryptor = process.env.SECRET_KEY ? nacl.util.decodeUTF8(process.env.SECRET_KEY) : nacl.randomBytes(32);
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -81,16 +81,27 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
-  res.send({ encryptor });
+  res.send(nacl.util.encodeBase64(encryptor));
 });
 
 server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+  const {
+    id
+  } = req.params;
+
+  github.gists.get({ id })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.get('/keyPairGen', (req, res) => {
-  let keypair;
   // TODO Generate a keypair to use for sharing secret messagase using public gists
+  const keypair = nacl.sign.keyPair(nacl.util.encodeBase64(encryptor));
 
   // Display the keys as strings
   res.send(`
