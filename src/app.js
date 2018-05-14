@@ -80,12 +80,30 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
-  
-  
+  res.send(process.env.SECRET_KEY);
+  // let gistkeys = [];
+  // github.gists.getForUser({ username })
+  //   .then((response) => {
+  //     res.json(response.data.id);
+  //   })
+  //   .catch((err) => {
+  //     res.json(err);
+  //   });
 });
 
 server.get('/secretgist/:id', (req, res) => {
+  // console.log(res);
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+  github.gists.getForUser({ username })
+    .then((response) => {
+      const temp = response.data;
+      for (let i = 0; i < temp.length; i++) {
+        res.json(temp[i]);
+      }
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.get('/keyPairGen', (req, res) => {
