@@ -5,7 +5,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'username'; // TODO: Replace with your username
+const username = 'Dan-Lara'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -69,7 +69,9 @@ server.get('/', (req, res) => {
 
 server.get('/gists', (req, res) => {
   // Retrieve a list of all gists for the currently authed user
-  github.gists.getForUser({ username })
+
+  github.gists
+    .getForUser({ username })
     .then((response) => {
       res.json(response.data);
     })
@@ -80,16 +82,34 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
+  res.send(process.env.SECRET_KEY);
 });
 
 server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+  const target = req.params.id;
+  github.gists
+    .getForUser({ username })
+    .then((response) => {
+      const gists = response.data;
+      for (let x = 0; x < gists.length; x++) {
+        if (gists[x].id === target) res.send(gists[x]);
+      }
+      res.send({ err: 'Gist Dont Exist' });
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.get('/keyPairGen', (req, res) => {
-  let keypair;
   // TODO Generate a keypair to use for sharing secret messagase using public gists
-  
+  const keypair = {
+    publicKey: 'E(H+MbQeThWmZq4t7w!z%C*F)J@NcRfU',
+    secretKey: process.env.SECRET_KEY
+  };
+
+
   // Display the keys as strings
   res.send(`
   <html>
@@ -109,7 +129,8 @@ server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
   const { name, content } = req.body;
   const files = { [name]: { content } };
-  github.gists.create({ files, public: false })
+  github.gists
+    .create({ files, public: false })
     .then((response) => {
       res.json(response.data);
     })
@@ -145,7 +166,8 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
     // Using their public key
     let files; // build in here
 
-    github.gists.create({ files, public: true })
+    github.gists
+      .create({ files, public: true })
       .then((response) => {
         // TODO Build string that is the messager's public key + encrypted message blob
         // to share with the friend.
@@ -169,9 +191,13 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   }
 });
 
-server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
-  // TODO Retrieve, decrypt, and display the secret gist corresponding to the given ID
-});
+server.get(
+  '/fetchmessagefromfriend:messageString',
+  urlencodedParser,
+  (req, res) => {
+    // TODO Retrieve, decrypt, and display the secret gist corresponding to the given ID
+  }
+);
 
 /* OPTIONAL - if you want to extend functionality */
 server.post('/login', (req, res) => {
