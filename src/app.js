@@ -5,7 +5,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'username'; // TODO: Replace with your username
+const username = 'petergraycreative'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -16,8 +16,40 @@ const urlencodedParser = bodyParser.urlencoded({ extended: false });
 // Set it to be able to create gists
 github.authenticate({
   type: 'oauth',
-  token: process.env.GITHUB_TOKEN
+  token: process.env.GITHUB_TOKEN,
 });
+
+const encryptionFunctions = {
+  getNonce: () => {
+    return nacl.util.encodeBase64(nacl.randomBytes(24));
+  },
+  encodeKey: (key) => {
+    if (key) {
+      return nacl.util.encodeBase64(key);
+    }
+    return nacl.util.encodeBase64(process.env.SECRET_KEY);
+  },
+  decodeKey: (key) => {
+    if (key) {
+      return nacl.util.encodeBase64(key);
+    }
+    return nacl.util.decodeBase64(process.env.SECRET_KEY);
+  },
+  encryptContent: (content) => {
+    if (content) {
+      const nonce = this.getNonce();
+      const key = this.decodeKey();
+      const naclContent = nacl.util.decodeUTF8(content);
+      return nacl.util.encodeUTF8(nacl.secretbox(naclContent, nonce, key));
+    }
+    return { error: 'Please provide content' };
+  },
+  decryptContent: (content) => {
+    // if (content) {
+    // }
+    return { error: 'Please provide content' };
+  },
+};
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO:  Use the existing key or generate a new 32 byte key
@@ -38,13 +70,13 @@ server.get('/', (req, res) => {
           <li><i>POST /createsecret { name, content }</i>: create a private and encrypted gist for the authorized user with given name/content</li>
           <li><i><a href="/keyPairGen">Generate Keypair</a></i>: Generate a keypair.  Share your public key for other users of this app to leave encrypted gists that only you can decode with your secret key.</li>
         </ul>
-        <h3>Create an *unencrypted* gist</h3>
+        <h3>Create an *unencrypted* gist</h3> <!-- Done -->
         <form action="/create" method="post">
           Name: <input type="text" name="name"><br>
           Content:<br><textarea name="content" cols="80" rows="10"></textarea><br>
           <input type="submit" value="Submit">
         </form>
-        <h3>Create an *encrypted* gist</h3>
+        <h3>Create an *encrypted* gist</h3> <!-- Next -->
         <form action="/createsecret" method="post">
           Name: <input type="text" name="name"><br>
           Content:<br><textarea name="content" cols="80" rows="10"></textarea><br>
@@ -69,7 +101,8 @@ server.get('/', (req, res) => {
 
 server.get('/gists', (req, res) => {
   // Retrieve a list of all gists for the currently authed user
-  github.gists.getForUser({ username })
+  github.gists
+    .getForUser({ username })
     .then((response) => {
       res.json(response.data);
     })
@@ -80,6 +113,8 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
+  const key = encryptionFunctions.decodeKey();
+  res.json({ 'Secret Key': key });
 });
 
 server.get('/secretgist/:id', (req, res) => {
@@ -87,13 +122,13 @@ server.get('/secretgist/:id', (req, res) => {
 });
 
 server.get('/keyPairGen', (req, res) => {
-  let keypair;
+  const keypair = nacl.box.keyPair();
   // TODO Generate a keypair to use for sharing secret messagase using public gists
 
   // Display the keys as strings
   res.send(`
   <html>
-    <header><title>Keypair</title></header>
+    <header><title>Keypair</title></header> 
     <body>
       <h1>Keypair</h1>
       <div>Share your public key with anyone you want to be able to leave you secret messages.</div>
@@ -109,7 +144,8 @@ server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
   const { name, content } = req.body;
   const files = { [name]: { content } };
-  github.gists.create({ files, public: false })
+  github.gists
+    .create({ files, public: false })
     .then((response) => {
       res.json(response.data);
     })
@@ -122,6 +158,20 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
+  const { name, content } = req.body;
+  // encrypt content
+  const encryptedContent = encryptionFunctions.encryptContent(content);
+
+  const files = { [name]: { encryptedContent } };
+
+  github.gists
+    .create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
@@ -145,7 +195,8 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
     // Using their public key
     let files; // build in here
 
-    github.gists.create({ files, public: true })
+    github.gists
+      .create({ files, public: true })
       .then((response) => {
         // TODO Build string that is the messager's public key + encrypted message blob
         // to share with the friend.
@@ -169,9 +220,22 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   }
 });
 
-server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
-  // TODO Retrieve, decrypt, and display the secret gist corresponding to the given ID
-});
+server.get(
+  '/fetchmessagefromfriend:messageString',
+  urlencodedParser,
+  (req, res) => {
+    // TODO Retrieve, decrypt, and display the secret gist corresponding to the given ID
+
+    // github.gists
+    //   .create({ files, public: false })
+    //   .then((response) => {
+    //     res.json(response.data);
+    //   })
+    //   .catch((err) => {
+    //     res.json(err);
+    //   });
+  }
+);
 
 /* OPTIONAL - if you want to extend functionality */
 server.post('/login', (req, res) => {
