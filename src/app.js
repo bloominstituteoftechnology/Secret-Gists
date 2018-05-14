@@ -5,9 +5,10 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'username'; // TODO: Replace with your username
+const username = 'das41236'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
+const port = 3000;
 
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
@@ -21,6 +22,8 @@ github.authenticate({
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO:  Use the existing key or generate a new 32 byte key
+
+const key = process.env.SECRET_KEY ? nacl.util.decodeBase64(process.env.SECRET_KEY) : nacl.randomBytes(32);
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -80,6 +83,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
+  res.send(`The secret key is: ${nacl.util.encodeBase64(key)}`);
 });
 
 server.get('/secretgist/:id', (req, res) => {
@@ -89,7 +93,6 @@ server.get('/secretgist/:id', (req, res) => {
 server.get('/keyPairGen', (req, res) => {
   let keypair;
   // TODO Generate a keypair to use for sharing secret messagase using public gists
-  
   // Display the keys as strings
   res.send(`
   <html>
@@ -122,6 +125,18 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
+  const { name, content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const encryptedContent = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, key);
+  const secretContent = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encryptedContent);
+  const files = { [name]: { content: secretContent } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
@@ -191,4 +206,6 @@ Still want to write code? Some possibilities:
 -Let the user pass in their private key via POST
 */
 
-server.listen(3000);
+server.listen(port, (req, res) => {
+  console.log(`server listenting on port ${port}`);
+});
