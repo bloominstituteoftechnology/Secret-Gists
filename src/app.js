@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 require('dotenv').config();
 const bodyParser = require('body-parser');
 const express = require('express');
@@ -21,6 +23,7 @@ github.authenticate({
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO:  Use the existing key or generate a new 32 byte key
+const secretKey = process.env.SECRET_KEY ? nacl.util.decodeUTF8(process.env.SECRET_KEY) : nacl.randomBytes(32);
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -80,6 +83,8 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
+  res.send(nacl.util.encodeBase64(secretKey));
+
 });
 
 server.get('/secretgist/:id', (req, res) => {
