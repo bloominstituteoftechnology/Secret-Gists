@@ -1,11 +1,11 @@
-require('dotenv').config();
+const resOfEnv = require('dotenv').config();
 const bodyParser = require('body-parser');
 const express = require('express');
 const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'username'; // TODO: Replace with your username
+const username = 'LeonOfTheHollow';
 const github = octokit({ debug: true });
 const server = express();
 
@@ -18,9 +18,11 @@ github.authenticate({
   type: 'oauth',
   token: process.env.GITHUB_TOKEN
 });
+console.log(process.env);
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO:  Use the existing key or generate a new 32 byte key
+const key = process.env.SECRET_KEY ? process.env.SECRET_KEY : nacl.randomBytes(nacl.secretbox.keyLength);
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -67,6 +69,10 @@ server.get('/', (req, res) => {
   `);
 });
 
+server.get('/test', (req, res) => {
+  res.json({ message: 'Test endpoint is functional.' });
+});
+
 server.get('/gists', (req, res) => {
   // Retrieve a list of all gists for the currently authed user
   github.gists.getForUser({ username })
@@ -79,17 +85,17 @@ server.get('/gists', (req, res) => {
 });
 
 server.get('/key', (req, res) => {
-  // TODO Return the secret key used for encryption of secret gists
+  res.json(nacl.util.encodeBase64(key));
 });
 
 server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+
 });
 
 server.get('/keyPairGen', (req, res) => {
   let keypair;
   // TODO Generate a keypair to use for sharing secret messagase using public gists
-  
   // Display the keys as strings
   res.send(`
   <html>
@@ -107,6 +113,7 @@ server.get('/keyPairGen', (req, res) => {
 
 server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
+  console.log("This is the body of the create request: ", req.body);
   const { name, content } = req.body;
   const files = { [name]: { content } };
   github.gists.create({ files, public: false })
@@ -122,6 +129,19 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
+  const { name, content } = req.body;
+  const decodedContent = nacl.util.decodeUTF8(content);
+  const nonce = nacl.randomBytes(nacl.secretbox.nonceLength);
+  const encryptedContent = nacl.secretbox(decodedContent, nonce, key);
+  encryptedContent.nonce = nonce;
+  const files = { [name]: { encryptedContent } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
@@ -190,5 +210,5 @@ Still want to write code? Some possibilities:
 -Exchange keys, encrypt messages for each other, share them
 -Let the user pass in their private key via POST
 */
-
-server.listen(3000);
+server.use(bodyParser.json());
+server.listen(4000);
