@@ -102,9 +102,9 @@ server.get('/secretgist/:id', (req, res) => {
 });
 
 server.get('/keyPairGen', (req, res) => {
-  let keypair;
-  // TODO Generate a keypair to use for sharing secret messagase using public gists
+  // TODO Generate a keypair to use for sharing secret messages using public gists
   // Display the keys as strings
+  const keypair = nacl.sign.keyPair();
   res.send(`
   <html>
     <header><title>Keypair</title></header>
