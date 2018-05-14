@@ -94,6 +94,7 @@ server.get('/secretgist/:id', (req, res) => {
 server.get('/keyPairGen', (req, res) => {
   let keypair;
   // TODO Generate a keypair to use for sharing secret messagase using public gists
+  keypair = nacl.sign.keyPair(nacl.util.encodeBase64(secretKey));
   
   // Display the keys as strings
   res.send(`
