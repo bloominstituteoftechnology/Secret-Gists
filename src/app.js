@@ -21,7 +21,7 @@ github.authenticate({
 
 const encryptionFunctions = {
   getNonce: () => {
-    return nacl.util.encodeBase64(nacl.randomBytes(24));
+    return nacl.randomBytes(24);
   },
   encodeKey: (key) => {
     if (key) {
@@ -31,16 +31,20 @@ const encryptionFunctions = {
   },
   decodeKey: (key) => {
     if (key) {
-      return nacl.util.encodeBase64(key);
+      return nacl.util.decodeBase64(key);
     }
     return nacl.util.decodeBase64(process.env.SECRET_KEY);
   },
-  encryptContent: (content) => {
+  encryptContent: (content, nonce) => {
     if (content) {
-      const nonce = this.getNonce();
-      const key = this.decodeKey();
-      const naclContent = nacl.util.decodeUTF8(content);
-      return nacl.util.encodeUTF8(nacl.secretbox(naclContent, nonce, key));
+      const encodedNonce = nacl.util.encodeBase64(nonce);
+      const key = encryptionFunctions.decodeKey();
+      const decodedContent = nacl.util.decodeUTF8(content);
+      const encryptedContent = nacl.util.encodeBase64(
+        nacl.secretbox(decodedContent, nonce, key)
+      );
+      const blob = `${encodedNonce}\n${encryptedContent}`;
+      return blob;
     }
     return { error: 'Please provide content' };
   },
@@ -114,7 +118,8 @@ server.get('/gists', (req, res) => {
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
   const key = encryptionFunctions.decodeKey();
-  res.json({ 'Secret Key': key });
+
+  res.json({ 'Secret Key': process.env.SECRET_KEY });
 });
 
 server.get('/secretgist/:id', (req, res) => {
@@ -123,6 +128,7 @@ server.get('/secretgist/:id', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   const keypair = nacl.box.keyPair();
+  const secret = keypair.secretKey;
   // TODO Generate a keypair to use for sharing secret messagase using public gists
 
   // Display the keys as strings
@@ -160,9 +166,11 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // To save, we need to keep both encrypted content and nonce
   const { name, content } = req.body;
   // encrypt content
-  const encryptedContent = encryptionFunctions.encryptContent(content);
+  const nonce = encryptionFunctions.getNonce();
 
-  const files = { [name]: { encryptedContent } };
+  const encryptedContent = encryptionFunctions.encryptContent(content, nonce);
+
+  const files = { [name]: { content: encryptedContent } };
 
   github.gists
     .create({ files, public: false })
@@ -225,7 +233,6 @@ server.get(
   urlencodedParser,
   (req, res) => {
     // TODO Retrieve, decrypt, and display the secret gist corresponding to the given ID
-
     // github.gists
     //   .create({ files, public: false })
     //   .then((response) => {
