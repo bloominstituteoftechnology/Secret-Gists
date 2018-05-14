@@ -5,7 +5,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'username'; // TODO: Replace with your username
+const username = 'sharp0111'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -89,7 +89,7 @@ server.get('/secretgist/:id', (req, res) => {
 server.get('/keyPairGen', (req, res) => {
   let keypair;
   // TODO Generate a keypair to use for sharing secret messagase using public gists
-  
+
   // Display the keys as strings
   res.send(`
   <html>

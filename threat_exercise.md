@@ -28,22 +28,22 @@ She is on her phone constantly.  Typing in pin numbers or doing those silly patt
 
 Yolanda gets along well with most of classmates, except Jennifer, but there are always haters who want to take people down.
 
-Adversaries - 
+Adversaries - Jennifer, haters
 
 
-Attack surface - 
+Attack surface - phone, instagram, snapchat, facebook
 
 
-Attack vectors -
+Attack vectors - phishing, malware, spyware
 
 
-Risks (Confidentiality, Integrity, Availability, etc) -
+Risks (Confidentiality, Integrity, Availability, etc) - not using pin numbers, 
 
 
-Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
+Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - malware, social accounts, ddos
 
 
-Mitigation -
+Mitigation - secure accounts with pin/passwords, log out of the accounts when she's done, using password manager
 
 
 Zaida, 37, is a senior IT Security manager for the Washington, DC Embassy of a country whose relationship with the United States is, at best, complicated.  She oversees accounts, permissions, and access for the embassy’s personnel, including locally employed staff.  
