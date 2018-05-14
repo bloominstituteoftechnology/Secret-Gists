@@ -5,7 +5,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'yourusername';  // TODO: your GitHub username here
+const username = 'username'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -20,7 +20,7 @@ github.authenticate({
 });
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
-// TODO either use or generate a new 32 byte key
+// TODO:  Use the existing key or generate a new 32 byte key
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -36,6 +36,7 @@ server.get('/', (req, res) => {
           <li><i>GET /secretgist/ID</i>: retrieve and decrypt a given secret gist
           <li><i>POST /create { name, content }</i>: create a private gist for the authorized user with given name/content</li>
           <li><i>POST /createsecret { name, content }</i>: create a private and encrypted gist for the authorized user with given name/content</li>
+          <li><i><a href="/keyPairGen">Generate Keypair</a></i>: Generate a keypair.  Share your public key for other users of this app to leave encrypted gists that only you can decode with your secret key.</li>
         </ul>
         <h3>Create an *unencrypted* gist</h3>
         <form action="/create" method="post">
@@ -47,6 +48,18 @@ server.get('/', (req, res) => {
         <form action="/createsecret" method="post">
           Name: <input type="text" name="name"><br>
           Content:<br><textarea name="content" cols="80" rows="10"></textarea><br>
+          <input type="submit" value="Submit">
+        </form>
+        <h3>Create an *encrypted* gist for a friend to decode</h3>
+        <form action="/postmessageforfriend" method="post">
+          Name: <input type="text" name="name"><br>
+          Friend's Public Key: <input type="text" name="publicKey"><br>
+          Content:<br><textarea name="content" cols="80" rows="10"></textarea><br>
+          <input type="submit" value="Submit">
+        </form>
+        <h3>Retrieve an *encrypted* gist a friend has posted</h3>
+        <form action="/fetchmessagefromfriend:messageString" method="get">
+          String From Friend: <input type="text" name="messageString"><br>
           <input type="submit" value="Submit">
         </form>
       </body>
@@ -73,6 +86,25 @@ server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
 });
 
+server.get('/keyPairGen', (req, res) => {
+  let keypair;
+  // TODO Generate a keypair to use for sharing secret messagase using public gists
+  
+  // Display the keys as strings
+  res.send(`
+  <html>
+    <header><title>Keypair</title></header>
+    <body>
+      <h1>Keypair</h1>
+      <div>Share your public key with anyone you want to be able to leave you secret messages.</div>
+      <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
+      <br/>
+      <div>Public Key: ${nacl.util.encodeBase64(keypair.publicKey)}</div>
+      <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
+    </body>
+  `);
+});
+
 server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
   const { name, content } = req.body;
@@ -86,10 +118,59 @@ server.post('/create', urlencodedParser, (req, res) => {
     });
 });
 
-server.post('/createsecret', (req, res) => {
+server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
+});
+
+server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
+  // TODO Create a private and encrypted gist with given name/content
+  // using someone else's public key that can be accessed and
+  // viewed only by the person with the matching private key
+  // NOTE - we're only encrypting the content, not the filename
+  const savedKey = process.env.SECRET_KEY;
+  if (savedKey === undefined) {
+    // Must create saved key first
+    res.send(`
+    <html>
+      <header><title>No Keypair</title></header>
+      <body>
+        <h1>Error</h1>
+        <div>You must create a keypair before using this feature.</div>
+      </body>
+    `);
+  } else {
+    // TODO if the key exists, create an asymetrically encrypted message
+    // Using their public key
+    let files; // build in here
+
+    github.gists.create({ files, public: true })
+      .then((response) => {
+        // TODO Build string that is the messager's public key + encrypted message blob
+        // to share with the friend.
+        let messageString;
+
+        // Display the string built above
+        res.send(`
+        <html>
+          <header><title>Message Saved</title></header>
+          <body>
+            <h1>Message Saved</h1>
+            <div>Give this string to your friend for decoding.</div>
+            <div>${messageString}</div>
+            <div>
+          </body>
+        `);
+      })
+      .catch((err) => {
+        res.json(err);
+      });
+  }
+});
+
+server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
+  // TODO Retrieve, decrypt, and display the secret gist corresponding to the given ID
 });
 
 /* OPTIONAL - if you want to extend functionality */
