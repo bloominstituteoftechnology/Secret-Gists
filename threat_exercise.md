@@ -9,7 +9,7 @@ These days, Bob does most of his work by computer.  He regularly uses email, an 
 | Attack surface| Email, customer information, malware website, telemarketers/scammers calling to access information, file sharing wensite, coworkers looking over his shoulder |
 | Attack vectors | Social malware, email attachments, phone calls. |
 
--
+---
 
 Risks (Confidentiality, Integrity, Availability, etc) - Confidentiality (using his notebook), losing business, losing his reputation,
 
