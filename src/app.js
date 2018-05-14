@@ -74,7 +74,6 @@ server.get('/gists', (req, res) => {
 
   github.gists.getForUser({ username })
     .then((response) => {
-      console.log(response);
       res.json(response.data);
     })
     .catch((err) => {
@@ -89,6 +88,17 @@ server.get('/key', (req, res) => {
 
 server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+  const { id } = req.params;
+  github.gists.getForUser({ username })
+  .then((response) => {
+    const gotGist = response.data.find((gist) => {
+      return gist.id === id;
+    });
+    res.json(gotGist);
+  })
+  .catch((err) => {
+    res.json(err);
+  });
 });
 
 server.get('/keyPairGen', (req, res) => {
