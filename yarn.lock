@@ -618,6 +618,13 @@ doctrine@^2.0.0:
   dependencies:
     esutils "^2.0.2"
 
+dotenv-node@^0.0.2:
+  version "0.0.2"
+  resolved "https://registry.yarnpkg.com/dotenv-node/-/dotenv-node-0.0.2.tgz#e5fab6489d68bf224d95acab32cbe54b484f9ee7"
+  dependencies:
+    fsreadfileastype "0.0.4"
+    underscore ""
+
 dotenv@^5.0.1:
   version "5.0.1"
   resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-5.0.1.tgz#a5317459bd3d79ab88cff6e44057a6a3fbb1fcef"
@@ -944,6 +951,13 @@ fresh@0.5.2:
 fs.realpath@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/fs.realpath/-/fs.realpath-1.0.0.tgz#1504ad2523158caa40db4a2787cb01411994ea4f"
+
+fsreadfileastype@0.0.4:
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/fsreadfileastype/-/fsreadfileastype-0.0.4.tgz#f34e2e86d7d116ddd10c131f16511928e1367012"
+  dependencies:
+    shellvarparser "0.0.3"
+    underscore "1.5.2"
 
 function-bind@^1.0.2:
   version "1.1.1"
@@ -1605,6 +1619,12 @@ shelljs@^0.7.5:
     interpret "^1.0.0"
     rechoir "^0.6.2"
 
+shellvarparser@0.0.3:
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/shellvarparser/-/shellvarparser-0.0.3.tgz#3b5a32e2ef1ae1a13dfd6c73622509e6388f731d"
+  dependencies:
+    underscore "1.5.2"
+
 slice-ansi@0.0.4:
   version "0.0.4"
   resolved "https://registry.yarnpkg.com/slice-ansi/-/slice-ansi-0.0.4.tgz#edbf8903f66f7ce2f8eafd6ceed65e264c831b35"
@@ -1746,6 +1766,14 @@ type-is@~1.6.15:
 typedarray@^0.0.6:
   version "0.0.6"
   resolved "https://registry.yarnpkg.com/typedarray/-/typedarray-0.0.6.tgz#867ac74e3864187b1d3d47d996a78ec5c8830777"
+
+underscore@:
+  version "1.9.0"
+  resolved "https://registry.yarnpkg.com/underscore/-/underscore-1.9.0.tgz#31dbb314cfcc88f169cd3692d9149d81a00a73e4"
+
+underscore@1.5.2:
+  version "1.5.2"
+  resolved "https://registry.yarnpkg.com/underscore/-/underscore-1.5.2.tgz#1335c5e4f5e6d33bbb4b006ba8c86a00f556de08"
 
 unpipe@1.0.0, unpipe@~1.0.0:
   version "1.0.0"
