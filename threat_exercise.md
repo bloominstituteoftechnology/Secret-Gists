@@ -4,22 +4,22 @@ Bob is a 58 year old independent CPA.  He primarily services medium-income indiv
 
 These days, Bob does most of his work by computer.  He regularly uses email, an online file sharing website, and desktop tax software in his work.  Although he has had to learn many new things as his work has changed, Bob has gained a reasonable understanding of the technology he uses.  The records for each of his clients are encrypted using a different password.  He also used different passwords for each online service.  These passwords are kept in a notebook, which Bob diligently keeps locked in his file cabinet when not in use.
 
-Adversaries - 
+Adversaries - low value target for outside hackers. People who are sharing office with him
 
 
-Attack surface - 
+Attack surface - people looking over shoulder, phishing over phone
 
 
-Attack vectors -
+Attack vectors - social engineering, malware, email attachments/links, carelessness
 
 
-Risks (Confidentiality, Integrity, Availability, etc) -
+Risks (Confidentiality, Integrity, Availability, etc) - If he got client information exposed he could lose business
 
 
-Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
+Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - social / malware
 
 
-Mitigation -
+Mitigation - 
 
 
 Yolanda, 17, is the most popular girl in her school.  Her Insta is perfectly curated, her Snaps are da bomb, and her Facebook account exists so she can talk to her grandma every other Sunday.  
@@ -28,10 +28,10 @@ She is on her phone constantly.  Typing in pin numbers or doing those silly patt
 
 Yolanda gets along well with most of classmates, except Jennifer, but there are always haters who want to take people down.
 
-Adversaries - 
+Adversaries -
 
 
-Attack surface - 
+Attack surface -
 
 
 Attack vectors -
@@ -40,7 +40,7 @@ Attack vectors -
 Risks (Confidentiality, Integrity, Availability, etc) -
 
 
-Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
+Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) -
 
 
 Mitigation -
@@ -50,19 +50,19 @@ Zaida, 37, is a senior IT Security manager for the Washington, DC Embassy of a c
 
 Zaida is an expert in her field.  At work, she and her team follow the latest best practices in account and network security.  She keeps her work and home life private - using separate phones and computers for each.  He job is high stress, so she values her time off as a chance to relax and step away from the high-stakes world of her job, and enjoys not having to worry about someone hacking her devices or accounts.  
 
-Adversaries - 
+Adversaries (who would try to exploit this person) - State actors
 
 
-Attack surface - 
+Attack surface (all vectors together) - computer
 
 
-Attack vectors -
+Attack vectors (phone, email, phishing, ect...) - email
 
 
 Risks (Confidentiality, Integrity, Availability, etc) -
 
 
-Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
+Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) -
 
 
 Mitigation -
@@ -76,10 +76,10 @@ He currently uses different passphrases for all of his accounts, except that he 
 
 Rashad is himself an avid blogger.  He has a moderately popular, weekly column where he shares the weeks adventures, hangouts, vacations, etc.  He is excited that next week he will be heading out to his favorite vacation spot since childhood - Rehoboth Beach, DE.
 
-Adversaries - 
+Adversaries -
 
 
-Attack surface - 
+Attack surface -
 
 
 Attack vectors -
@@ -88,11 +88,7 @@ Attack vectors -
 Risks (Confidentiality, Integrity, Availability, etc) -
 
 
-Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
+Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) -
 
 
 Mitigation -
-
-
-
-
