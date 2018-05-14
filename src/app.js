@@ -18,6 +18,7 @@ github.authenticate({
   type: 'oauth',
   token: process.env.GITHUB_TOKEN
 });
+console.log(process.env);
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO:  Use the existing key or generate a new 32 byte key
@@ -112,6 +113,7 @@ server.get('/keyPairGen', (req, res) => {
 
 server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
+  console.log("This is the body of the create request: ", req.body);
   const { name, content } = req.body;
   const files = { [name]: { content } };
   github.gists.create({ files, public: false })
@@ -208,5 +210,5 @@ Still want to write code? Some possibilities:
 -Exchange keys, encrypt messages for each other, share them
 -Let the user pass in their private key via POST
 */
-
+server.use(bodyParser.json());
 server.listen(4000);
