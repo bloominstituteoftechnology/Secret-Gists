@@ -50,7 +50,9 @@ Zaida, 37, is a senior IT Security manager for the Washington, DC Embassy of a c
 
 Zaida is an expert in her field.  At work, she and her team follow the latest best practices in account and network security.  She keeps her work and home life private - using separate phones and computers for each.  He job is high stress, so she values her time off as a chance to relax and step away from the high-stakes world of her job, and enjoys not having to worry about someone hacking her devices or accounts.  
 
-Adversaries - 
+Adversaries -
+
+state actors - US / NSA,  
 
 
 Attack surface - 
