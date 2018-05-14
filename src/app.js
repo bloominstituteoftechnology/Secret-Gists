@@ -90,6 +90,7 @@ server.get('/keyPairGen', (req, res) => {
   const publicKey = nacl.randomBytes(32);
   const secretKey = nacl.randomBytes(24);
   const keypair = { publicKey, secretKey };
+  process.env.SECRET_KEY = secretKey;
   // TODO Generate a keypair to use for sharing secret messagase using public gists
   // Display the keys as strings
   res.send(`
@@ -145,7 +146,6 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
     // TODO if the key exists, create an asymetrically encrypted message
     // Using their public key
     let files; // build in here
-
     github.gists.create({ files, public: true })
       .then((response) => {
         // TODO Build string that is the messager's public key + encrypted message blob
