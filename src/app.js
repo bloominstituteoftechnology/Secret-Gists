@@ -35,6 +35,19 @@ const key = nacl.randomBytes(32);
 const nonce = nacl.randomBytes(24);
 const secretKey = nacl.secretbox(key, nonce);
 
+/* { decodeUTF8: [Function],
+  encodeUTF8: [Function],
+  encodeBase64: [Function],
+  decodeBase64: [Function] }
+*/
+
+const array = new Uint8Array(32);
+
+nacl.util.decodeUTF8(string)
+nacl.util.encodeUTF8(array)
+nacl.util.decodeBase64(string)
+nacl.util.encodeBase64(array)
+
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
   res.send(`

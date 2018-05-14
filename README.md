@@ -200,8 +200,7 @@ will provide this. You will also want to give the secret key to the user so
 they can save it ("offline" - assume they can keep it safe, like a passphrase)
 and use it later to decrypt things. Since asking users to save an array of
 numbers isn't great, use the utility functions to encode it for them. To read
-it back, for now you can just set it as an environment variable similar to the
-OAuth token.
+it back, for now you can just set it as an environment variable similar to the OAuth token.
 
 Once you've encrypted the content of the gist, make sure to also include the
 nonce, otherwise you won't be able to decrypt it. The nonce can just be
