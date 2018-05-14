@@ -5,22 +5,43 @@ Bob is a 58 year old independent CPA.  He primarily services medium-income indiv
 These days, Bob does most of his work by computer.  He regularly uses email, an online file sharing website, and desktop tax software in his work.  Although he has had to learn many new things as his work has changed, Bob has gained a reasonable understanding of the technology he uses.  The records for each of his clients are encrypted using a different password.  He also used different passwords for each online service.  These passwords are kept in a notebook, which Bob diligently keeps locked in his file cabinet when not in use.
 
 Adversaries - 
-
+* shared space office mates stealing his notebook password
+* hackers, not likely targeted, but generic hacks
+* angry wife
+* local mob
+* ransomware
+* natural weather --> fire
 
 Attack surface - 
-
+* his email --> malware 
+* desktop tax software
+* file sharing website
+* co-working space looking over his shoulder
+* someone phishing him over the phone
 
 Attack vectors -
-
+* social engineering
+* malware
+* email attachments/links
+* carelessness with documents
 
 Risks (Confidentiality, Integrity, Availability, etc) -
-
+* Confidentiality, client info to be exposed
+* Availability, not having access to client info on becoming compromised
+* losing business due to lax security policies & lack of trust
 
 Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
 
 
 Mitigation -
-
+* Not giving out private info over the phone (high value private info)
+* Encrypted file sharing links over email in transit, 
+* Using private links instead of public
+* Keep backup in safe deposit box
+* Add 2 factor auth where he can; use yubi key if possible
+* Add caller ID service which tracks scammers/marketers
+* Use anti-virus service
+* Suggest use of a password manager, but might not be the best solution for such sensitive low-risk info
 
 Yolanda, 17, is the most popular girl in her school.  Her Insta is perfectly curated, her Snaps are da bomb, and her Facebook account exists so she can talk to her grandma every other Sunday.  
 
