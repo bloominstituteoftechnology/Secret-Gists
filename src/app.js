@@ -80,6 +80,29 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
+  const savedKey = process.env.SECRET_KEY.split(',');
+  if (savedKey === undefined) {
+    // Must create saved key first
+    res.send(`
+    <html>
+      <header><title>No Keypair</title></header>
+      <body>
+        <h1>Error</h1>
+        <div>You must create a keypair before using this feature.</div>
+      </body>
+    `);
+  } else {
+    res.send(`
+    <html>
+      <header><title>Key</title></header>
+      <body>
+        <h1>Key</h1>
+        <div>Here is your secret key/nonce. You will need it to decode messages. Protect it like a passphrase!</div>
+        <br/>
+        <div>Secret Key: ${nacl.util.encodeBase64(savedKey)}</div>
+      </body>
+    `);
+  }
 });
 
 server.get('/secretgist/:id', (req, res) => {
