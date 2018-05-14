@@ -113,7 +113,7 @@ project. Be sure to not check in the `.env` file! It's already in `.gitignore`
 but could still end up explicitly added if you really try to push it.
 
 The token will be accessible within node as `process.env.GITHUB_TOKEN`, and can
-be used to authenticate the GitHub client:
+be used to authenticate the GitHub client: 
 
 ```
 const GitHubApi = require('github');
