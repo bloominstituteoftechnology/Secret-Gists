@@ -82,6 +82,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
+  res.send(`Key: ${nacl.util.encodeBase64(key)}`);
 });
 
 server.get('/secretgist/:id', (req, res) => {
