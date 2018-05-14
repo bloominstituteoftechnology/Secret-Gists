@@ -80,14 +80,8 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
-  // let gistkeys = [];
-  github.gists.getForUser({ username })
-    .then((response) => {
-      res.json(response.data.id);
-    })
-    .catch((err) => {
-      res.json(err);
-    });
+  
+  
 });
 
 server.get('/secretgist/:id', (req, res) => {
@@ -129,6 +123,7 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
+  const { name, content } = req.body;
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
