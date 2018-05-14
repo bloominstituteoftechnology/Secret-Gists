@@ -133,28 +133,21 @@ server.post('/create', urlencodedParser, (req, res) => {
 });
 
 server.post('/createsecret', urlencodedParser, (req, res) => {
-  // // TODO Create a private and encrypted gist with given name/content
-  // // NOTE - we're only encrypting the content, not the filename
-  // // To save, we need to keep both encrypted content and nonce
-  // const nonce = nacl.randomBytes(24);
-  // const nonceString = nacl.util.encodeBase64(Object.values(nonce));
-  // const nonceArr = nacl.util.decodeUTF8(nonceString);
-  // // console.log(nonce, Array.isArray(nonce));
-  // // console.log(nonceString, typeof nonceString);
-
-  // const { name, content: bananas } = req.body; // renaming content variable to bananas for secrecy
-  // console.log({ nonce, key }, nacl.util.decodeUTF8(bananas));
-  // const encryptedCont = nacl.secretbox(nacl.util.decodeUTF8(bananas), nonce, key);
-  // const encryptedMessage = nacl.util.encodeBase64(Object.values(encryptedCont));
-  // // console.log(encryptedCont);
-  // const files = { [name]: { content: encryptedMessage } };
-  // github.gists.create({ files, public: false })
-  //   .then((response) => {
-  //     res.json(response.data);
-  //   })
-  //   .catch((err) => {
-  //     res.json(err);
-  //   });
+  // TODO Create a private and encrypted gist with given name/content
+  // NOTE - we're only encrypting the content, not the filename
+  // To save, we need to keep both encrypted content and nonce
+  const nonce = nacl.randomBytes(24);
+  const { name, content } = req.body;
+  const encryptedCont = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, key);
+  const encryptedMessage = nacl.util.encodeBase64(Object.values(encryptedCont));
+  const files = { [name]: { content: encryptedMessage } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
