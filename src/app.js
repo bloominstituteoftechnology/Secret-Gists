@@ -5,7 +5,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'username'; // TODO: Replace with your username
+const username = 'dk574'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -31,6 +31,9 @@ github.authenticate({
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO:  Use the existing key or generate a new 32 byte key
+const key = nacl.randomBytes(32);
+const nonce = nacl.randomBytes(24);
+const secretKey = nacl.secretbox(key, nonce);
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
