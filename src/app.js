@@ -19,6 +19,16 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
+/*
+const GitHubApi = require('github');
+const github = new GitHubApi({ debug: true });
+
+github.authenticate({
+  type: 'oauth',
+  token: process.env.GITHUB_TOKEN
+});
+*/
+
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO:  Use the existing key or generate a new 32 byte key
 
@@ -89,7 +99,6 @@ server.get('/secretgist/:id', (req, res) => {
 server.get('/keyPairGen', (req, res) => {
   let keypair;
   // TODO Generate a keypair to use for sharing secret messagase using public gists
-  
   // Display the keys as strings
   res.send(`
   <html>
