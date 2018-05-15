@@ -22,7 +22,12 @@ github.authenticate({
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO:  Use the existing key or generate a new 32 byte key
-const secretKey = nacl.randomBytes(32);
+const secretKey = process.env.SECRET_KEY
+  ? nacl.util.decodeBase64(process.env.SECRET_KEY)
+  : nacl.randomBytes(32);
+
+console.log("Secret Key:", secretKey);
+console.log("Process Key:", process.env.SECRET_KEY);
 
 server.get("/", (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -137,6 +142,7 @@ server.post("/create", urlencodedParser, (req, res) => {
     });
 });
 
+console.log("changes test");
 server.post("/createsecret", urlencodedParser, (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
@@ -168,6 +174,8 @@ server.post("/postmessageforfriend", urlencodedParser, (req, res) => {
   const savedKey = process.env.SECRET_KEY;
   if (savedKey === undefined) {
     // Must create saved key first
+    const { name, content } = req.body;
+
     res.send(`
     <html>
       <header><title>No Keypair</title></header>
