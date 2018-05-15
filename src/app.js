@@ -58,7 +58,7 @@ server.get('/', (req, res) => {
           <input type="submit" value="Submit">
         </form>
         <h3>Retrieve an *encrypted* gist a friend has posted</h3>
-        <form action="/fetchmessagefromfriend/:messageString" method="get">
+        <form action="/fetchmessagefromfriend" method="get">
           String From Friend: <input type="text" name="messageString"><br>
           <input type="submit" value="Submit">
         </form>
@@ -230,17 +230,17 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   }
 });
 
-server.get('/fetchmessagefromfriend/:messageString', urlencodedParser, (req, res) => {
+server.get('/fetchmessagefromfriend', urlencodedParser, (req, res) => {
   // TODO Retrieve, decrypt, and display the secret gist corresponding to the given ID
-  const { messageString } = req.params;
-  console.log('req.params', req.params);
+  const { messageString } = req.query;
+  console.log('req.query is', req.query);
   console.log('messageString length', messageString.length);
   const theirKey = nacl.util.decodeBase64(messageString.slice(0, 44));
   const nonce = nacl.util.decodeBase64(messageString.slice(44, 76));
   const box = nacl.util.decodeBase64(messageString.slice(76));
   const secret = nacl.util.decodeBase64(process.env.SECRET_KEY);
 
-  const message = nacl.box.open(box, nonce, theirKey, secret);
+  const message = nacl.util.encodeUTF8(nacl.box.open(box, nonce, theirKey, secret));
   res.json(message);
 });
 
