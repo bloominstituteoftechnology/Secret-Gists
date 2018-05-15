@@ -103,6 +103,7 @@ server.get('/keyPairGen', (req, res) => {
       <div>Public Key: ${nacl.util.encodeBase64(keypair.publicKey)}</div>
       <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
     </body>
+  </html>
   `);
 });
 
