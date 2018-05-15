@@ -24,7 +24,9 @@ github.authenticate({
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO:  Use the existing key or generate a new 32 byte key
-const encryptor = process.env.SECRET_KEY ? nacl.util.decodeUTF8(process.env.SECRET_KEY) : nacl.randomBytes(32);
+// const encryptor = nacl.util.decodeUTF8(process.env.SECRET_KEY);
+// const encryptor = nacl.randomBytes(32);
+const encryptor = process.env.SECRET_KEY ? nacl.util.decodeBase64(process.env.SECRET_KEY) : nacl.randomBytes(32);
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -62,7 +64,7 @@ server.get('/', (req, res) => {
           <input type="submit" value="Submit">
         </form>
         <h3>Retrieve an *encrypted* gist a friend has posted</h3>
-        <form action="/fetchmessagefromfriend:messageString" method="get">
+        <form action="/fetchmessagefromfriend/:messageString" method="get">
           String From Friend: <input type="text" name="messageString"><br>
           <input type="submit" value="Submit">
         </form>
@@ -100,7 +102,7 @@ server.get('/secretgist/:id', (req, res) => {
       const encrypted = nacl.util.decodeBase64(ciphertext.content.slice(32));
       const gistMSG = nacl.secretbox.open(encrypted, nonce, encryptor);
 
-      ciphertext.content = nacl.util.encodeUTF8(gist);
+      ciphertext.content = nacl.util.encodeUTF8(gistMSG);
 
       res.json(ciphertext);
     })
@@ -111,7 +113,8 @@ server.get('/secretgist/:id', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO Generate a keypair to use for sharing secret messagase using public gists
-  const keypair = nacl.sign.keyPair(nacl.util.encodeBase64(encryptor));
+  const secretKey = new Uint8Array(encryptor);
+  const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
 
   // Display the keys as strings
   res.send(`
@@ -166,27 +169,36 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content } = req.body;
   const savedKey = process.env.SECRET_KEY;
+
   if (savedKey === undefined) {
     // Must create saved key first
     res.send(`
     <html>
-      <header><title>No Keypair</title></header>
-      <body>
-        <h1>Error</h1>
-        <div>You must create a keypair before using this feature.</div>
-      </body>
+    <header><title>No Keypair</title></header>
+    <body>
+    <h1>Error</h1>
+    <div>You must create a keypair before using this feature.</div>
+    </body>
     `);
   } else {
     // TODO if the key exists, create an asymetrically encrypted message
     // Using their public key
-    let files; // build in here
+    // let files; // build in here
+    const nonce = nacl.randomBytes(24);
+    const encrypted = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, encryptor);
+    const gistMSG = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encrypted);
+    const publicKey = process.env.PUBLIC_KEY;
+    const files = { [name]: { content: gistMSG } };
+
 
     github.gists.create({ files, public: true })
       .then((response) => {
         // TODO Build string that is the messager's public key + encrypted message blob
         // to share with the friend.
-        let messageString;
+        // let messageString;
+        const messageString = publicKey + gistMSG;
 
         // Display the string built above
         res.send(`
@@ -206,8 +218,35 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   }
 });
 
-server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
+server.get('/fetchmessagefromfriend/:messageString', urlencodedParser, (req, res) => {
   // TODO Retrieve, decrypt, and display the secret gist corresponding to the given ID
+  const {
+    messageString
+  } = req.params;
+  const publicKey = messageString.slice(0, 44);
+  let message = messageString.slice(44);
+  const nonce = nacl.util.decodeBase64(message.slice(0, 32));
+  const encrypted = nacl.util.decodeBase64(message.slice(32));
+  const gistMSG = nacl.secretbox.open(encrypted, nonce, encryptor);
+
+  message = nacl.util.encodeUTF8(gistMSG);
+
+  res.json(message);
+
+  // github.gists.get({ id })
+  //   .then((response) => {
+  //     const ciphertext = Object.values(response.data.files)[0];
+  //     const nonce = nacl.util.decodeBase64(ciphertext.content.slice(0, 32));
+  //     const encrypted = nacl.util.decodeBase64(ciphertext.content.slice(32));
+  //     const gistMSG = nacl.secretbox.open(encrypted, nonce, encryptor);
+
+  //     ciphertext.content = nacl.util.encodeUTF8(gistMSG);
+
+  //     res.json(ciphertext);
+  //   })
+  //   .catch((err) => {
+  //     res.json(err);
+    // });
 });
 
 /* OPTIONAL - if you want to extend functionality */
