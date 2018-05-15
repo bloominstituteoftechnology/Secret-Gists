@@ -81,35 +81,34 @@ server.get('/gists', (req, res) => {
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
   res.send(process.env.SECRET_KEY);
-  // let gistkeys = [];
-  // github.gists.getForUser({ username })
-  //   .then((response) => {
-  //     res.json(response.data.id);
-  //   })
-  //   .catch((err) => {
-  //     res.json(err);
-  //   });
 });
-
 server.get('/secretgist/:id', (req, res) => {
-  // console.log(res);
+  const keyId = req.params.id;
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
   github.gists.getForUser({ username })
     .then((response) => {
       const temp = response.data;
       for (let i = 0; i < temp.length; i++) {
-        res.json(temp[i]);
+        if (temp[i].id === keyId) {
+          res.send(temp[i]);
+        }
       }
     })
-    .catch((err) => {
+    .catch((err
+    ) => {
       res.json(err);
     });
 });
 
 server.get('/keyPairGen', (req, res) => {
-  let keypair;
+  
   // TODO Generate a keypair to use for sharing secret messagase using public gists
   // Display the keys as strings
+  let keypair = {
+    secretKey:...,
+    publicKey:...
+  }
+  
   res.send(`
   <html>
     <header><title>Keypair</title></header>
@@ -142,6 +141,17 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
   const { name, content } = req.body;
+  content = nacl.util.decodeUTF8(content);
+  const files = { [name]: { content } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
+  
+
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
