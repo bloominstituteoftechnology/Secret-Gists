@@ -106,6 +106,22 @@ server.get('/key', (req, res) => {
 
 server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+  const { id } = req.query;
+  github.gists
+  .get({ id })
+  .then((response) => {
+    const title = Object.keys(response.data.files);
+    let content = response.data.files[title].content;
+    const nonce = nacl.util.decodeBase64(content.slice(0, 32));
+    content = content.slice(32);
+    const cipherText = nacl.util.decodeBase64(content);
+    const decryptedContent = nacl.secretbox.open(cipherText, nonce, secret);
+    content = nacl.util.encodeUTF8(decryptedContent);
+    res.send(content);
+  })
+  .catch((err) => {
+    res.json(err);
+  });
 });
 
 server.get('/keyPairGen', (req, res) => {
