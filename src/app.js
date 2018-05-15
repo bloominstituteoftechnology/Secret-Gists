@@ -6,7 +6,7 @@ const octokit = require("@octokit/rest");
 const nacl = require("tweetnacl");
 nacl.util = require("tweetnacl-util");
 
-const username = "nikhilkamineni"; // TODO: Replace with your username
+const username = "aceredesign"; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -22,8 +22,7 @@ github.authenticate({
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO:  Use the existing key or generate a new 32 byte key
-const secretKey =
-  nacl.util.decodeBase64(process.env.GITHUB_TOKEN) || nacl.randomBytes(32);
+const secretKey = nacl.randomBytes(32);
 
 server.get("/", (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -126,6 +125,7 @@ server.get("/keyPairGen", (req, res) => {
 server.post("/create", urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
   const { name, content } = req.body;
+  console.log(name, content);
   const files = { [name]: { content } };
   github.gists
     .create({ files, public: false })
@@ -141,6 +141,23 @@ server.post("/createsecret", urlencodedParser, (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
+  let { name, content } = req.body;
+  console.log(req.body);
+  let nonce = nacl.randomBytes(24); //Random bytes
+  content = nacl.util.decodeUTF8(content); //Turn the gist content into a u-int
+  let box = nacl.secretbox(content, nonce, secretKey); // Putting in content
+  content = nacl.util.encodeBase64(secretKey) + nacl.util.encodeBase64(box);
+
+  const files = { [name]: { content } };
+
+  github.gists
+    .create({ files, public: false })
+    .then(response => {
+      res.json(response.data);
+    })
+    .catch(err => {
+      res.json(err);
+    });
 });
 
 server.post("/postmessageforfriend", urlencodedParser, (req, res) => {
