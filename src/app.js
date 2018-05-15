@@ -99,7 +99,7 @@ server.get('/secretgist/:id', (req, res) => {
 
       const message = nacl.secretbox.open(boxArr, sNonceArr, key);
       const plaintext = nacl.util.encodeUTF8(message);
-      
+
       if (message === null) {
         console.log('cannot open box');
       }
@@ -166,7 +166,8 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
-  const savedKey = process.env.SECRET_KEY;
+  const savedKey = process.env.PUBLIC_KEY;
+  // const savedKey = keyString;
   if (savedKey === undefined) {
     // Must create saved key first
     res.send(`
@@ -180,13 +181,26 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   } else {
     // TODO if the key exists, create an asymetrically encrypted message
     // Using their public key
-    let files; // build in here
+    const { name, content: reqCont, publicKey } = req.body;
+    const publicKeyArr = nacl.util.decodeBase64(publicKey);
+
+    const secretNonce = nacl.randomBytes(24);
+    const secretNonceString = nacl.util.encodeBase64(secretNonce);
+
+    const encryptedCont = nacl.box(nacl.util.decodeUTF8(reqCont), secretNonce, publicKeyArr, key);
+    const encryptedMessage = nacl.util.encodeBase64(Object.values(encryptedCont));
+
+    // console.log(publicKey);
+    const files = { [name]: { content: secretNonceString.concat(encryptedMessage) } }; // build in here
 
     github.gists.create({ files, public: true })
       .then((response) => {
+        // console.log(Object.values(response.data.files)[0].content);
         // TODO Build string that is the messager's public key + encrypted message blob
         // to share with the friend.
-        let messageString;
+        const { content } = Object.values(response.data.files)[0];
+        // console.log(content);
+        const messageString = process.env.PUBLIC_KEY + content;
 
         // Display the string built above
         res.send(`
