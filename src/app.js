@@ -16,11 +16,12 @@ const urlencodedParser = bodyParser.urlencoded({ extended: false });
 // Set it to be able to create gists
 github.authenticate({
   type: 'oauth',
-  token: process.env.GITHUB_TOKEN
+  token: process.env.GITHUB_TOKEN,
 });
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO:  Use the existing key or generate a new 32 byte key
+const key = process.env.SECRET_KEY;
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -80,10 +81,17 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
+  // console.log(key);
+  res.send(nacl.util.encodeBase64(key));
 });
 
 server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+  const { id } = req.params;
+  github.gists.get({ id, public: false }).then(result => {
+    // console.log(result.data);
+    res.send(result.data.files);
+  });
 });
 
 server.get('/keyPairGen', (req, res) => {
