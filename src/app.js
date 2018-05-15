@@ -223,16 +223,13 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO Retrieve, decrypt, and display the secret gist corresponding to the given ID
   const { messageString } = req.query;
-  publicKey = nacl.util.decodeBase64(messageString.slice(0, 44));
-  nonce = nacl.util.decodeBase64(messageString.slice(44, 76));
-  box = nacl.util.decodeBase64(messageString.slice(76));
+  const publicKey = nacl.util.decodeBase64(messageString.slice(0, 44));
+  const nonce = nacl.util.decodeBase64(messageString.slice(44, 76));
+  const box = nacl.util.decodeBase64(messageString.slice(76));
 
-  
   const decryptedMessage = nacl.util.encodeUTF8(nacl.box.open(box, nonce, publicKey, key));
 
-  res.send(decryptedMessage); 
-
-
+  res.send(decryptedMessage);
 });
 
 /* OPTIONAL - if you want to extend functionality */
