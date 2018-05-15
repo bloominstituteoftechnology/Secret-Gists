@@ -85,6 +85,18 @@ server.get('/key', (req, res) => {
 server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
   const { id } = req.params;
+  github.gists.get({ id })
+  .then((response) => {
+    res.json(response.data);
+    const data = response.data.files.Test.content;
+    const nonce = nacl.util.decodeBase64(data.substring(0, 32));
+    const box = nacl.util.decodeBase64(data.substring(32));
+    const encodedMessage = nacl.secretbox.open(box, nonce, secretKey);
+    console.log(nacl.util.encodeUTF8(encodedMessage));
+  })
+  .catch((err) => {
+    res.json(err);
+  });
 });
 
 server.get('/keyPairGen', (req, res) => {
@@ -121,7 +133,7 @@ server.post('/create', urlencodedParser, (req, res) => {
 });
 
 server.post('/createsecret', urlencodedParser, (req, res) => {
-  // TODO Create a private and encrypted gist with given name/content
+  // Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
 
