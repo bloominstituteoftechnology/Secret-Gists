@@ -80,7 +80,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
-  const savedKey = process.env.SECRET_KEY.split(',');
+  const savedKey = process.env.SECRET_KEY;
   if (savedKey === undefined) {
     // Must create saved key first
     res.send(`
@@ -99,7 +99,7 @@ server.get('/key', (req, res) => {
         <h1>Key</h1>
         <div>Here is your secret key/nonce. You will need it to decode messages. Protect it like a passphrase!</div>
         <br/>
-        <div>Secret Key: ${nacl.util.encodeBase64(savedKey)}</div>
+        <div>Secret Key: ${savedKey}</div>
       </body>
     `);
   }
@@ -110,10 +110,11 @@ server.get('/secretgist/:id', (req, res) => {
 });
 
 server.get('/keyPairGen', (req, res) => {
-  const publicKey = nacl.randomBytes(32);
-  const secretKey = nacl.randomBytes(24);
+  const publicKey = nacl.util.encodeBase64(nacl.randomBytes(32));
+  const secretKey = nacl.util.encodeBase64(nacl.randomBytes(24));
   const keypair = { publicKey, secretKey };
   process.env.SECRET_KEY = secretKey;
+  process.env.PUBLIC_KEY = publicKey;
   // TODO Generate a keypair to use for sharing secret messagase using public gists
   // Display the keys as strings
   res.send(`
@@ -124,8 +125,8 @@ server.get('/keyPairGen', (req, res) => {
       <div>Share your public key with anyone you want to be able to leave you secret messages.</div>
       <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
       <br/>
-      <div>Public Key: ${nacl.util.encodeBase64(keypair.publicKey)}</div>
-      <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
+      <div>Public Key: ${keypair.publicKey}</div>
+      <div>Secret Key: ${keypair.secretKey}</div>
     </body>
   `);
 });
@@ -147,6 +148,21 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
+  const { name } = req.body;
+  const nonce = new Uint8Array(process.env.SECRET_KEY.split(','));
+  const key = new Uint8Array(process.env.PUBLIC_KEY.split(','));
+  console.log('nonce and key', nonce, key);
+  const encrypt = nacl.secretbox(req.body.content, nonce, key);
+  console.log('encrypt is', encrypt);
+  const encryptedContent = nacl.util.encodeBase64(encrypt);
+  const files = { [name]: { encryptedContent } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
