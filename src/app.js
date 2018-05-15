@@ -76,11 +76,11 @@ server.get("/", (req, res) => {
 });
 
 server.get("/gists", (req, res) => {
-	// Retrieve a list of all gists for the currently authed user
+	// TODO Retrieve a list of all gists for the currently authed user
 	github.gists
 		.getForUser({ username })
-		.then(response => {
-			res.json(response.data);
+		.then(result => {
+			res.json(result.data);
 		})
 		.catch(err => {
 			res.json(err);
@@ -88,12 +88,12 @@ server.get("/gists", (req, res) => {
 });
 
 server.get("/key", (req, res) => {
-	// Return the secret key used for encryption of secret gists
+	// TODO Return the secret key used for encryption of secret gists
 	res.send(nacl.util.encodeBase64(encryption));
 });
 
 server.get("/secretgist/:id", (req, res) => {
-	// Retrieve and decrypt the secret gist corresponding to the given ID
+	// TODO Retrieve and decrypt the secret gist corresponding to the given ID
 	const id = req.params.id;
 	github.gists
 		.get({ id })
@@ -142,6 +142,16 @@ server.post("/createsecret", urlencodedParser, (req, res) => {
 	// TODO Create a private and encrypted gist with given name/content
 	// NOTE - we're only encrypting the content, not the filename
 	// To save, we need to keep both encrypted content and nonce
+	let {name, content} = req.body;
+	//decode content string into an array of UTF8 
+	let contents = nacl.util.decodeUTF8(content);
+	console.log(contents);
+	//create nonce
+	//create nacl secret box
+	//combine with nonce
+	//send to github
+
+
 });
 
 server.post("/postmessageforfriend", urlencodedParser, (req, res) => {
