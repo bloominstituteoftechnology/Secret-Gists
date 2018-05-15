@@ -9,6 +9,8 @@ const username = process.env.USERNAME; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
+// console.log(process.env);
+
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
@@ -18,6 +20,7 @@ github.authenticate({
   type: 'oauth',
   token: process.env.GITHUB_TOKEN
 });
+
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO:  Use the existing key or generate a new 32 byte key
@@ -92,7 +95,14 @@ server.get('/secretgist/:id', (req, res) => {
 
   github.gists.get({ id })
     .then((response) => {
-      res.json(response.data);
+      const ciphertext = Object.values(response.data.files)[0];
+      const nonce = nacl.util.decodeBase64(ciphertext.content.slice(0, 32));
+      const encrypted = nacl.util.decodeBase64(ciphertext.content.slice(32));
+      const gistMSG = nacl.secretbox.open(encrypted, nonce, encryptor);
+
+      ciphertext.content = nacl.util.encodeUTF8(gist);
+
+      res.json(ciphertext);
     })
     .catch((err) => {
       res.json(err);
@@ -122,6 +132,7 @@ server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
   const { name, content } = req.body;
   const files = { [name]: { content } };
+
   github.gists.create({ files, public: false })
     .then((response) => {
       res.json(response.data);
@@ -135,6 +146,19 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
+  const { name, content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const encrypted = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, encryptor);
+  const gistMSG = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encrypted);
+  const files = { [name]: { content: gistMSG } };
+
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
