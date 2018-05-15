@@ -231,6 +231,22 @@ server.post('/login', (req, res) => {
   res.json({ success: false });
 });
 
+server.delete('/deletegist/:id', (req, res) => {
+  const {
+    id
+  } = req.params;
+
+  github.gists.delete({ id })
+    .then((removed) => {
+      if (removed) {
+        res.json({ success: true });
+      }
+    })
+    .catch((err) => {
+      res.json(err);
+    });
+});
+
 /*
 Still want to write code? Some possibilities:
 -Pretty templates! More forms!
