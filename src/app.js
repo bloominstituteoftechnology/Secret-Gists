@@ -115,7 +115,8 @@ server.get('/secretgist/:id', (req, res) => {
     const content = file[filename].content;
     const nonce = nacl.util.decodeBase64(content.slice(0, 32));
     const box = nacl.util.decodeBase64(content.slice(32));
-    const message = nacl.secretbox.open(box, nonce, process.env.PUBLIC_KEY);
+    const key = nacl.util.decodeBase64(process.env.PUBLIC_KEY);
+    const message = nacl.util.encodeUTF8(nacl.secretbox.open(box, nonce, key));
     res.json(message);
   })
   .catch((err) => {
@@ -127,7 +128,6 @@ server.get('/keyPairGen', (req, res) => {
   const keypair = nacl.box.keyPair();
   process.env.SECRET_KEY = nacl.util.encodeBase64(keypair.secretKey);
   process.env.PUBLIC_KEY = nacl.util.encodeBase64(keypair.publicKey);
-  console.log('length is', process.env.PUBLIC_KEY.length);
   // TODO Generate a keypair to use for sharing secret messagase using public gists
   // Display the keys as strings
   res.send(`
@@ -202,12 +202,16 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
     const key = nacl.util.decodeBase64(process.env.SECRET_KEY);
     const encrypt = nacl.box(content, nonce, nacl.util.decodeBase64(publicKey), key);
     const encryptedContent = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encrypt);
+    console.log('length of nonce', nacl.util.encodeBase64(nonce).length);
+    console.log('length of encrypt', nacl.util.encodeBase64(encrypt).length);
     const files = { [name]: { content: encryptedContent } };
     github.gists.create({ files, public: true })
       .then((response) => {
         // TODO Build string that is the messager's public key + encrypted message blob
         // to share with the friend.
+        console.log('PUBLIC_KEY length', process.env.PUBLIC_KEY.length);
         const messageString = `${process.env.PUBLIC_KEY}${encryptedContent}`;
+        console.log('messageString length', messageString.length);
         // Display the string built above
         res.send(`
         <html>
@@ -229,6 +233,8 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
 server.get('/fetchmessagefromfriend/:messageString', urlencodedParser, (req, res) => {
   // TODO Retrieve, decrypt, and display the secret gist corresponding to the given ID
   const { messageString } = req.params;
+  console.log('req.params', req.params);
+  console.log('messageString length', messageString.length);
   const theirKey = nacl.util.decodeBase64(messageString.slice(0, 44));
   const nonce = nacl.util.decodeBase64(messageString.slice(44, 76));
   const box = nacl.util.decodeBase64(messageString.slice(76));
