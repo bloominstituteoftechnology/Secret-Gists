@@ -59,7 +59,7 @@ server.get('/', (req, res) => {
           <input type="submit" value="Submit">
         </form>
         <h3>Retrieve an *encrypted* gist a friend has posted</h3>
-        <form action="/fetchmessagefromfriend:messageString" method="get">
+        <form action="/fetchmessagefromfriend/" method="get">
           String From Friend: <input type="text" name="messageString"><br>
           <input type="submit" value="Submit">
         </form>
@@ -130,6 +130,7 @@ server.get('/keyPairGen', (req, res) => {
       <div>Public Key: ${nacl.util.encodeBase64(keypair.publicKey)}</div>
       <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
     </body>
+  </html>
   `);
 });
 
@@ -174,6 +175,7 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
         <h1>Error</h1>
         <div>You must create a keypair before using this feature.</div>
       </body>
+    </html>
     `);
     } else {
         // Using their public key
@@ -189,6 +191,8 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
                 // TODO Build string that is the messager's public key + encrypted message blob
                 // to share with the friend.
                 const nonce64 = nacl.util.encodeBase64(nonce);
+                console.log('publen: ', process.env.PUB.length);
+                console.log('nonce64len: ', nonce64.length);
                 const messageString = process.env.PUB + nonce64 + nacl.util.encodeBase64(ciphertext);
                 // const pub = process.env.PUB;
                 // Display the string built above
@@ -202,6 +206,7 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
                   <div>${messageString}</div>
                   <div>
                 </body>
+              </html>
               `);
             })
             .catch(err => {
@@ -211,24 +216,41 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
     }
 });
 
-server.get('/fetchmessagefromfriend/:messageString', urlencodedParser, (req, res) => {
-    const string = req.params.messageString;
-    const pub_key = nacl.util.decodeBase64(string.slice(0, pub.length));
-    const non = nacl.util.decodeBase64(string.slice(pub.length, nonce64.length + pub.length));
-    const cipher = nacl.util.decodeBase64(string.slice(pub.length + nonce64.length));
+server.get('/fetchmessagefromfriend/', urlencodedParser, (req, res) => {
+    const string = req.query.messageString;
+    // console.log(req.query);
+    // console.log(string);
+    const pub_key = nacl.util.decodeBase64(string.slice(0, 44));
+    const non = nacl.util.decodeBase64(string.slice(44, 32 + 44));
+    const cipher = nacl.util.decodeBase64(string.slice(44 + 32));
     const plain = nacl.box.open(cipher, non, pub_key, nacl.util.decodeBase64(process.env.SECRET));
+    // console.log(plain);
 
-    res.send(`
-    <html>
-      <header><title>Message Saved</title></header>
-      <body>
-        <h1>Message Saved</h1>
-        <div>Give this string to your friend for decoding.</div>
-        <br/>
-        <div>${nacl.util.encodeUTF8(plain)}</div>
-        <div>
-      </body>
-    `);});
+    if(plain === null) {
+      res.send(`
+      <html>
+        <body>
+          <h2><title>Error</title></h2>
+          <div>Not authorized to decode this string.</div>
+        </body>
+      </html>
+      `);
+    } else {
+      res.send(`
+      <html>
+        <header><title>Message Saved</title></header>
+        <body>
+          <h1>Message Saved</h1>
+          <div>Give this string to your friend for decoding.</div>
+          <br/>
+          <div>${nacl.util.encodeUTF8(plain)}</div>
+          <div>
+        </body>
+      </html>
+      `);
+    }
+
+  });
 
 /* OPTIONAL - if you want to extend functionality */
 server.post('/login', (req, res) => {
