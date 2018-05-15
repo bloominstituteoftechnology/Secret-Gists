@@ -5,7 +5,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'Mephestys'; // TODO: Replace with your username
+const username = process.env.GITHUB_USERNAME; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -81,6 +81,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
+  res.json(secretKey);
 });
 
 server.get('/secretgist/:id', (req, res) => {
