@@ -15,8 +15,8 @@ const urlencodedParser = bodyParser.urlencoded({ extended: false });
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
 github.authenticate({
-  type: 'oauth',
-  token: process.env.GITHUB_TOKEN,
+    type: 'oauth',
+    token: process.env.GITHUB_TOKEN,
 });
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
@@ -102,7 +102,7 @@ server.get('/secretgist/:id', (req, res) => {
         const blob = gist.files[filename].content;
 
         const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
-        const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
+        const ciphertext = nacl.util.decodeBase64(blob.slice(32));
         const plaintext = nacl.secretbox.open(ciphertext, nonce, nacl.util.decodeBase64(secret_key));
         res.send(`
     <html>
@@ -165,10 +165,6 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
-    // TODO Create a private and encrypted gist with given name/content
-    // using someone else's public key that can be accessed and
-    // viewed only by the person with the matching private key
-    // NOTE - we're only encrypting the content, not the filename
     if (secret_key === undefined) {
         // Must create saved key first
         res.send(`
@@ -190,19 +186,13 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
         github.gists
             .create({ files, public: true })
             .then(response => {
-              // TODO Build string that is the messager's public key + encrypted message blob
-              // to share with the friend.
-              const nonce64 = nacl.util.encodeBase64(nonce);
-              const messageString = process.env.PUB + nonce64 + nacl.util.encodeBase64(ciphertext);
-              // const pub = process.env.PUB;
-
-              // const pub_key = nacl.util.decodeBase64(messageString.slice(0, pub.length));
-              // const non = nacl.util.decodeBase64(messageString.slice(pub.length, nonce64.length + pub.length));
-              // const cipher = nacl.util.decodeBase64(messageString.slice(pub.length + nonce64.length, messageString.length));
-              // const plain = nacl.box.open(cipher, non, pub_key, nacl.util.decodeBase64('eAKaNm7dbtt0er+Etj4bLdGVt/IVTTFqpJgPCWVMB/I='));
-
-              // Display the string built above
-              res.send(`
+                // TODO Build string that is the messager's public key + encrypted message blob
+                // to share with the friend.
+                const nonce64 = nacl.util.encodeBase64(nonce);
+                const messageString = process.env.PUB + nonce64 + nacl.util.encodeBase64(ciphertext);
+                // const pub = process.env.PUB;
+                // Display the string built above
+                res.send(`
               <html>
                 <header><title>Message Saved</title></header>
                 <body>
@@ -221,9 +211,24 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
     }
 });
 
-server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
-    // TODO Retrieve, decrypt, and display the secret gist corresponding to the given ID
-});
+server.get('/fetchmessagefromfriend/:messageString', urlencodedParser, (req, res) => {
+    const string = req.params.messageString;
+    const pub_key = nacl.util.decodeBase64(string.slice(0, pub.length));
+    const non = nacl.util.decodeBase64(string.slice(pub.length, nonce64.length + pub.length));
+    const cipher = nacl.util.decodeBase64(string.slice(pub.length + nonce64.length));
+    const plain = nacl.box.open(cipher, non, pub_key, nacl.util.decodeBase64(process.env.SECRET));
+
+    res.send(`
+    <html>
+      <header><title>Message Saved</title></header>
+      <body>
+        <h1>Message Saved</h1>
+        <div>Give this string to your friend for decoding.</div>
+        <br/>
+        <div>${nacl.util.encodeUTF8(plain)}</div>
+        <div>
+      </body>
+    `);});
 
 /* OPTIONAL - if you want to extend functionality */
 server.post('/login', (req, res) => {
