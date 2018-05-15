@@ -92,9 +92,8 @@ server.get('/secretgist/:id', (req, res) => {
     .then((response) => {
       const gists = response.data;
       for (let x = 0; x < gists.length; x++) {
-        if (gists[x].id === target) res.send(gists[x]);
+        if (gists[x].id === target) res.json(gists[x].files);
       }
-      res.send({ err: 'Gist Dont Exist' });
     })
     .catch((err) => {
       res.json(err);
@@ -143,15 +142,23 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // To save, we need to keep both encrypted content and nonce
 
   let { name, content } = req.body;
-  const nonce = nacl.randomBytes(24);
+  let nonce = nacl.randomBytes(24);
   content = nacl.util.decodeUTF8(content);
   secret = nacl.util.decodeBase64(process.env.SECRET_KEY);
   let blob = nacl.secretbox(content, nonce, secret);
   blob = nacl.util.encodeBase64(blob);
   content = blob;
-  const files = { [name]: { content } };
+  nonce = nacl.util.encodeBase64(nonce);
+  const files = { [name]: { content: content + nonce } };
+  // {
+  //   "files": {
+  //     "file1.txt": {
+  //       "content": "String file contents"
+  //     }
+  //   }
+  // }
   github.gists
-    .create({ files, public: false })
+    .create({ files })
     .then((response) => {
       res.json(response.data);
     })
@@ -159,6 +166,16 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
       res.json(err);
     });
 });
+
+//   github.gists
+//     .create({ files, public: false })
+//     .then((response) => {
+//       res.json(response.data);
+//     })
+//     .catch((err) => {
+//       res.json(err);
+//     });
+// });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
