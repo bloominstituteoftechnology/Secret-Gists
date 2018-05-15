@@ -206,8 +206,7 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
       .then(response => {
         // TODO Build string that is the messager's public key + encrypted message blob
         // to share with the friend.
-        let messageString = `publicKey is: ${nacl.util.encodeBase64(publicKey)}`;
-        let contentString = `Content is: ${content}`
+        let messageString = nacl.util.encodeBase64(publicKey) + content;
         // Display the string built above
         res.send(`
         <html>
@@ -216,7 +215,6 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
             <h1>Message Saved</h1>
             <div>Give this string to your friend for decoding.</div>
             <div>${messageString}</div>
-            <div>${contentString}</div>
             <div>
           </body>
         `);
