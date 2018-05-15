@@ -141,7 +141,6 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   const { name, content } = req.body;
   const nonce = nacl.randomBytes(24);
   const message = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
-  console.log(nacl.util.encodeBase64(nonce));
   const final = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(message);
   const files = { [name]: { content: final } };
   github.gists.create({ files, public: false })
@@ -154,13 +153,12 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
-  // TODO Create a private and encrypted gist with given name/content
+  // Create a private and encrypted gist with given name/content
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
   const savedKey = process.env.SECRET_KEY;
   if (savedKey === undefined) {
-    // Must create saved key first
     res.send(`
     <html>
       <header><title>No Keypair</title></header>
@@ -170,17 +168,20 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
       </body>
     `);
   } else {
-    // TODO if the key exists, create an asymetrically encrypted message
+    // if the key exists, create an asymetrically encrypted message
     // Using their public key
-    let files; // build in here
-
+    
+    const { name, content, publicKey } = req.body;
+    const nonce = nacl.randomBytes(24);
+    const message = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, nacl.util.decodeBase64(publicKey));
+    const final = nacl.util.encodeBase64(publicKey) + nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(message);
+    const files = { [name]: { content: final } };
     github.gists.create({ files, public: true })
       .then((response) => {
-        // TODO Build string that is the messager's public key + encrypted message blob
+        // cBuild string that is the messager's public key + encrypted message blob
         // to share with the friend.
-        let messageString;
-
-        // Display the string built above
+        const fileName = Object.keys(response.data.files)[0];
+        const messageString = response.data.files[fileName].content;
         res.send(`
         <html>
           <header><title>Message Saved</title></header>
