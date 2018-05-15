@@ -5,7 +5,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'natdf'; // TODO: Replace with your username
+const username = 'natdf'; // Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -82,7 +82,7 @@ server.get('/gists', (req, res) => {
 });
 
 server.get('/key', (req, res) => {
-  res.send({ key });
+  res.send(nacl.util.encodeBase64(key));
 });
 
 server.get('/secretgist/:id', (req, res) => {
@@ -92,7 +92,15 @@ server.get('/secretgist/:id', (req, res) => {
   github.gists
   .get({ id })
   .then((response) => {
-    res.json(response.data);
+    const filename = Object.keys(response.data.files)[0];
+    const gist = response.data.files[filename];
+
+    const blob = gist.content;
+    const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
+    const secretBox = nacl.util.decodeBase64(blob.slice(32, blob.length));
+    const encryptedContent = nacl.secretbox.open(secretBox, nonce, key);
+    const plainText = nacl.util.encodeUTF8(encryptedContent);
+    res.send(plainText);
   })
   .catch((err) => {
     res.json(err);
@@ -100,8 +108,16 @@ server.get('/secretgist/:id', (req, res) => {
 });
 
 server.get('/keyPairGen', (req, res) => {
+  // TODO Generate a keypair to use for sharing secret messages using public gists
   let keypair;
-  // TODO Generate a keypair to use for sharing secret messagase using public gists
+  const secretKey = process.env.SECRET_KEY;
+
+  if (secretKey) keypair = nacl.box.keyPair.fromSecretKey(nacl.util.decodeBase64(secretKey));
+  else {
+    keypair = nacl.box.keyPair();
+    process.env.SECRET_KEY = nacl.util.encodeBase64(keypair.publicKey);
+  }
+
   // Display the keys as strings
   res.send(`
   <html>
@@ -136,8 +152,8 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // NOTE - we're only encrypting the content, not the filename
   const { name, content } = req.body;
 
-  const nonce = nacl.randomBytes(24);
   const postKey = nacl.randomBytes(32);
+  const nonce = nacl.randomBytes(24);
   const passForUser = nacl.util.encodeBase64(postKey);
   const encryptedContent = nacl.util.decodeUTF8(content);
   const secretBox = nacl.secretbox(encryptedContent, nonce, postKey);
