@@ -117,7 +117,7 @@ export GITHUB_TOKEN="yourtoken"
 
 
 The token will be accessible within node as `process.env.GITHUB_TOKEN`, and can
-be used to authenticate the GitHub client:
+be used to authenticate the GitHub client: 
 
 ```
 const GitHubApi = require('github');
