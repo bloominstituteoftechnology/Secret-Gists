@@ -163,6 +163,7 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content, publicKey } = req.body;
   const savedKey = process.env.SECRET_KEY;
   if (savedKey === undefined) {
     // Must create saved key first
@@ -177,13 +178,17 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   } else {
     // TODO if the key exists, create an asymetrically encrypted message
     // Using their public key
-    let files; // build in here
+    const decodedPublicKey = nacl.util.decodeBase64(publicKey);
+    const decodedMessage = nacl.util.decodeUTF8(content);
+    const nonce = nacl.randomBytes(24);
+    const encryptedMessage = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(nacl.box(decodedMessage, nonce, decodedPublicKey, key));
+    const files = { [name]: { content: encryptedMessage } }; // build in here
 
     github.gists.create({ files, public: true })
       .then((response) => {
         // TODO Build string that is the messager's public key + encrypted message blob
         // to share with the friend.
-        let messageString;
+        const messageString = publicKey + encryptedMessage;
 
         // Display the string built above
         res.send(`
@@ -205,6 +210,16 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO Retrieve, decrypt, and display the secret gist corresponding to the given ID
+  const { messageString } = req.query;
+  const publicKey = nacl.util.decodeBase64(messageString.slice(0, 44));
+  let message = messageString.slice(44);
+  const nonce = nacl.util.decodeBase64(message.slice(0, 32));
+  const encrypted = nacl.util.decodeBase64(message.slice(32));
+  const decrypted = nacl.box.open(encrypted, nonce, publicKey, key);
+
+  message = nacl.util.encodeUTF8(decrypted);
+
+  res.json(message);
 });
 
 /* OPTIONAL - if you want to extend functionality */
