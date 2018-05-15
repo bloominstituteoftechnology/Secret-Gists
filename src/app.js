@@ -21,7 +21,7 @@ github.authenticate({
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO:  Use the existing key or generate a new 32 byte key
-
+const secretKey = process.env.SECRET_KEY ? process.env.SECRET_KEY : nacl.randomBytes(32);
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
   res.send(`
@@ -80,11 +80,26 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
-  const something = process.env.SECRET_KEY ? nacl.util.decodeBase64(process.env.SECRET_KEY) : nacl.randomBytes(32);
+  res
+    .json(secretKey);
 });
 
 server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+  const { id } = req.params;
+  console.log('id', id);
+  github.gists.get({ id: req.params.id })
+    .then((response) => {
+      const file = response.data.files;
+      const name = Object.keys(file)[0];
+      const content = file[name].content;
+      console.log('name', name);
+      console.log('content', content);
+    })
+    .catch((err) => {
+      res
+        .json({ Error: err });
+    });
 });
 
 server.get('/keyPairGen', (req, res) => {
