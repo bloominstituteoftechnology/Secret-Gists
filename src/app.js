@@ -1,3 +1,5 @@
+/* eslint no-console: 0 */
+
 require('dotenv').config();
 const bodyParser = require('body-parser');
 const express = require('express');
@@ -19,6 +21,7 @@ github.authenticate({
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO:  Use the existing key or generate a new 32 byte key
+
 const secretKey = process.env.SECRET_KEY ? nacl.util.decodeBase64(process.env.SECRET_KEY) : nacl.randomBytes(32);
 
 server.get('/', (req, res) => {
@@ -79,6 +82,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
+  res.send(nacl.util.encodeBase64(secretKey));
 });
 
 server.get('/secretgist/:id', (req, res) => {
@@ -192,5 +196,5 @@ Still want to write code? Some possibilities:
 
 const port = process.env.PORT || 3000;
 server.listen(port, () => {
-  console.log(`Server is running on ${port}`); // eslint-disable-line no-console
+  console.log(`Server is running on ${port}`);
 });
