@@ -22,7 +22,7 @@ github.authenticate({
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO:  Use the existing key or generate a new 32 byte key
 
-const key = nacl.randomBytes(32);
+const key = process.env.SECRET_KEY ? nacl.util.decodeBase64(process.env.SECRET_KEY) : nacl.randomBytes(32);
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -92,6 +92,9 @@ server.get('/secretgist/:id', (req, res) => {
 server.get('/keyPairGen', (req, res) => {
   let keypair;
   // TODO Generate a keypair to use for sharing secret messagase using public gists
+  // Follow TweetNacl docs - search for keypair
+    const savedKey = process.env.SECRET_KEY;
+    keypair = nacl.box.keyPair.fromSecretKey(nacl.util.decodeBase64(process.env.SECRET_KEY));
 
   // Display the keys as strings
   res.send(`
@@ -125,6 +128,19 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
+  const { name, content } = req.body;
+  const files = { [name]: { content } };
+
+  // TODO: use encryption to change content from unencrypted string to encrypted
+  // DO TweetNACL stuff here
+
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
@@ -134,7 +150,7 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // NOTE - we're only encrypting the content, not the filename
   const savedKey = process.env.SECRET_KEY;
   if (savedKey === undefined) {
-    // Must create saved key first
+  // Must create saved key first
     res.send(`
     <html>
       <header><title>No Keypair</title></header>
