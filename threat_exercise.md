@@ -29,18 +29,18 @@ She is on her phone constantly.  Typing in pin numbers or doing those silly patt
 Yolanda gets along well with most of classmates, except Jennifer, but there are always haters who want to take people down.
 
 Adversaries - 
-
+haters
 
 Attack surface - 
-
+phone
 
 Attack vectors -
-
+phising, melware, spyware
 
 Risks (Confidentiality, Integrity, Availability, etc) -
+picturs, text msg
 
-
-Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
+Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - phishing, melware, spyware
 
 
 Mitigation -
