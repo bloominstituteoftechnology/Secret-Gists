@@ -97,14 +97,25 @@ server.get('/secretgist/:id', (req, res) => {
   const { id, } = req.params;
   github.gists.get({ id })
     .then((response) => {
-      const gist = response.data;
-      const filename = Object.keys(gist.files)[0];
-      const blob = gist.files[filename].content;
-      console.log({ blob });
+      const gist = Object.values(response.data.files);
+      const box = gist[0].content.slice(32);
+      const sNonce = gist[0].content.slice(0, 32);
+      console.log({ gist, box });
+      const boxArr = nacl.util.decodeBase64(box);
+      const sNonceArr = nacl.util.decodeBase64(sNonce);
+      // const filename = Object.keys(gist.files)[0];
+      // const blob = gist.files[filename].content;
       // const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
-      const cipherText = nacl.util.decodeBase64(blob.slice(0, 32));
-      const plaintext = nacl.secretbox.open(cipherText, nonce, key);
-      res.send(nacl.util.encodeUTF8(plaintext));
+      // const cipherText = nacl.util.decodeBase64(blob.slice(0, 32));
+
+      const message = nacl.secretbox.open(boxArr, sNonceArr, key);
+      const plaintext = nacl.util.encodeUTF8(message);
+      // console.log({ sNonce, key, message });
+      if (message === null) {
+        console.log('cannot open box');
+      }
+      // console.log('decrypetd message: ', plaintext); 
+      res.send(plaintext);
     })
   // github.gists.getForUser({ username })
   // .then((response) => {
@@ -153,11 +164,12 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
-  // const nonce = nacl.randomBytes(24);
+  const secretNonce = nacl.randomBytes(24);
+  const secretNonceString = nacl.util.encodeBase64(secretNonce);
   const { name, content } = req.body;
-  const encryptedCont = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, key);
+  const encryptedCont = nacl.secretbox(nacl.util.decodeUTF8(content), secretNonce, key);
   const encryptedMessage = nacl.util.encodeBase64(Object.values(encryptedCont));
-  const files = { [name]: { content: encryptedMessage } };
+  const files = { [name]: { content: secretNonceString.concat(encryptedMessage) } };
   github.gists.create({ files, public: false })
     .then((response) => {
       res.json(response.data);
