@@ -126,8 +126,8 @@ server.get('/secretgist/:id', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   const keypair = nacl.box.keyPair();
-  process.env.SECRET_KEY = nacl.util.encodeBase64(keypair.secretKey);
-  process.env.PUBLIC_KEY = nacl.util.encodeBase64(keypair.publicKey);
+  // process.env.SECRET_KEY = nacl.util.encodeBase64(keypair.secretKey);
+  // process.env.PUBLIC_KEY = nacl.util.encodeBase64(keypair.publicKey);
   // TODO Generate a keypair to use for sharing secret messagase using public gists
   // Display the keys as strings
   res.send(`
