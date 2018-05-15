@@ -5,7 +5,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'username'; // TODO: Replace with your username
+const username = 'sirkevinc'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -19,6 +19,8 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
+const randomKey = nacl.randomBytes(32);
+const key = process.env.SECRET_KEY ? nacl.util.decodeBase64(process.env.SECRET_KEY) : randomKey;
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO:  Use the existing key or generate a new 32 byte key
 
@@ -80,16 +82,37 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
+  res.json(nacl.util.encodeBase64(key));
 });
 
 server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+  const { id } = req.params;
+  github.gists.get({ id })
+    .then((response) => {
+      const title = Object.keys(response.data.files);
+      let content = response.data.files[title].content;
+
+      const nonce = nacl.util.decodeBase64(content.slice(0, 32));
+      content = content.slice(32);
+
+      const encrypted = nacl.util.decodeBase64(content);
+      const decrypted = nacl.secretbox.open(encrypted, nonce, key);
+
+      content = nacl.util.encodeUTF8(decrypted);
+
+      res.json(content);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.get('/keyPairGen', (req, res) => {
   let keypair;
   // TODO Generate a keypair to use for sharing secret messagase using public gists
-  
+
+
   // Display the keys as strings
   res.send(`
   <html>
@@ -122,6 +145,18 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
+  const { name, content } = req.body;
+  const decodedContent = nacl.util.decodeUTF8(content);
+  const nonce = nacl.randomBytes(24);
+  const encryptedContent = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64((nacl.secretbox(decodedContent, nonce, key)));
+  const files = { [name]: { content: encryptedContent } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
