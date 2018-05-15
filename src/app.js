@@ -88,8 +88,8 @@ server.get('/secretgist/:id', (req, res) => {
   const { id } = req.params;
   github.gists.get({ id })
     .then((response) => {
-      const data = response.data.files.Encrypted.content;
-      console.log(data);
+      const name = Object.keys(response.data.files)[0];
+      const data = response.data.files[name].content;
       const nonce = nacl.util.decodeBase64(data.substring(0, 32));
       const box = nacl.util.decodeBase64(data.substring(32));
       const encodedMessage = nacl.secretbox.open(box, nonce, secretKey);
