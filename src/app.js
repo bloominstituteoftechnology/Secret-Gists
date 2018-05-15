@@ -162,6 +162,7 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // Create a private and encrypted gist with given name/content
   const {
     name,
+    publicKey,
     content
   } = req.body;
   const savedKey = process.env.SECRET_KEY;
@@ -179,15 +180,15 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   } else {
     // If the key exists, create an asymetrically encrypted message using their public key
     const nonce = nacl.randomBytes(24);
-    const publicKey = new Uint8Array(nacl.util.decodeBase64(process.env.PUBLIC_KEY));
-    const encrypted = nacl.box(nacl.util.decodeUTF8(content), nonce, publicKey, encryptor);
+    const pk = new Uint8Array(nacl.util.decodeBase64(publicKey));
+    const encrypted = nacl.box(nacl.util.decodeUTF8(content), nonce, pk, encryptor);
     const message = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encrypted);
     const files = { [name]: { content: message } };
 
     github.gists.create({ files, public: true })
       .then((response) => {
         // Build string that is the messager's public key + encrypted message blob to share with the friend.
-        const messageString = nacl.util.encodeBase64(publicKey) + message;
+        const messageString = process.env.PUBLIC_KEY + message;
 
         // Display the string built above
         res.send(`
@@ -229,6 +230,27 @@ server.post('/login', (req, res) => {
   // This will replace hardcoded username from above
   // const { username, oauth_token } = req.body;
   res.json({ success: false });
+});
+
+server.put('/editgist/:id', urlencodedParser, (req, res) => {
+  const {
+    id
+  } = req.params;
+  const {
+    name,
+    content
+  } = req.body;
+  const files = { [name]: { content } };
+
+  github.gists.edit({ id }, { files })
+    .then((edited) => {
+      if (edited) {
+        res.json(edited);
+      }
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.delete('/deletegist/:id', (req, res) => {
