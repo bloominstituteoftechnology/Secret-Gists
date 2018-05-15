@@ -51,6 +51,11 @@ server.get('/', (req, res) => {
           Content:<br><textarea name="content" cols="80" rows="10"></textarea><br>
           <input type="submit" value="Submit">
         </form>
+        <h3>Decrypt an *encrypted* gist</h3>
+        <form action="/readsecret/" method="get">
+          Gist Id: <input type="text" name="gistId"><br>
+          <input type="submit" value="Submit">
+        </form>
         <h3>Create an *encrypted* gist for a friend to decode</h3>
         <form action="/postmessageforfriend" method="post">
           Name: <input type="text" name="name"><br>
@@ -59,8 +64,13 @@ server.get('/', (req, res) => {
           <input type="submit" value="Submit">
         </form>
         <h3>Retrieve an *encrypted* gist a friend has posted</h3>
+        <form action="/fetchgistfromfriend/" method="get">
+          Gist Id From Friend: <input type="text" name="gistId"><br>
+          <input type="submit" value="Submit">
+        </form>
+        <h3>Decrypt an *encrypted* message</h3>
         <form action="/fetchmessagefromfriend/" method="get">
-          String From Friend: <input type="text" name="messageString"><br>
+          Message From Friend: <input type="text" name="messageString"><br>
           <input type="submit" value="Submit">
         </form>
       </body>
@@ -165,6 +175,49 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
         });
 });
 
+server.get('/readsecret/', urlencodedParser, (req, res) => {
+  const string = req.query.gistId;
+  // console.log(req.query);
+  // console.log(string);
+
+  github.gists.get({ id: string }).then(response => {
+    const gist = response.data;
+    const filename = Object.keys(gist.files)[0];
+    const blob = gist.files[filename].content;
+
+    const non = nacl.util.decodeBase64(blob.slice(0, 32));
+    const cipher = nacl.util.decodeBase64(blob.slice(32));
+    const plain = nacl.secretbox.open(cipher, non, nacl.util.decodeBase64(secret_key));
+    // console.log(plain);
+
+    if(plain === null) {
+      res.send(`
+      <html>
+        <body>
+          <h2><title>Error</title></h2>
+          <div>Not authorized to decode this string.</div>
+        </body>
+      </html>
+      `);
+    } else {
+      res.send(`
+      <html>
+        <header><title>Message Saved</title></header>
+        <body>
+          <h1>Message Saved</h1>
+          <div>Give this string to your friend for decoding.</div>
+          <br/>
+          <div>${nacl.util.encodeUTF8(plain)}</div>
+          <div>
+        </body>
+      </html>
+      `);
+    }
+
+  });
+
+});
+
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
     if (secret_key === undefined) {
         // Must create saved key first
@@ -183,17 +236,18 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
         const nonce = nacl.randomBytes(24);
         const ciphertext = nacl.box(nacl.util.decodeUTF8(content), nonce, nacl.util.decodeBase64(publicKey), nacl.util.decodeBase64(secret_key));
 
-        const files = { [name]: { content } };
+        const nonce64 = nacl.util.encodeBase64(nonce);
+        console.log('publen: ', process.env.PUB.length);
+        console.log('nonce64len: ', nonce64.length);
+        const messageString = process.env.PUB + nonce64 + nacl.util.encodeBase64(ciphertext);
+
+        const files = { [name]: { content: messageString } };
 
         github.gists
             .create({ files, public: true })
             .then(response => {
                 // TODO Build string that is the messager's public key + encrypted message blob
                 // to share with the friend.
-                const nonce64 = nacl.util.encodeBase64(nonce);
-                console.log('publen: ', process.env.PUB.length);
-                console.log('nonce64len: ', nonce64.length);
-                const messageString = process.env.PUB + nonce64 + nacl.util.encodeBase64(ciphertext);
                 // const pub = process.env.PUB;
                 // Display the string built above
                 res.send(`
@@ -203,7 +257,7 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
                   <h1>Message Saved</h1>
                   <div>Give this string to your friend for decoding.</div>
                   <br/>
-                  <div>${messageString}</div>
+                  <div>${response.data.id}</div>
                   <div>
                 </body>
               </html>
@@ -216,10 +270,55 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
     }
 });
 
-server.get('/fetchmessagefromfriend/', urlencodedParser, (req, res) => {
+server.get('/fetchgistfromfriend/', urlencodedParser, (req, res) => {
+    const string = req.query.gistId;
+    // console.log(req.query);
+    // console.log(string);
+
+    github.gists.get({ id: string }).then(response => {
+      const gist = response.data;
+      const filename = Object.keys(gist.files)[0];
+      const blob = gist.files[filename].content;
+
+      const pub_key = nacl.util.decodeBase64(blob.slice(0, 44));
+      const non = nacl.util.decodeBase64(blob.slice(44, 32 + 44));
+      const cipher = nacl.util.decodeBase64(blob.slice(44 + 32));
+      const plain = nacl.box.open(cipher, non, pub_key, nacl.util.decodeBase64(process.env.SECRET));
+      // console.log(plain);
+
+      if(plain === null) {
+        res.send(`
+        <html>
+          <body>
+            <h2><title>Error</title></h2>
+            <div>Not authorized to decode this string.</div>
+          </body>
+        </html>
+        `);
+      } else {
+        res.send(`
+        <html>
+          <header><title>Message Saved</title></header>
+          <body>
+            <h1>Message Saved</h1>
+            <div>Give this string to your friend for decoding.</div>
+            <br/>
+            <div>${nacl.util.encodeUTF8(plain)}</div>
+            <div>
+          </body>
+        </html>
+        `);
+      }
+
+    });
+
+  });
+
+  server.get('/fetchmessagefromfriend/', urlencodedParser, (req, res) => {
     const string = req.query.messageString;
     // console.log(req.query);
     // console.log(string);
+
     const pub_key = nacl.util.decodeBase64(string.slice(0, 44));
     const non = nacl.util.decodeBase64(string.slice(44, 32 + 44));
     const cipher = nacl.util.decodeBase64(string.slice(44 + 32));
