@@ -64,7 +64,7 @@ server.get('/', (req, res) => {
           <input type="submit" value="Submit">
         </form>
         <h3>Retrieve an *encrypted* gist a friend has posted</h3>
-        <form action="/fetchmessagefromfriend/:messageString" method="get">
+        <form action="/fetchmessagefromfriend" method="get">
           String From Friend: <input type="text" name="messageString"><br>
           <input type="submit" value="Submit">
         </form>
@@ -187,9 +187,9 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
     // Using their public key
     // let files; // build in here
     const nonce = nacl.randomBytes(24);
-    const encrypted = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, encryptor);
+    const publicKey = new Uint8Array(nacl.util.decodeBase64(process.env.PUBLIC_KEY));
+    const encrypted = nacl.box(nacl.util.decodeUTF8(content), nonce, publicKey, encryptor);
     const gistMSG = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encrypted);
-    const publicKey = process.env.PUBLIC_KEY;
     const files = { [name]: { content: gistMSG } };
 
 
@@ -198,7 +198,7 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
         // TODO Build string that is the messager's public key + encrypted message blob
         // to share with the friend.
         // let messageString;
-        const messageString = publicKey + gistMSG;
+        const messageString = nacl.util.encodeBase64(publicKey) + gistMSG;
 
         // Display the string built above
         res.send(`
@@ -218,16 +218,16 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   }
 });
 
-server.get('/fetchmessagefromfriend/:messageString', urlencodedParser, (req, res) => {
+server.get('/fetchmessagefromfriend', urlencodedParser, (req, res) => {
   // TODO Retrieve, decrypt, and display the secret gist corresponding to the given ID
   const {
     messageString
-  } = req.params;
-  const publicKey = messageString.slice(0, 44);
+  } = req.query;
+  const publicKey = nacl.util.decodeBase64(messageString.slice(0, 44));
   let message = messageString.slice(44);
   const nonce = nacl.util.decodeBase64(message.slice(0, 32));
   const encrypted = nacl.util.decodeBase64(message.slice(32));
-  const gistMSG = nacl.secretbox.open(encrypted, nonce, encryptor);
+  const gistMSG = nacl.box.open(encrypted, nonce, publicKey, encryptor);
 
   message = nacl.util.encodeUTF8(gistMSG);
 
