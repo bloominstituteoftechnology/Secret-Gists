@@ -87,13 +87,23 @@ server.get('/key', (req, res) => {
 
 server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.params.id;
+  github.gists.get({ id })
+    .then((response) => {
+      const { content } = Object.keys(response.data.files)[0];
+      const nonce = nacl.util.decodeBase64(content.slice(0, 32));
+      const cipher = nacl.util.decodeBase64(content.slice(32, content.length));
+      const plaintext = nacl.secretbox.open(cipher, nonce, key);
+      res.json(nacl.util.encodeUTF8(plaintext));
+  }).catch((err) => {
+    res.json(err);
+  })
 });
 
 server.get('/keyPairGen', (req, res) => {
   let keypair;
   // TODO Generate a keypair to use for sharing secret messagase using public gists
   // Follow TweetNacl docs - search for keypair
-    const savedKey = process.env.SECRET_KEY;
     keypair = nacl.box.keyPair.fromSecretKey(nacl.util.decodeBase64(process.env.SECRET_KEY));
 
   // Display the keys as strings
@@ -129,10 +139,10 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
   const { name, content } = req.body;
-  const files = { [name]: { content } };
-
-  // TODO: use encryption to change content from unencrypted string to encrypted
-  // DO TweetNACL stuff here
+  const nonce = nacl.randomBytes(24);
+  const cipher = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, key);
+  const encodedContent = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(cipher);
+  const files = { [name]: { content: encodedContent } };
 
   github.gists.create({ files, public: false })
     .then((response) => {
