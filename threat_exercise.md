@@ -76,22 +76,22 @@ He currently uses different passphrases for all of his accounts, except that he 
 
 Rashad is himself an avid blogger.  He has a moderately popular, weekly column where he shares the weeks adventures, hangouts, vacations, etc.  He is excited that next week he will be heading out to his favorite vacation spot since childhood - Rehoboth Beach, DE.
 
-Adversaries - 
+Adversaries - Rival dev firms
 
 
-Attack surface - 
+Attack surface - emails, accounts, devices
 
 
-Attack vectors -
+Attack vectors - master email
 
 
-Risks (Confidentiality, Integrity, Availability, etc) -
+Risks (Confidentiality, Integrity, Availability, etc) - Integrity of web presence, reputation
 
 
-Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
+Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - Phising, malware
 
 
-Mitigation -
+Mitigation - Multifactor auth, password mgr, alternate method of aggregating emails
 
 
 
