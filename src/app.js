@@ -127,8 +127,9 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
 
   const { name, content } = req.body;
   const nonce = nacl.randomBytes(24);
-  const message = nacl.secretbox(content, nonce, secretKey);
-  const files = { [name]: { message } };
+  const message = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+  const final = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(message);
+  const files = { [name]: { content: final } };
   github.gists.create({ files, public: false })
     .then((response) => {
       res.json(response.data);
