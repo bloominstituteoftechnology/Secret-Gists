@@ -86,9 +86,16 @@ server.get('/secretgist/:id', (req, res) => {
   // TODO Retrieve and decrypt the secret gist corresponding to the given ID
   const id = req.params.id;
 
-  github.gists.get({ id }).then((response) => {
-    console.log(response);
-  });
+  github.gists.get({ id })
+    .then((response) => {
+      const data = response.data.files[Object.keys(response.data.files)[0]].content;
+      const nonce = nacl.util.decodeBase64(data.slice(0, 32));
+      const content = nacl.secretbox.open(nacl.util.decodeBase64(data.slice(32, data.length)), nonce, secretKey);
+      res.send(nacl.util.encodeUTF8(content));
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.get('/keyPairGen', (req, res) => {
@@ -128,9 +135,9 @@ server.post('/createsecret', urlencodedParser, (req, res) => { // use nacl.secre
   // To save, we need to keep both encrypted content and nonce
   const nonce = nacl.randomBytes(24);
   const { name } = req.body;
-  const content = nacl.util.encodeBase64(nacl.secretbox(nacl.util.decodeUTF8(req.body.content), nonce, secretKey));
-
+  const content = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(nacl.secretbox(nacl.util.decodeUTF8(req.body.content), nonce, secretKey));
   const files = { [name]: { content } };
+
   github.gists.create({ files, public: false })
     .then((response) => {
       res.json(response.data);
