@@ -6,7 +6,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = `${process.env.USER_NAME}`; // TODO: Replace with your username
+const username = `${process.env.USER_NAME}`; // Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -21,7 +21,7 @@ github.authenticate({
 });
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
-// TODO:  Use the existing key or generate a new 32 byte key
+// Use the existing key or generate a new 32 byte key
 const secretKey = process.env.SECRET_KEY
   ? nacl.util.decodeBase64(process.env.SECRET_KEY)
   : nacl.randomBytes(32);
@@ -84,12 +84,12 @@ server.get('/gists', (req, res) => {
 });
 
 server.get('/key', (req, res) => {
-  // TODO Return the secret key used for encryption of secret gists
+  // Return the secret key used for encryption of secret gists
   res.json({ secretKey: nacl.util.encodeBase64(secretKey) });
 });
 
 server.get('/secretgist/:id', (req, res) => {
-  // TODO Retrieve and decrypt the secret gist corresponding to the given ID
+  // Retrieve and decrypt the secret gist corresponding to the given ID
   let id = req.params.id;
 
   github.gists
@@ -114,7 +114,7 @@ server.get('/secretgist/:id', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   let keypair;
-  // TODO Generate a keypair to use for sharing secret messagase using public gists
+  // Generate a keypair to use for sharing secret messagase using public gists
   keypair = nacl.box.keyPair();
   console.log(keypair);
 
@@ -149,7 +149,7 @@ server.post('/create', urlencodedParser, (req, res) => {
 });
 
 server.post('/createsecret', urlencodedParser, (req, res) => {
-  // TODO Create a private and encrypted gist with given name/content
+  // Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   // To save, we need to keep both encrypted content and nonce
   let { name, content } = req.body;
@@ -175,11 +175,10 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
-  const savedKey = process.env.SECRET_KEY;
+  let savedKey = process.env.SECRET_KEY;
+  let { name, content, publicKey } = req.body;
   if (savedKey === undefined) {
     // Must create saved key first
-    const { name, content } = req.body;
-
     res.send(`
     <html>
       <header><title>No Keypair</title></header>
@@ -191,15 +190,24 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   } else {
     // TODO if the key exists, create an asymetrically encrypted message
     // Using their public key
-    let files; // build in here
+
+    let nonce = nacl.randomBytes(24);
+    let message = nacl.util.decodeUTF8(content);
+    publicKey = nacl.util.decodeBase64(publicKey);
+    savedKey = nacl.util.decodeBase64(savedKey);
+
+    let box = nacl.box(message, nonce, publicKey, savedKey)
+    content = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(box);
+
+    let files = { [name]: { content } }; // build in here
 
     github.gists
       .create({ files, public: true })
       .then(response => {
         // TODO Build string that is the messager's public key + encrypted message blob
         // to share with the friend.
-        let messageString;
-
+        let messageString = `publicKey is: ${nacl.util.encodeBase64(publicKey)}`;
+        let contentString = `Content is: ${content}`
         // Display the string built above
         res.send(`
         <html>
@@ -208,6 +216,7 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
             <h1>Message Saved</h1>
             <div>Give this string to your friend for decoding.</div>
             <div>${messageString}</div>
+            <div>${contentString}</div>
             <div>
           </body>
         `);
