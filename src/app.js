@@ -27,9 +27,9 @@ github.authenticate({
 // const nonce = nacl.randomBytes(24);
 // const secretKey = nacl.secretbox(key, nonce);
 
-// const secret = process.env.GITHUB_TOKEN
-//   ? nacl.util.decodeBase64(process.env.GITHUB_TOKEN)
-//   : nacl.randomBytes(32);
+const secret = process.env.SECRET_KEY
+  ? nacl.util.decodeBase64(process.env.GITHUB_TOKEN)
+  : nacl.randomBytes(32);
 
 /* { decodeUTF8: [Function],
   encodeUTF8: [Function],
@@ -101,7 +101,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
-  // res.send(nacl.util.encodeBase64(secret));
+  res.send(nacl.util.encodeBase64(secret));
 });
 
 server.get('/secretgist/:id', (req, res) => {
