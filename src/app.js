@@ -103,7 +103,7 @@ server.get('/secretgist/:id', (req, res) => {
 });
 
 server.get('/keyPairGen', (req, res) => {
-  let keypair;
+  const keypair = nacl.box.keyPair.fromSecretKey(key);
   // TODO Generate a keypair to use for sharing secret messagase using public gists
   // Display the keys as strings
   res.send(`
@@ -170,13 +170,19 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   } else {
     // TODO if the key exists, create an asymetrically encrypted message
     // Using their public key
-    let files; // build in here
-
+    // build in here
+    const keypair = nacl.box.keyPair.fromSecretKey(key);
+    const { name, publicKey, content } = req.body;
+    const nonce = nacl.randomBytes(24);
+    const msg = nacl.box(nacl.util.decodeUTF8(content), nonce, nacl.util.decodeBase64(publicKey), key);
+    const secretContent = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(msg);
+    const files = { [name]: { content: secretContent } };
     github.gists.create({ files, public: true })
       .then((response) => {
         // TODO Build string that is the messager's public key + encrypted message blob
         // to share with the friend.
-        let messageString;
+      const { id } = response.data;
+      const messageString = nacl.util.encodeBase64(keypair.publicKey) + id;
 
         // Display the string built above
         res.send(`
@@ -198,6 +204,19 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO Retrieve, decrypt, and display the secret gist corresponding to the given ID
+  const { messageString } = req.query;
+  const friendKey = nacl.util.decodeBase64(messageString.slice(0, 44));
+  const id = messageString.slice(44, messageString.length);
+  github.gists.get({ id })
+  .then((response) => {
+    const { content } = Object.values(response.data.files)[0];
+    const nonce = nacl.util.decodeBase64(content.slice(0, 32));
+    const encryptedContent = nacl.util.decodeBase64(content.slice(32, content.length));
+    const decryptedContent = nacl.box.open(encryptedContent, nonce, friendKey, key);
+    res.send({ message: nacl.util.encodeUTF8(decryptedContent) });
+  }).catch((err) => {
+    res.send(err);
+  });
 });
 
 /* OPTIONAL - if you want to extend functionality */
