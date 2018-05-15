@@ -14,26 +14,22 @@ const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
-github.authenticate({
-  type: 'oauth',
-  token: process.env.GITHUB_TOKEN
-});
-
-/*
-const GitHubApi = require('github');
-const github = new GitHubApi({ debug: true });
 
 github.authenticate({
   type: 'oauth',
   token: process.env.GITHUB_TOKEN
 });
-*/
 
 // Set up the encryption - use process.env.SECRET_KEY if it exists
 // TODO:  Use the existing key or generate a new 32 byte key
-const key = nacl.randomBytes(32);
-const nonce = nacl.randomBytes(24);
-const secretKey = nacl.secretbox(key, nonce);
+
+// const key = nacl.randomBytes(32);
+// const nonce = nacl.randomBytes(24);
+// const secretKey = nacl.secretbox(key, nonce);
+
+// const secret = process.env.GITHUB_TOKEN
+//   ? nacl.util.decodeBase64(process.env.GITHUB_TOKEN)
+//   : nacl.randomBytes(32);
 
 /* { decodeUTF8: [Function],
   encodeUTF8: [Function],
@@ -41,12 +37,11 @@ const secretKey = nacl.secretbox(key, nonce);
   decodeBase64: [Function] }
 */
 
-const array = new Uint8Array(32);
-
-nacl.util.decodeUTF8(string)
-nacl.util.encodeUTF8(array)
-nacl.util.decodeBase64(string)
-nacl.util.encodeBase64(array)
+// const array = new Uint8Array(32);
+// nacl.util.decodeUTF8(array);
+// nacl.util.encodeUTF8(array);
+// nacl.util.decodeBase64(array);
+// nacl.util.encodeBase64(array);
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -106,6 +101,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO Return the secret key used for encryption of secret gists
+  // res.send(nacl.util.encodeBase64(secret));
 });
 
 server.get('/secretgist/:id', (req, res) => {
