@@ -176,7 +176,7 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => { // use na
       .then((response) => {
         // Build string that is the messager's public key + encrypted message blob
         // to share with the friend.
-        const messageString = publicKey + response.data.id;
+        const messageString = nacl.util.encodeBase64(keyPair.publicKey) + response.data.id;
 
         // Display the string built above
         res.send(`
