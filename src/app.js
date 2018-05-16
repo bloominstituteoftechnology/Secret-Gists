@@ -24,6 +24,13 @@ const key = process.env.SECRET_KEY
   ? nacl.util.decodeBase64(process.env.SECRET_KEY)
   : nacl.randomBytes(32);
 
+// The bellow represents my untested understanding the situation to replace the block above
+// process.env.SECRET_KEY = process.env.SECRET_KEY
+//   ? process.env.SECRET_KEY
+//   : nacl.util.encodeBase64(nacl.randomBytes(32));
+
+// const key = nacl.util.decodeBase64(process.env.SECRET_KEY);
+
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
   res.send(`
@@ -114,10 +121,14 @@ server.get('/keyPairGen', (req, res) => {
 
   if (secretKey) {
     keypair = nacl.box.keyPair.fromSecretKey(nacl.util.decodeBase64(secretKey));
+    // process.env.PUBLIC_KEY = nacl.util.encodeBase64(keypair.publicKey);
   } else {
     keypair = nacl.box.keyPair();
     process.env.SECRET_KEY = nacl.util.encodeBase64(keypair.publicKey);
+    // process.env.SECRET_KEY = nacl.util.encodeBase64(keypair.secretKey);
+    // process.env.PUBLIC_KEY = nacl.util.encodeBase64(keypair.publicKey);
   }
+  // the three comments above represent my untested understanding of the situation
 
   // Display the keys as strings
   res.send(`
