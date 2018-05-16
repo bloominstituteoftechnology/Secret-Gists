@@ -24,7 +24,7 @@ const key = process.env.SECRET_KEY
   ? nacl.util.decodeBase64(process.env.SECRET_KEY)
   : nacl.randomBytes(32);
 
-// The bellow represents my untested understanding the situation to replace the block above
+// The below represents my untested understanding the situation to replace the block above
 // process.env.SECRET_KEY = process.env.SECRET_KEY
 //   ? process.env.SECRET_KEY
 //   : nacl.util.encodeBase64(nacl.randomBytes(32));
