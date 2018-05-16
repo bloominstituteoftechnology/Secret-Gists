@@ -170,11 +170,11 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   } else {
     // if the key exists, create an asymetrically encrypted message
     // Using their public key
-    
+
     const { name, content, publicKey } = req.body;
     const nonce = nacl.randomBytes(24);
     const message = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, nacl.util.decodeBase64(publicKey));
-    const final = nacl.util.encodeBase64(publicKey) + nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(message);
+    const final = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(message);
     const files = { [name]: { content: final } };
     github.gists.create({ files, public: true })
       .then((response) => {
@@ -201,6 +201,15 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO Retrieve, decrypt, and display the secret gist corresponding to the given ID
+  const messageString = 'HkAWJZn465gnjwjymViMlE4hKTjgSBg7GyctoRXj3Q+mNeRJmAefGMWv43BTK0Kob1KeHmZ+cQH5OTo=';
+  // const key = nacl.util.decodeBase64(messageString.substring(0, 60));
+  const nonce = nacl.util.decodeBase64(messageString.substring(0, 32));
+  const box = nacl.util.decodeBase64(messageString.substring(32));
+  console.log(nonce, box);
+  const privateKey = 'mSVNI++EBwFc2PaREeSSmZ+rx0pyMvXxqC20OmT5qlY=';
+  const encodedMessage = nacl.secretbox.open(box, nonce, nacl.util.decodeBase64(privateKey));
+  console.log(encodedMessage);
+  res.json({ Message: nacl.util.encodeUTF8(encodedMessage) });
 });
 
 /* OPTIONAL - if you want to extend functionality */
