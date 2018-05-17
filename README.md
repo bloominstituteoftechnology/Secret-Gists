@@ -10,6 +10,18 @@ Audience: Node.js developers, CS students, security enthusiasts
 * Learn how to use an authenticated REST API
 * Learn how to do simple client-side encryption/decryption using existing libraries
 
+## Tasks
+
+Create a token with Github to access your gists and save it in the .env file (see below)
+
+Run the provided code (yarn start then navigate to localhost:3000/ in your browser)
+
+Review the functionality implemented in this temporary test page. 
+
+Use the existing functionality as a guide to implement new features making use
+of encryption.
+
+Stretch:  Redo the test page so the user can access the same functionality in a sleek react app with a nice UI/UX.
 
 ## Getting started
 
@@ -91,14 +103,18 @@ display once - copy it somewhere safe, and treat it as a password! That it,
 don't paste it into your code to check in, don't send over chat/email, etc.
 Instead, you should set it as an environment variable:
 
+To use it, set the token in a `.env` file in the repository. The starter file has some
+help with this task.  Open the file called `dotenv`, paste in your token as described in
+the file, and resave the file with a new name of `.env`.  Be sure to not check in the 
+`.env` file! It's already in `.gitignore` but could still end up explicitly added if you 
+really try to push it.
+
+Environment variables can also be declared in the terminal, such as the example below:
+
 ```
 export GITHUB_TOKEN="yourtoken"
 ```
 
-If you prefer, you can set the token in a `.env` file in the repository and add
-the [dotenv-node](https://www.npmjs.com/package/dotenv-node) package to the
-project. Be sure to not check in the `.env` file! It's already in `.gitignore`
-but could still end up explicitly added if you really try to push it.
 
 The token will be accessible within node as `process.env.GITHUB_TOKEN`, and can
 be used to authenticate the GitHub client:
