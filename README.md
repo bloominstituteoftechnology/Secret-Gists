@@ -12,16 +12,16 @@ Audience: Node.js developers, CS students, security enthusiasts
 
 ## Tasks
 
-Create a token with Github to access your gists and save it in the .env file (see below)
+* [x] Create a token with Github to access your gists and save it in the .env file (see below)
 
-Run the provided code (yarn start then navigate to localhost:3000/ in your browser)
+* [x] Run the provided code (yarn start then navigate to localhost:3000/ in your browser)
 
-Review the functionality implemented in this temporary test page. 
+* [ ] Review the functionality implemented in this temporary test page. 
 
-Use the existing functionality as a guide to implement new features making use
+* [ ] Use the existing functionality as a guide to implement new features making use
 of encryption.
 
-Stretch:  Redo the test page so the user can access the same functionality in a sleek react app with a nice UI/UX.
+* [ ] Stretch:  Redo the test page so the user can access the same functionality in a sleek react app with a nice UI/UX.
 
 ## Getting started
 
@@ -204,8 +204,7 @@ will provide this. You will also want to give the secret key to the user so
 they can save it ("offline" - assume they can keep it safe, like a passphrase)
 and use it later to decrypt things. Since asking users to save an array of
 numbers isn't great, use the utility functions to encode it for them. To read
-it back, for now you can just set it as an environment variable similar to the
-OAuth token.
+it back, for now you can just set it as an environment variable similar to the OAuth token.
 
 Once you've encrypted the content of the gist, make sure to also include the
 nonce, otherwise you won't be able to decrypt it. The nonce can just be
