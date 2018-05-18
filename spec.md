@@ -34,6 +34,16 @@ Return a base64 string of the user's secretKey
 
 Incomplete
 
+# Set Key
+
+**Expected Functionality**
+
+Set the user's secret key to the string they enter.
+
+**Status**
+
+Incomplete
+
 # Create an unencrypted gist
 
 **Expected Functionality**
