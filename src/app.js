@@ -52,6 +52,11 @@ server.get('/', (req, res) => {
           <li><i><a href="/gists">GET /gists</a></i>: retrieve a list of gists for the authorized user (including private gists)</li>
           <li><i><a href="/key">GET /key</a></i>: return the secret key used for encryption of secret gists</li>
         </ul>
+        <h3>Set your secret key to a specific key</h3>
+        <form action="/setkey:keyString" method="get">
+          Key String: <input type="text" name="keyString"><br>
+          <input type="submit" value="Submit">
+        </form>
         <h3>Create an *unencrypted* gist</h3>
         <form action="/create" method="post">
           Name: <input type="text" name="name"><br>
@@ -121,6 +126,18 @@ server.get('/gists', (req, res) => {
 server.get('/key', (req, res) => {
   // Return the secret key used for encryption of secret gists
   res.send(nacl.util.encodeBase64(secretKey));
+});
+
+server.get('/setkey:keyString', (req, res) => {
+  // Set the key to one specified by the user
+  const keyString = req.query.keyString;
+  try {
+    secretKey = nacl.util.decodeBase64(keyString);
+    res.send(`<div> Key set to new value: ${keyString} </div>`);
+  } catch (err) {
+    // failed
+    res.send('Failed to set key.  Key string appears invalid.');
+  }
 });
 
 server.get('/fetchmessagefromself:id', (req, res) => {
