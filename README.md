@@ -120,8 +120,8 @@ The token will be accessible within node as `process.env.GITHUB_TOKEN`, and can
 be used to authenticate the GitHub client:
 
 ```
-const GitHubApi = require('github');
-const github = new GitHubApi({ debug: true });
+const octokit = require('@octokit/rest');
+const github = octokit({ debug: true });
 
 github.authenticate({
   type: 'oauth',
