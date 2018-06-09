@@ -48,7 +48,7 @@ server.get('/', (req, res) => {
         <div>This is an educational implementation.  Do not use for truly valuable information</div>
         <h2>Supported operations:</h2>
         <ul>
-          <li><i><a href="/keyPairGen">Generate/Load Keypair</a></i>: (Do this first). Generate a keypair, or load an existing one.  Share your public key for other users of this app to leave encrypted gists that only you can decode with your secret key.</li>
+          <li><i><a href="/keyPairGen">Show Keypair</a></i>:  generate a keypair from your secret key.  Share your public key for other users of this app to leave encrypted gists that only you can decode with your secret key.</li>
           <li><i><a href="/gists">GET /gists</a></i>: retrieve a list of gists for the authorized user (including private gists)</li>
           <li><i><a href="/key">GET /key</a></i>: return the secret key used for encryption of secret gists</li>
         </ul>
@@ -92,9 +92,7 @@ server.get('/', (req, res) => {
 });
 
 server.get('/keyPairGen', (req, res) => {
-  // If a secret key is found in config.js, load it and use it to generate a public key
-  // If one is not found:
-  // Generate a new 32 byte secret key and save it in config.js
+  // Generate a keypair from the secretKey and display both
   // Display both keys as strings
 
   const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
