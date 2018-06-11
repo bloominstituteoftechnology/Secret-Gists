@@ -63,7 +63,7 @@ After a few non-authenticated operations, the next step is to authenticate. The
 most basic way to do this:
 
 ```
-curl -u username https://api.github.com/user
+curl -u Ajmaljalal58@gmail.com https://api.github.com/user
 ```
 
 Replace `username` with your GitHub username (keep the /user in the path the
