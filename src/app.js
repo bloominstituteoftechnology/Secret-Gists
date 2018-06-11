@@ -1,3 +1,4 @@
+/* eslint-disable */
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -6,11 +7,12 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = process.env.GITHUB_USERNAME; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
 // Create application/x-www-form-urlencoded parser
+server.use(bodyParser.json());
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
 // Generate an access token: https://github.com/settings/tokens
@@ -21,7 +23,7 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-
+const secretKey = process.env.SECRET_key ? nacl.util.decodeBase64(process.env.SECRET_KEY) : nacl.randomBytes(32);
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -98,10 +100,10 @@ server.get('/gists', (req, res) => {
   // Retrieve a list of all gists for the currently authed user
   github.gists.getForUser({ username })
     .then((response) => {
-      res.json(response.data);
+      res.status(200).json(response.data);
     })
     .catch((err) => {
-      res.json(err);
+      res.status(422).json(err);
     });
 });
 
