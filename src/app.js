@@ -6,7 +6,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'dragonrydrz'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -20,8 +20,9 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
-// TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+github.users.getForUser({ username }).then(response => console.log(response));
 
+// TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -79,6 +80,8 @@ server.get('/', (req, res) => {
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
 
+  const keypair = nacl.box.keyPair();
+
   // Display both keys as strings
   res.send(`
   <html>
@@ -96,7 +99,8 @@ server.get('/keyPairGen', (req, res) => {
 
 server.get('/gists', (req, res) => {
   // Retrieve a list of all gists for the currently authed user
-  github.gists.getForUser({ username })
+  github.gists
+    .getForUser({ username })
     .then((response) => {
       res.json(response.data);
     })
@@ -126,9 +130,11 @@ server.get('/fetchmessagefromself:id', (req, res) => {
 
 server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
+  console.log(req.body);
   const { name, content } = req.body;
   const files = { [name]: { content } };
-  github.gists.create({ files, public: false })
+  github.gists
+    .create({ files, public: false })
     .then((response) => {
       res.json(response.data);
     })
@@ -149,9 +155,13 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // NOTE - we're only encrypting the content, not the filename
 });
 
-server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
-  // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
-});
+server.get(
+  '/fetchmessagefromfriend:messageString',
+  urlencodedParser,
+  (req, res) => {
+    // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  }
+);
 
 /* OPTIONAL - if you want to extend functionality */
 server.post('/login', (req, res) => {
@@ -171,4 +181,4 @@ Still want to write code? Some possibilities:
 -Let the user pass in their private key via POST
 */
 
-server.listen(3000);
+server.listen(3000, () => console.log('SERVER RUNNING ON 3000!'));
