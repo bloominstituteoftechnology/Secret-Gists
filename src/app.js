@@ -20,6 +20,8 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
+
+//askdfjaskl;dfja
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
 const data = fs.readFileSync('./config.json');
 let secretKey;
