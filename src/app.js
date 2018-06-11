@@ -10,6 +10,8 @@ const username = 'your_name_here'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
+console.log('app running...');
+
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
@@ -21,7 +23,6 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -96,11 +97,12 @@ server.get('/keyPairGen', (req, res) => {
 
 server.get('/gists', (req, res) => {
   // Retrieve a list of all gists for the currently authed user
-  github.gists.getForUser({ username })
-    .then((response) => {
+  github.gists
+    .getForUser({ username })
+    .then(response => {
       res.json(response.data);
     })
-    .catch((err) => {
+    .catch(err => {
       res.json(err);
     });
 });
@@ -128,11 +130,12 @@ server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
   const { name, content } = req.body;
   const files = { [name]: { content } };
-  github.gists.create({ files, public: false })
-    .then((response) => {
+  github.gists
+    .create({ files, public: false })
+    .then(response => {
       res.json(response.data);
     })
-    .catch((err) => {
+    .catch(err => {
       res.json(err);
     });
 });
@@ -149,9 +152,13 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // NOTE - we're only encrypting the content, not the filename
 });
 
-server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
-  // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
-});
+server.get(
+  '/fetchmessagefromfriend:messageString',
+  urlencodedParser,
+  (req, res) => {
+    // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  }
+);
 
 /* OPTIONAL - if you want to extend functionality */
 server.post('/login', (req, res) => {
