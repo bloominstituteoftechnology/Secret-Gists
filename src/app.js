@@ -132,12 +132,7 @@ github.users.getForUser({
   Uint8Array;
 }
 
-
-
-
-
-
-
+//Routes
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
   res.send(`
@@ -192,9 +187,29 @@ server.get('/', (req, res) => {
 });
 
 server.get('/keyPairGen', (req, res) => {
-  // TODO:  Generate a keypair from the secretKey and display both
+  // TODO:  Generate a keypair from the secretKey and display both 
 
+  let keyPair = function () {
+    var pk = new Uint8Array(crypto_box_PUBLICKEYBYTES);
+    var sk = new Uint8Array(crypto_box_SECRETKEYBYTES);
+    crypto_box_keypair(pk, sk);
+    return {
+      publicKey: pk,
+      secretKey: sk
+    };
+  }
 
+  let secretKey = function (secretKey) {
+    checkArrayTypes(secretKey);
+    if (secretKey.length !== crypto_box_SECRETKEYBYTES)
+      throw new Error('bad secret key size');
+    let pk = new Uint8Array(crypto_box_PUBLICKEYBYTES);
+    crypto_scalarmult_base(pk, secretKey);
+    return {
+      publicKey: pk,
+      secretKey: new Uint8Array(secretKey)
+    };
+  }
 
   // Display both keys as strings
   res.send(`
