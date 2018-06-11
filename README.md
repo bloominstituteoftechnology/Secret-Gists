@@ -12,9 +12,9 @@ Audience: Node.js developers, CS students, security enthusiasts
 
 ## Tasks
 
--[] Create a token with Github to access your gists and save it in the .env file (see below)
+- [] Create a token with Github to access your gists and save it in the .env file (see below)
 
--[] Run the provided code (yarn start then navigate to localhost:3000/ in your browser)
+- [ ] Run the provided code (yarn start then navigate to localhost:3000/ in your browser)
 
 -[] Review the functionality implemented in this temporary test page. 
 
