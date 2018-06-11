@@ -36,100 +36,23 @@ github.users.getForUser({
   console.log(response.data);
 });
 
-// Public domain.
-(function (root, f) {
-  'use strict';
-  if (typeof module !== 'undefined' && module.exports) module.exports = f();
-  else if (root.nacl) root.nacl.util = f();
-  else {
-    root.nacl = {};
-    root.nacl.util = f();
-  }
-}(this, function () {
-  'use strict';
-
-  let util = {};
-
-  function validateBase64(s) {
-    if (!(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(s))) {
-      throw new TypeError('invalid encoding');
-    }
-  }
-
-  util.decodeUTF8 = function (s) {
-    if (typeof s !== 'string') throw new TypeError('expected string');
-    let i, d = unescape(encodeURIComponent(s)),
-      b = new Uint8Array(d.length);
-    for (i = 0; i < d.length; i++) b[i] = d.charCodeAt(i);
-    return b;
+const data = fs.readFileSync('./config.json');
+let secretKey;
+try {
+  const keyObject = JSON.parse(data);
+  secretKey = nacl.util.decodeBase64(keyObject.secretKey);
+} catch (err) {
+  secretKey = nacl.randomBytes(32);
+  const keyObject = {
+    secretKey: nacl.util.encodeBase64(secretKey)
   };
-
-  util.encodeUTF8 = function (arr) {
-    let i, s = [];
-    for (i = 0; i < arr.length; i++) s.push(String.fromCharCode(arr[i]));
-    return decodeURIComponent(escape(s.join('')));
-  };
-
-  if (typeof atob === 'undefined') {
-    // Node.js
-
-    if (typeof Buffer.from !== 'undefined') {
-      // Node v6 and later
-      util.encodeBase64 = function (arr) { // v6 and later
-        return Buffer.from(arr).toString('base64');
-      };
-
-      util.decodeBase64 = function (s) {
-        validateBase64(s);
-        return new Uint8Array(Array.prototype.slice.call(Buffer.from(s, 'base64'), 0));
-      };
-
-    } else {
-      // Node earlier than v6
-      util.encodeBase64 = function (arr) { // v6 and later
-        return (new Buffer(arr)).toString('base64');
-      };
-
-      util.decodeBase64 = function (s) {
-        validateBase64(s);
-        return new Uint8Array(Array.prototype.slice.call(new Buffer(s, 'base64'), 0));
-      };
+  fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+    if (ferr) {
+      console.log('There has been an error saving the key data.');
+      console.log(err.message);
+      return;
     }
-
-  } else {
-    // Browsers
-
-    util.encodeBase64 = function (arr) {
-      let i, s = [],
-        len = arr.length;
-      for (i = 0; i < len; i++) s.push(String.fromCharCode(arr[i]));
-      return btoa(s.join(''));
-    };
-
-    util.decodeBase64 = function (s) {
-      validateBase64(s);
-      let i, d = atob(s),
-        b = new Uint8Array(d.length);
-      for (i = 0; i < d.length; i++) b[i] = d.charCodeAt(i);
-      return b;
-    };
-
-  }
-
-  return util;
-
-}));
-
-// Reading the util information
-{
-  decodeUTF8: string,
-  Uint8Array;
-  encodeUTF8: Uint8Array,
-  string;
-  encodeBase64: Uint8Array,
-  string;
-  decodeBase64: string,
-  Uint8Array;
+  });
 }
 
 //Routes
@@ -188,16 +111,6 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both 
-
-  let keyPair = function () {
-    var pk = new Uint8Array(crypto_box_PUBLICKEYBYTES);
-    var sk = new Uint8Array(crypto_box_SECRETKEYBYTES);
-    crypto_box_keypair(pk, sk);
-    return {
-      publicKey: pk,
-      secretKey: sk
-    };
-  }
 
   let secretKey = function (secretKey) {
     checkArrayTypes(secretKey);
