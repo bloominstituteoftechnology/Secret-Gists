@@ -200,6 +200,22 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO Retrieve, decrypt, and display the secret gist corresponding to the given ID
+  const messageString = req.query.messageString;
+  const friendPublic = messageString.slice(0, 44);
+  const id = messageString.slice(44, messageString.length);
+  const mySecret = process.env.SECRET_KEY;
+  github.gists.get({ id }).then((response) => {
+    const gist = response.data;
+    const filename = Object.keys(gist.files)[0];
+    const blob = gist.files[filename].content;
+    const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
+    const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
+    const plaintext = nacl.box.open(ciphertext, nonce,
+      nacl.util.decodeBase64(friendPublic),
+      nacl.util.decodeBase64(mySecret)
+  );
+    res.send(nacl.util.encodeUTF8(plaintext));
+  });
 });
 
 /* OPTIONAL - if you want to extend functionality */
