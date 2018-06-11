@@ -76,22 +76,22 @@ He currently uses different passphrases for all of his accounts, except that he 
 
 Rashad is himself an avid blogger.  He has a moderately popular, weekly column where he shares the weeks adventures, hangouts, vacations, etc.  He is excited that next week he will be heading out to his favorite vacation spot since childhood - Rehoboth Beach, DE.
 
-Adversaries - 
+Adversaries - Rival developers, predatory SEO-type people, 
 
 
-Attack surface - 
+Attack surface - User accounts for all of his social media/services
 
 
-Attack vectors -
+Attack vectors - Physical confrontation (he constantly shares his location), email password vulnerability as they are the same, people may guess his information due to his sharing of personal information.
 
 
-Risks (Confidentiality, Integrity, Availability, etc) -
+Risks (Confidentiality, Integrity, Availability, etc) - Naivety, may not be prepared for his relative fame. He may not be very experienced with back-end security as he is predominately a front-end designer. 
 
 
-Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
+Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - Jealous rivals DDOSing, falling for phishing scams from people looking to make a quick buck on his fame, people taking advantage of a site that may not be properly secured as he is not well versed in the back end.
 
 
-Mitigation -
+Mitigation - Be less specific when sharing your location. Read up on best practices for security for a website. Change up all of your passwords and consider a password manager.
 
 
 
