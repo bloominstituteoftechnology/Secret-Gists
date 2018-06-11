@@ -21,10 +21,18 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+let secretString;
 let secretKey;
+let keyPair;
 try {
-  secretKey = require('./config.json');
+  const config = require('../config.json');
+  secretString = config.secretKey;
+  console.log(secretString);
+  secretKey = nacl.util.decodeUTF8(secretString);
+  nacl.box.keyPair.fromSecretKey(secretKey);
 } catch (error) {
+  console.log(error);
+  console.log('Failed to find key in config variables. Generating new key.');
   secretKey = nacl.box.keyPair().secretKey;
 }
 
@@ -83,7 +91,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
+  keypair = nacl.box.keyPair.fromSecretKey(secretKey);
 
   // Display both keys as strings
   res.send(`
@@ -113,6 +121,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.json(keypair.secretKey);
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -120,8 +129,11 @@ server.get('/setkey:keyString', (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO:
+    keyPair = nacl.box.keyPair.fromSecretKey(nacl.util.decodeUTF8(keyString));
   } catch (err) {
     // failed
+    console.log(err);
+    console.log(nacl.util.decodeUTF8(keyString).length);
     res.send('Failed to set key.  Key string appears invalid.');
   }
 });
