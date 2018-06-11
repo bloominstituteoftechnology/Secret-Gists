@@ -57,3 +57,5 @@ typings/
 # dotenv environment variables file
 .env
 
+# store details you don't want shared with everyone
+api.js
