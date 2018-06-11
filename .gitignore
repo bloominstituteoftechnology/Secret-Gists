@@ -58,4 +58,7 @@ typings/
 .env
 
 # store details you don't want shared with everyone
-api.js
+details.js
+
+# config files with the keys
+config.json

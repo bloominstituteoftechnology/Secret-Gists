@@ -6,10 +6,15 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-// local files
-const config = require('./config');
+// load local files
+// my personal js files
+const details = require('./details');
 
-const username = config.username; // TODO: Replace with your username
+// config json file
+const configData = fs.readFileSync('./src/config.json', 'utf8');
+const config = JSON.parse(configData);
+
+const username = details.username; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -80,10 +85,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  const keypair = {
-    publicKey: config.public,
-    secretKey: config.private,
-  };
+  const keypair = { publicKey: config.publicKey, secretKey: config.secretKey };
 
   // Display both keys as strings
   res.send(`
