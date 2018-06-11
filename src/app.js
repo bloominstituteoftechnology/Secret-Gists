@@ -1,3 +1,4 @@
+/* eslint-disable */
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -5,6 +6,8 @@ const express = require('express');
 const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
+
+
 
 const username = 'Charletta'; // TODO: Replace with your username
 const github = octokit({
@@ -24,7 +27,115 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
-// TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+// TODO:  Attempt to load the key from config.json. If it is not found, create a new 32 byte key.
+
+let handle = "Charletta";
+github.users.getForUser({
+  username: handle
+}).then(response => {
+  console.log(response.data);
+});
+
+// Public domain.
+(function (root, f) {
+  'use strict';
+  if (typeof module !== 'undefined' && module.exports) module.exports = f();
+  else if (root.nacl) root.nacl.util = f();
+  else {
+    root.nacl = {};
+    root.nacl.util = f();
+  }
+}(this, function () {
+  'use strict';
+
+  let util = {};
+
+  function validateBase64(s) {
+    if (!(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(s))) {
+      throw new TypeError('invalid encoding');
+    }
+  }
+
+  util.decodeUTF8 = function (s) {
+    if (typeof s !== 'string') throw new TypeError('expected string');
+    let i, d = unescape(encodeURIComponent(s)),
+      b = new Uint8Array(d.length);
+    for (i = 0; i < d.length; i++) b[i] = d.charCodeAt(i);
+    return b;
+  };
+
+  util.encodeUTF8 = function (arr) {
+    let i, s = [];
+    for (i = 0; i < arr.length; i++) s.push(String.fromCharCode(arr[i]));
+    return decodeURIComponent(escape(s.join('')));
+  };
+
+  if (typeof atob === 'undefined') {
+    // Node.js
+
+    if (typeof Buffer.from !== 'undefined') {
+      // Node v6 and later
+      util.encodeBase64 = function (arr) { // v6 and later
+        return Buffer.from(arr).toString('base64');
+      };
+
+      util.decodeBase64 = function (s) {
+        validateBase64(s);
+        return new Uint8Array(Array.prototype.slice.call(Buffer.from(s, 'base64'), 0));
+      };
+
+    } else {
+      // Node earlier than v6
+      util.encodeBase64 = function (arr) { // v6 and later
+        return (new Buffer(arr)).toString('base64');
+      };
+
+      util.decodeBase64 = function (s) {
+        validateBase64(s);
+        return new Uint8Array(Array.prototype.slice.call(new Buffer(s, 'base64'), 0));
+      };
+    }
+
+  } else {
+    // Browsers
+
+    util.encodeBase64 = function (arr) {
+      let i, s = [],
+        len = arr.length;
+      for (i = 0; i < len; i++) s.push(String.fromCharCode(arr[i]));
+      return btoa(s.join(''));
+    };
+
+    util.decodeBase64 = function (s) {
+      validateBase64(s);
+      let i, d = atob(s),
+        b = new Uint8Array(d.length);
+      for (i = 0; i < d.length; i++) b[i] = d.charCodeAt(i);
+      return b;
+    };
+
+  }
+
+  return util;
+
+}));
+
+// Reading the util information
+{
+  decodeUTF8: string,
+  Uint8Array;
+  encodeUTF8: Uint8Array,
+  string;
+  encodeBase64: Uint8Array,
+  string;
+  decodeBase64: string,
+  Uint8Array;
+}
+
+
+
+
+
 
 
 server.get('/', (req, res) => {
@@ -82,6 +193,8 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
+
+
 
   // Display both keys as strings
   res.send(`
