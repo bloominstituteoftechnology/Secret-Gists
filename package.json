@@ -14,7 +14,10 @@
     "tweetnacl": "^1.0.0",
     "tweetnacl-util": "^0.15.0"
   },
+  "devDependencies": {
+    "nodemon": "1.17.5"
+  },
   "scripts": {
-    "start": "eslint src/*.js && node src/app.js"
+    "start": "eslint src/*.js && nodemon src/app.js"
   }
 }
