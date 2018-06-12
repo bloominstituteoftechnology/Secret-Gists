@@ -1,4 +1,5 @@
 require('dotenv').config();
+
 const fs = require('fs');
 const bodyParser = require('body-parser');
 const express = require('express');
@@ -6,7 +7,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'WalterSWoodward'; // For now, username is hard coded, TODO: Add login system
 const github = octokit({ debug: true });
 const server = express();
 
@@ -79,6 +80,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
+  let keypair;
 
   // Display both keys as strings
   res.send(`
@@ -109,6 +111,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  console.log(nacl.randomBytes(32));
 });
 
 server.get('/setkey:keyString', (req, res) => {
