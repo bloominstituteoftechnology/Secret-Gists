@@ -1,3 +1,4 @@
+/* eslint-disable */
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -22,9 +23,14 @@ github.authenticate({
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
 
+// Step 1: create config.json
+// Step 2: Try to load the variable from the file
+
+// Step 3: If that doesn't work CATCH the pieces, make a new key AND save that key to config.json
+
 // create a new 32 byte key
 const secretKey = nacl.randomBytes(32);
-// console.log(secretKey);
+console.log(nacl.util.encodeBase64(secretKey));
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -131,12 +137,21 @@ server.get('/fetchmessagefromself:id', (req, res) => {
   const id = req.query.id;
   github.gists.get({ id }).then(result => {
     res.send(result);
-  });
-  // TODO: Catch Error block
+  
+  // find gist content in result
+
+  // separate nonce and message
+
+  // turn back into bytes
+
+  // use nonce, message, and secretKey to decrypt
+
   // step 2. decrypt
 
   // step 3. display to user
- 
+
+  });
+  // TODO: Catch Error block
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
