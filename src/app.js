@@ -19,6 +19,7 @@ github.authenticate({
   type: 'oauth',
   token: process.env.GITHUB_TOKEN
 });
+
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
 
 const data = fs.readFileSync('./config.json');
@@ -142,6 +143,54 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  // Step 1: Fetch gist by ID
+  github.gists
+    .get({ id: req.query.id })
+    .then((result) => {
+      const name = Object.keys(result.data.files)[0];
+      const text = result.data.files[name].content;
+      let nonce = text.slice(0, 24);
+      console.log('Pre decoded Nonce: ', nonce);
+      nonce = nacl.util.decodeBase64(nonce.length);
+      console.log('Post decoded Nonce: ', nonce.length);
+
+      const content = text.slice(24);
+      // Step 3: Display to user.
+      res.send(
+        nacl.secretbox.open(content, nacl.util.decodeBase64(nonce), secretKey)
+      );
+    })
+    .catch((err) => {
+      res.send({ message: err });
+    });
+  // TODO Add catch
+
+  // Step 2: Decrypt
+});
+
+server.post('/createsecret', urlencodedParser, (req, res) => {
+  // TODO:  Create a private and encrypted gist with given name/content
+  // NOTE - we're only encrypting the content, not the filename
+  const { name } = req.body;
+  let { content } = req.body;
+  const nonce = nacl.randomBytes(24);
+
+  const encryptedMessage = nacl.secretbox(
+    nacl.util.decodeUTF8(content),
+    nonce,
+    secretKey
+  );
+  content =
+    nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encryptedMessage);
+  const files = { [name]: { content } };
+  github.gists
+    .create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -156,11 +205,6 @@ server.post('/create', urlencodedParser, (req, res) => {
     .catch((err) => {
       res.json(err);
     });
-});
-
-server.post('/createsecret', urlencodedParser, (req, res) => {
-  // TODO:  Create a private and encrypted gist with given name/content
-  // NOTE - we're only encrypting the content, not the filename
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
