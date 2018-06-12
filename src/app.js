@@ -1,3 +1,4 @@
+/*eslint-disable*/
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -21,9 +22,10 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-const key = process.env.SECRET_KEY
-? nacl.util.decodeBase64(process.env.SECRET_KEY)
-: nacl.randomBytes(32);
+const secretKey = nacl.randomBytes(32);
+
+// console.log(secretKey);
+
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -110,6 +112,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.send(nacl.util.encodeBase64(secretKey));
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -125,6 +128,22 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+
+  // Step1: fetch the gist by id 
+  const id = req.query.id; 
+  github.gists.get({ id }).then(result => {
+      res.send(result.data);
+    });
+
+    // Find gist content in result 
+    // separate nonce and message 
+    // use nonce, messagem and secretKey to decrypt
+    // turn back into bytes 
+
+  // Step2: decrypt
+
+  // Step3: display to user 
+
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -143,6 +162,24 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  let { name, content } = req.body;
+   
+
+  const nonce = nacl.randomBytes(24);
+
+  const encryptedMessage = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+  
+  const blov = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encryptedMessage);
+
+  const files = { [name]: {content}};
+
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
