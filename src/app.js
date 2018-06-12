@@ -140,14 +140,14 @@ server.get('/setkey:keyString', (req, res) => {
 });
 
 server.get('/fetchmessagefromself:id', (req, res) => {
-  // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  // DONE:  Retrieve and decrypt the secret gist corresponding to the given ID
   const id = req.query.id;
 
   github.gists
     .get({ id })
     .then((result) => {
       // find gist content in result
-      const { filename } = Object.values(result.data.files)[0];
+      // const { filename } = Object.values(result.data.files)[0];
       let { content } = Object.values(result.data.files)[0];
 
       content = nacl.util.decodeBase64(content);
@@ -159,7 +159,7 @@ server.get('/fetchmessagefromself:id', (req, res) => {
       // use nonce, message, and secretkey to decrypt
       const decryptedMessage = nacl.secretbox.open(message, nonce, secretKey);
 
-      res.send(nacl.util.encodeUTF8(decryptedMessage));  // to be removed/refactored
+      res.send(nacl.util.encodeUTF8(decryptedMessage));
     })
     .catch((error) => {
       res.json(error);
@@ -210,7 +210,6 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   const { name } = req.body;
   let { content } = req.body;
   const nonce = nacl.randomBytes(24);
-  console.log('nonce in creatsecret: ', nonce);
   const encryptedMessage = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
 
   content = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encryptedMessage);
