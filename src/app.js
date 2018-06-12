@@ -10,6 +10,9 @@ const username = 'perryahern'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
+// server.use(bodyParser.json());                                      // ???
+// const parser = bodyParser.urlencoded({ extended: false });          // ???
+
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
@@ -21,7 +24,22 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-
+const data = fs.readFileSync('./config.json');
+let secretKey;
+try {
+  const keyObject = JSON.parse(data);
+  secretKey = nacl.util.decodeBase64(keyObject.secretKey);
+} catch (err) {
+  secretKey = nacl.randomBytes(32);
+  const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+  fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+    if (ferr) {
+      console.log('There has been an error saving the key data.');
+      console.log(err.message);
+      return;
+    }
+  });
+}
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -78,7 +96,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-
+  const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
   // Display both keys as strings
   res.send(`
   <html>
@@ -107,6 +125,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.send(nacl.util.encodeBase64(secretKey));
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -140,6 +159,21 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  const { name } = req.body;
+  let { content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const encryptedMessage = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+
+  content = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encryptedMessage);
+  const files = { [name]: { content } };
+
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
