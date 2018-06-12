@@ -20,18 +20,22 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
-// TODO:  Attempt to load the key from config.json.  If it is not found, ...
-
-// Step 1: create config.json (not in code if we don't want to)
-
-// Step 2: TRY to load the variable from file
-
-// Step 3: If that doesn't work CATCH the pieces and make a new key AND save that key to config.json
-
-
-// create a new 32 byte key.
-const secretKey = nacl.randomBytes(32);
-console.log(secretKey);
+const data = fs.readFileSync('./config.json');
+let secretKey;
+try {
+  const keyObject = JSON.parse(data);
+  secretKey = nacl.util.decodeBase64(keyObject.secretKey);
+} catch (err) {
+  secretKey = nacl.randomBytes(32);
+  const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+  fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+    if (ferr) {
+      console.log('There has been an error saving the key data.');
+      console.log(err.message);
+      return;
+    }
+  });
+}
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -87,8 +91,7 @@ server.get('/', (req, res) => {
 });
 
 server.get('/keyPairGen', (req, res) => {
-  // TODO:  Generate a keypair from the secretKey and display both
-  const { keypair } = nacl.box.keyPair.fromSecretKey(secretKey);
+  const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
   const nonce = nacl.randomBytes(24);
   console.log(keypair);
 
@@ -175,11 +178,11 @@ server.post('/create', urlencodedParser, (req, res) => {
 
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // NOTE - we're only encrypting the content, not the filename
-  const { name, initContent } = req.body;
+  let { name, content } = req.body;
 
   const nonce = nacl.randomBytes(24); // TODO: Investigate why this is 24
-  const encryptedMsg = nacl.secretbox(nacl.util.decodeUTF8(initContent), nonce, secretKey);
-  const content = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encryptedMsg);
+  const encryptedMsg = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+  content = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encryptedMsg);
 
   const files = { [name]: { content } };
 
