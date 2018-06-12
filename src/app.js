@@ -141,12 +141,15 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
-  const { id } = req.query.id;
-  github.gists.get(id).then((response) => {
-    // const gist = response.data;
-    // const filename = Object.keys(gist.files)[0];
-
+  const id = req.query.id;
+  
+  // Step 1: Fetch the gist by id
+  github.gists.get({ id }).then(result => {
+    res.send(result);
   });
+  // Step 2: Decrypt
+
+  // Step 3: Display to User
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
