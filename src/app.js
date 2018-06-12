@@ -19,11 +19,13 @@ const urlencodedParser = bodyParser.urlencoded({ extended: false });
 // Set it to be able to create gists
 github.authenticate({
   type: 'oauth',
-  token: process.env.GITHUB_TOKEN
+  token: process.env.GITHUB_TOKEN,
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-const secretKey = process.env.SECRET_key ? nacl.util.decodeBase64(process.env.SECRET_KEY) : nacl.randomBytes(32);
+const secretKey = process.env.SECRET_key
+  ? nacl.util.decodeBase64(process.env.SECRET_KEY)
+  : nacl.randomBytes(32);
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -98,17 +100,20 @@ server.get('/keyPairGen', (req, res) => {
 
 server.get('/gists', (req, res) => {
   // Retrieve a list of all gists for the currently authed user
-  github.gists.getForUser({ username })
-    .then((response) => {
+  github.gists
+    .getForUser({ username })
+    .then(response => {
       res.status(200).json(response.data);
     })
-    .catch((err) => {
+    .catch(err => {
       res.status(422).json(err);
     });
 });
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  const secretKey = nacl.util.encodeBase64(key);
+  res.status(200).json({ key: secretKey });
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -124,24 +129,76 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const { id } = req.params;
+  github.gists
+    .get({ id })
+    .then(response => {
+      const gist = response.data;
+      const filename = Object.keys(gist.files)[0];
+      const contentHash = gist.files[filename].content;
+
+      const nonce = nacl.util.decodeBase64(contentHash.slice(0, 32));
+      const contentPart = contentHash.slice(32, contentHash.length);
+
+      const cipherText = nacl.util.decodeBase64(contentPart);
+      const decryted = nacl.secretbox.open(cipherText, nonce, key);
+
+      res.status(200).json({ content: nacl.util.encodeUTF8(decrypted) });
+    })
+    .catch(error => {
+      console.log(error);
+      res.status(422).json({ error });
+    });
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
   const { name, content } = req.body;
   const files = { [name]: { content } };
-  github.gists.create({ files, public: false })
-    .then((response) => {
+  github.gists
+    .create({ files, public: false })
+    .then(response => {
       res.json(response.data);
     })
-    .catch((err) => {
+    .catch(err => {
       res.json(err);
     });
 });
 
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
+  const { name, content } = req.body;
+  const files = { [name]: { content } };
+
+  github.gists
+    .create({ files, public: false })
+    .then(response => {
+      res.status(200).json(response.data);
+    })
+    .catch(error => {
+      res.status(422).json(error);
+    });
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content } = req.body;
+
+  const nonce = nacl.randomBytes(24);
+  const cipherText = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, key);
+  const contentHash =
+    nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(cipherText);
+
+  const files = {
+    [name]: { content: contentHash },
+  };
+  const public = false;
+  const options = { files, public };
+  github.gists
+    .create(options)
+    .then(response => {
+      res.status(SUCCESS).json(response);
+    })
+    .catch(error => {
+      res.status(ERROR).json(error);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
@@ -151,9 +208,13 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // NOTE - we're only encrypting the content, not the filename
 });
 
-server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
-  // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
-});
+server.get(
+  '/fetchmessagefromfriend:messageString',
+  urlencodedParser,
+  (req, res) => {
+    // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  }
+);
 
 /* OPTIONAL - if you want to extend functionality */
 server.post('/login', (req, res) => {
