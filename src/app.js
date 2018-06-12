@@ -22,6 +22,9 @@ github.authenticate({
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
 
+// create a new 32 byte key
+const secretKey = nacl.randomBytes(32);
+console.log(secretKey);
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -78,6 +81,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
+  let keypair;
   // Display both keys as strings
   res.send(`
   <html>
@@ -106,6 +110,8 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  const wrapped = nacl.util.encodeBase64;
+  res.send(wrapped(secretKey));
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -121,6 +127,10 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  // step 1. fetch gist by id
+  // step 2. decrypt
+  // step 3. display to user
+ 
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -137,8 +147,29 @@ server.post('/create', urlencodedParser, (req, res) => {
 });
 
 server.post('/createsecret', urlencodedParser, (req, res) => {
-  // TODO:  Create a private and encrypted gist with given name/content
+  // TODO:  Create a private and encrypted gist with given name/content  
   // NOTE - we're only encrypting the content, not the filename
+  let { name, content } = req.body;
+  
+  //TODO: Encrypt the content
+  console.log('content in createsecret is:', content);  
+  const nonce = nacl.randomBytes(24); // TODO: Investigate why this is 24
+  const encryptedMessage = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+  
+  content = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encryptedMessage);
+  // console.log('blob in createsecret', blob);
+  
+  console.log('encrypted in createsecret:', encryptedMessage);
+
+  const files = { [name]: { content } };
+
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
