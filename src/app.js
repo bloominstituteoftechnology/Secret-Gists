@@ -92,7 +92,6 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
-  const nonce = nacl.randomBytes(24);
   console.log(keypair);
 
   // Display both keys as strings
@@ -122,7 +121,7 @@ server.get('/gists', (req, res) => {
 });
 
 server.get('/key', (req, res) => {
-  // TODO: Display the secret key used for encryption of secret gists
+  // DONE: Display the secret key used for encryption of secret gists
   res.send(nacl.util.encodeBase64(secretKey));
 });
 
@@ -144,23 +143,23 @@ server.get('/fetchmessagefromself:id', (req, res) => {
   github.gists.get({ id })
     .then((result) => {
       // Debug show result
-      res.send(result.data);
 
-      // Find gist content in result
+      // Find gist content in result and decodeBase64
+      let { content } = Object.values(result.data.files)[0];
+      content = nacl.util.decodeBase64(content);
 
       // Separate nonce and message
-
-      // turn back into bytes
+      const nonce = content.slice(0, 24);
+      const encryptedMsg = content.slice(24);
 
       // Use nonce, message, and secretKey to decrypt
+      const decryptedMsg = nacl.secretbox.open(encryptedMsg, nonce, secretKey);
 
+      res.send(nacl.util.encodeUTF8(decryptedMsg));
     })
     .catch((err) => {
       res.json(err);
     });
-  // Step 2: decrypt
-
-  // Step 3: display to user
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -178,7 +177,8 @@ server.post('/create', urlencodedParser, (req, res) => {
 
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // NOTE - we're only encrypting the content, not the filename
-  let { name, content } = req.body;
+  const { name } = req.body;
+  let { content } = req.body;
 
   const nonce = nacl.randomBytes(24); // TODO: Investigate why this is 24
   const encryptedMsg = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
