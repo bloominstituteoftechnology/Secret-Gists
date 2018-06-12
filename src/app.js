@@ -6,7 +6,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'mjd02'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -15,6 +15,7 @@ const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
+
 github.authenticate({
   type: 'oauth',
   token: process.env.GITHUB_TOKEN
@@ -22,6 +23,9 @@ github.authenticate({
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
 
+let keypair = {
+  secretKey: nacl.box.keyPair().secretKey
+};
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -79,6 +83,8 @@ server.get('/', (req, res) => {
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
 
+  keypair = nacl.box.keyPair.fromSecretKey(keypair.secretKey);
+
   // Display both keys as strings
   res.send(`
   <html>
@@ -107,13 +113,25 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.send(`  <html>
+    <header><title>Keypair</title></header>
+    <body>
+      <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
+    </body>
+`);
 });
 
 server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
-  const keyString = req.query.keyString;
+  let keyString = req.query.keyString;
   try {
     // TODO:
+    const length = keyString.length;
+    for (let i = 0; i < 32 - length; i++) {
+      keyString += 'a';
+    }
+    keypair.secretKey = nacl.util.decodeUTF8(keyString);
+    res.send(keypair.secretKey);
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
@@ -140,6 +158,22 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  res.send(req.body);
+  github.gists.create(
+    {
+      description: 'test secret gist',
+      public: false,
+      files:
+      {
+        secretGist: { content: req.body.content }
+      }
+    }, (error, result) => {
+    if (error) {
+      res.send(error);
+    } else {
+      res.send(result);
+    }
+  });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
