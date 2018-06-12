@@ -221,5 +221,7 @@ Still want to write code? Some possibilities:
 -Exchange keys, encrypt messages for each other, share them
 -Let the user pass in their private key via POST
 */
-
-server.listen(3000);
+const port = 3000;
+server.listen(port, () => {
+  console.log('Gist App is listening on port', port);
+});
