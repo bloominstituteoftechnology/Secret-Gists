@@ -168,7 +168,7 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   const { name, content } = req.body;
 
   console.log(`content in /createsecret: ${content}`);
-  // const files = { [name]: { content } };
+  const files = { [name]: { content } };
 
   // TODO: Encrypt the content here
   // const nonce = nacl.randomBytes(24);
@@ -176,13 +176,13 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // const encryptedMessage = nacl.secretbox(nacl.util.decodeBase64(content), nonce, secretKey);
   // content = nacl.util.encodeBase64(nonce) + nacl.util.decodeBase64(encryptedMessage);
 
-  // github.gists.create({ files, public: false })
-  //   .then((response) => {
-  //     res.json(response.data);
-  //   })
-  //   .catch((err) => {
-  //     res.json(err);
-  //   });
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
