@@ -33,6 +33,7 @@ github.authenticate({
 
 // TODO: Create a new 32 byte key.
 const secretKey = nacl.randomBytes(32);
+// console.log(secretKey);
 
 
 //Testing data by inspecting the client(ME)
@@ -102,7 +103,7 @@ server.get('/', (req, res) => {
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
   let kepair;
-  
+
   
 
   // Display both keys as strings
@@ -136,7 +137,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
-  res.send(secretKey);
+  res.send(nacl.util.encodeBase64(secretKey));
 
 });
 
