@@ -6,7 +6,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'frogr';
 const github = octokit({ debug: true });
 const server = express();
 
@@ -20,7 +20,7 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
-const data = fs.readFileSync('./config/json');
+const data = fs.readFileSync('./config.json');
 let secretKey;
 try {
   const keyObject = JSON.parse(data);
