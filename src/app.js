@@ -172,7 +172,7 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO: Encrypt the content here
   const nonce = nacl.randomBytes(24);
 
-  const encryptedMessage = nacl.secretbox(nacl.util.decodeBase64(content), nonce, secretKey);
+  const encryptedMessage = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
 
   console.log(`ENCRYPTEDMESSAGE CONST IS ${encryptedMessage}.`);
 
