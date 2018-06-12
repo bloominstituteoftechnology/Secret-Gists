@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -19,8 +21,35 @@ github.authenticate({
   type: 'oauth',
   token: process.env.GITHUB_TOKEN
 });
+// Attempt to load the key from config.json.  If it is not found,
+// create a new 32 byte key.
 
-// TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+// const secretKey = nacl.randomBytes(32);
+
+//Step 1 create config.json
+
+// 2 Try to load variable from file
+
+// 3 Catch pieces and make/save a new key
+
+// Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+const data = fs.readFileSync('./config.json');
+let secretKey;
+try {
+  const keyObject = JSON.parse(data);
+  secretKey = nacl.util.decodeBase64(keyObject.secretKey);
+} catch (err) {
+  secretKey = nacl.randomBytes(32);
+  const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+  fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+    if (ferr) {
+      console.log('There has been an error saving the key data.');
+      console.log(err.message);
+      return;
+    }
+  });
+  console.log(nacl.util.encodeBase64(secretKey));
+}
 
 
 server.get('/', (req, res) => {
@@ -111,12 +140,19 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+
+  // const secKey = req.data;
+
+  // nacl.util.encodeUTF8(secretKey);
+
+  res.send(nacl.util.encodeBase64(secretKey));
 });
 
 server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
   const keyString = req.query.keyString;
-  res.send(nacl.utill.decodeUTF8(keyString));
+  console.log(keyString);
+  // res.send(nacl.utill.decodeUTF8(keyString));
   try {
     // TODO:
   } catch (err) {
@@ -127,6 +163,58 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+const gist_id = req.query.id;
+// const { name, content } = req.body;
+
+
+github.gists.get({ gist_id }).then(result => {
+  // Debug show result
+  const name = Object.keys(result.data.files)[0]
+
+  // console.log(nacl.decodeUTF8(cont));
+
+
+
+  // console.log(result.data);
+
+  // Find gist content in result
+
+  const cont = result.data.files[name].content;
+
+  // const files = result.data.files;
+  // console.log(files[key]);
+
+  
+  // Separate nonce and message
+
+  // const nonCont = nacl.decodeBase64(cont);
+  // console.log(nacl.util.decodeBase64(cont));
+  let nonce = cont.slice(0, 32);
+  console.log(nonce);
+
+
+  // Turn back into bytes
+  const bitCont = nacl.util.decodeBase64(cont);
+  const bitNonce = nacl.util.decodeBase64(nonce);
+  // console.log(bitCont);
+  // console.log(bitNonce)
+
+  // Use nonce, message, and secretKey to decrypt
+
+  const gistCont = nacl.secretbox(bitCont, bitNonce, secretKey);
+
+  // nacl.util.encodeUTF8(gistCont);
+
+  console.log(gistCont)
+
+  res.send(gistCont);
+})
+.catch(err => {
+  res.send(err)
+});
+  
+
+
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -145,6 +233,35 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+
+  let { name, content } = req.body;
+  
+  
+  // const sec = req.query.urlencodedParser;
+
+  // nacl.util.encodeBase64(sec.data);
+
+  // res.send(nacl.utill.decodeUTF8());
+
+  const nonce = nacl.randomBytes(24);
+  console.log(nonce);
+  const encMes = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+  
+  console.log(encMes);
+  content = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encMes);
+
+
+  const files = { [name]: { content } };
+
+  // console.log(encMes);
+
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
