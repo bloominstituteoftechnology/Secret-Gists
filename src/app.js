@@ -81,7 +81,8 @@ server.get('/', (req, res) => {
 });
 
 server.get('/keyPairGen', (req, res) => {
-  let keypair;
+   // let keypair;
+   const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
   // TODO:  Generate a keypair from the secretKey and display both
 
   // Display both keys as strings
