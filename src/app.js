@@ -134,7 +134,7 @@ server.get('/setkey:keyString', (req, res) => {
     secretKey = nacl.util.decodeBase64(keyString);
     res.send(secretKey);
   } catch (err) {
-    // failed
+    // failed notworiking
     res.send('Failed to set key.  Key string appears invalid.');
   }
 });
