@@ -4,22 +4,22 @@ Bob is a 58 year old independent CPA.  He primarily services medium-income indiv
 
 These days, Bob does most of his work by computer.  He regularly uses email, an online file sharing website, and desktop tax software in his work.  Although he has had to learn many new things as his work has changed, Bob has gained a reasonable understanding of the technology he uses.  The records for each of his clients are encrypted using a different password.  He also used different passwords for each online service.  These passwords are kept in a notebook, which Bob diligently keeps locked in his file cabinet when not in use.
 
-Adversaries - 
+Adversaries - Independent CPAs, Anyone wanting sensitive financial/user info, any of the local businesses' adversaries.
 
 
 Attack surface - 
 
 
-Attack vectors -
+Attack vectors - Password Notebook, Tax Software, Email Service, File Sharing Website, Physical Computer System
 
 
-Risks (Confidentiality, Integrity, Availability, etc) -
+Risks (Confidentiality, Integrity, Availability, etc) - Confidentiality is the biggest issue, he has sensitive info about all of his clients. The integrity of his accounting data is also at risk from his competitors. 
 
 
-Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
+Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - Social engineering, Physical theft, e-mail phishing, ransomware
 
 
-Mitigation -
+Mitigation - Remove physical note of passwords. Careful permissions for computer/strong desktop password. Maybe physical 2-factor authentication. Data backup to preserve integrity. 
 
 
 Yolanda, 17, is the most popular girl in her school.  Her Insta is perfectly curated, her Snaps are da bomb, and her Facebook account exists so she can talk to her grandma every other Sunday.  
