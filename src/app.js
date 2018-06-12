@@ -21,8 +21,28 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-let secretKey = process.env.secretKey;
-secretKey = nacl.util.decodeUTF8(secretKey);
+let secretKey;
+if (process.env.secretKey)
+  secretKey = process.env.secretKey;
+else {
+  secretKey = nacl.randomBytes(32);
+  fs.open('./.env', 'a', (err, fd) => {
+    if (err)
+      throw(err);
+    fs.write(fd, `secretKey=${nacl.util.encodeBase64(secretKey)}\n`, (err, bw, buff) => {
+      if (err)
+        throw(err);
+    });
+    fs.close(fd, err => {
+      if (err)
+        throw(err);
+    });
+
+  });
+}
+// let secretKey = process.env.secretKey;
+secretKey = nacl.util.decodeBase64(secretKey);
+
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
   res.send(`
@@ -166,7 +186,7 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   const nonce = nacl.randomBytes(24);
   const encryptedContent = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
   const noncePlusEncryptedContent = nacl.util.encodeBase64(nonce)+nacl.util.encodeBase64(encryptedContent);
-  //console.log(noncePlusEncryptedContent);
+  
   content = noncePlusEncryptedContent;
   const files = { [name]: { content }};
   github.gists.create({ files, public: false })
@@ -183,6 +203,23 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
+  const keyPair = {};
+  
+  let { name, content, publicKeyString } = req.body;
+  publicKeyString = nacl.util.decodeBase64(publicKeyString);
+  const nonce = nacl.randomBytes(24);
+  const encryptedContent = nacl.box(nacl.util.decodeUTF8(content), nonce, publicKeyString, secretKey);
+  const noncePlusEncryptedContent = nacl.util.encodeBase64(nonce)+nacl.util.encodeBase64(encryptedContent);
+  
+  content = noncePlusEncryptedContent;
+  const files = { [name]: { content }};
+  github.gists.create({ files, public: true })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
