@@ -6,7 +6,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'rrak22'; // TODO: Replace with your username
+const username = 'rrak22'; 
 const github = octokit({ debug: true });
 const server = express();
 
@@ -20,16 +20,23 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
-// TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-
-// step 1: create config.json
-
-// step 2: try to load var from file
-
-// step 3: if doesn't work, catch the pieces and make a new key and save 
-
-// create new 32-byte key
-const secretKey = nacl.randomBytes(32);
+// Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+let secretKey;
+try {
+  const data = fs.readFileSync('./config.json');
+  const keyObject = JSON.parse(data);
+  secretKey = nacl.util.decodeBase64(keyObject.secretKey);
+} catch (err) {
+  secretKey = nacl.randomBytes(32);
+  const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+  fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+    if (ferr) {
+      console.log('There has been an error saving the key data.');
+      console.log(err.message);
+      return;
+    }
+  });
+}
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -85,8 +92,7 @@ server.get('/', (req, res) => {
 });
 
 server.get('/keyPairGen', (req, res) => {
-  // TODO:  Generate a keypair from the secretKey and display both
-  const keypair = {};
+  const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
   // Display both keys as strings
   res.send(`
   <html>
@@ -114,16 +120,14 @@ server.get('/gists', (req, res) => {
 });
 
 server.get('/key', (req, res) => {
-  // TODO: Display the secret key used for encryption of secret gists
   res.send(nacl.util.encodeBase64(secretKey));
 });
 
 server.get('/setkey:keyString', (req, res) => {
-  // TODO: Set the key to one specified by the user or display an error if invalid
   const keyString = req.query.keyString;
-  // TODO:
 
   try {
+    keyPair = nacl.box.keyPair.fromSecretKey(nacl.util.decodeUTF8(keyString));
   } 
   // failed
   catch (err) {
@@ -137,8 +141,6 @@ server.get('/fetchmessagefromself:id', (req, res) => {
   
   github.gists.get({ id }).then(result => {
     res.send(result.data);
-
-
   })
   .catch(err => {
     res.error(err);
