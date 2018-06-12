@@ -57,3 +57,6 @@ typings/
 # dotenv environment variables file
 .env
 
+# config.json which contains secret key
+config.json
+
