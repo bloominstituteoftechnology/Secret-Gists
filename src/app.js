@@ -205,13 +205,37 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
+  const { name, publicKeyString } = req.body;
+  let { content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const encryptedContent = nacl.box(nacl.util.decodeUTF8(content), nonce, publicKeyString, privateKey);
+  content = nacl.util.encodeBase64(encryptedContent) + nacl.util.encodeBase64(nonce);
+  const files = { [name]: { content } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
 });
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
-  // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const messageString = req.query.messageString;
+  const nonce = nacl.util.decodeBase64(messageString.slice(messageString.length - 32, messageString.length));
+  const box = nacl.util.decodeBase64(messageString.slice(0, messageString.length - 32));
+  const message = nacl.box.open(box, nonce, theirPublicKey, privateKey)
+  res.send(`
+<html>
+<header><title>Message from ID</title></header>
+<body>
+  <h1>Message</h1>
+  <div>Message: ${nacl.util.encodeUTF8(message)}</div>
+</body>
+`);
 });
 
 /* OPTIONAL - if you want to extend functionality */
