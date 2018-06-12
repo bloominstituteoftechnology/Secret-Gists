@@ -215,7 +215,8 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   const files = { [name]: { content }};
   github.gists.create({ files, public: true })
     .then((response) => {
-      res.json(response.data);
+      const messageString = nacl.util.encodeBase64(publicKeyString)+response.data.id;
+      res.json(messageString);
     })
     .catch((err) => {
       res.json(err);
@@ -224,6 +225,28 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const { messageString } = req.body;
+  let publicKey = messageString.slice(0,44);
+  const gist_id = messageString.slice(44);
+
+  github.gists.get({ gist_id })
+  .then(response => {
+    const files = response.data.files;
+    let encryptedContent;
+    for (let key in files) {
+      encryptedContent = files[key].content;
+    }
+    console.log(encryptedContent);
+    const nonce = nacl.util.decodeBase64(encryptedContent.slice(0, 32));
+    let box = nacl.util.decodeBase64(encryptedContent.slice(32));
+    let content = nacl.box.open(box, nonce, publicKey, secretKey);
+    content = nacl.util.encodeUTF8(content);
+    console.log(content);
+    res.send(content);
+  })
+  .catch(error => {
+    res.json(error);
+  });
 });
 
 /* OPTIONAL - if you want to extend functionality */
