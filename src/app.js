@@ -24,7 +24,7 @@ github.authenticate({
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
 const secretKey = nacl.randomBytes(32);
 
-// console.log(secretKey);
+ console.log(nacl.util.encodeBase64(secretKey));
 
 
 server.get('/', (req, res) => {
@@ -135,14 +135,7 @@ server.get('/fetchmessagefromself:id', (req, res) => {
       res.send(result.data);
     });
 
-    // Find gist content in result 
-    // separate nonce and message 
-    // use nonce, messagem and secretKey to decrypt
-    // turn back into bytes 
-
-  // Step2: decrypt
-
-  // Step3: display to user 
+   
 
 });
 
