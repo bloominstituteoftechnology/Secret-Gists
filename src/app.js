@@ -25,9 +25,15 @@ github.authenticate({
 
 // TODO:  Attempt to load the key from config.json.  If it is not found...
 
+// Step 1: create config.json (not in code if we don't want to)
+
+// Step 2: TRY to load the variable from the file
+
+// Step 3: If that doesn't work CATCH the pieces and make a new key AND save that key to config.json
+
 // ...create a new 32 byte key. // Do this first
-let secretKey = nacl.randomBytes(32);
-// console.log(secretKey);
+const secretKey = nacl.randomBytes(32);
+// console.log(nacl.util.encodeBase64(secretKey));
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -105,10 +111,10 @@ server.get('/gists', (req, res) => {
   // Retrieve a list of all gists for the currently authed user
   github.gists
     .getForUser({ username })
-    .then(response => {
+    .then((response) => {
       res.json(response.data);
     })
-    .catch(err => {
+    .catch((err) => {
       res.json(err);
     });
 });
@@ -131,6 +137,41 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  // Step 1: fetch the gist by id
+  // // Have to use query, can't use req.params
+  // from https://octokit.github.io/rest.js/ - got from docs on octokit
+  const id = req.query.id;
+  github.gists
+    .get({ id })
+    .then((result) => {
+      // Debug show result:
+      const message = result.data.files.test1.content;
+      const nonce = result.data.id;
+      console.log(message);
+
+      // const decryptedMessage = nacl.secretbox(
+      //   nacl.util.decodeUTF8(message),
+      //   nonce,
+      //   secretKey
+      // );
+
+      // console.log('decrypted in fetch: ', decryptedMessage);
+
+      res.json(result.data);
+
+      // Find gist content in result
+
+      // separate nonce and message
+
+      // turn back into bytes
+
+      // use nonce, message, and secretKey to decrypt
+    })
+    .catch((err) => {
+      res.json(err);
+    });
+  // Step 2: decrypt
+  // Step 3: display to user
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -140,10 +181,10 @@ server.post('/create', urlencodedParser, (req, res) => {
 
   github.gists
     .create({ files, public: false })
-    .then(response => {
+    .then((response) => {
       res.json(response.data);
     })
-    .catch(err => {
+    .catch((err) => {
       res.json(err);
     });
 });
@@ -177,10 +218,10 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
 
   github.gists
     .create({ files, public: false })
-    .then(response => {
+    .then((response) => {
       res.json(response.data);
     })
-    .catch(err => {
+    .catch((err) => {
       res.json(err);
     });
 });
