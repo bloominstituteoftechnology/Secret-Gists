@@ -21,19 +21,21 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-let secretString;
+const data = fs.readFileSync('./config.json');
 let secretKey;
-let keyPair;
 try {
-  const config = require('../config.json');
-  secretString = config.secretKey;
-  console.log(secretString);
-  secretKey = nacl.util.decodeUTF8(secretString);
-  nacl.box.keyPair.fromSecretKey(secretKey);
-} catch (error) {
-  console.log(error);
-  console.log('Failed to find key in config variables. Generating new key.');
-  secretKey = nacl.box.keyPair().secretKey;
+  const keyObject = JSON.parse(data);
+  secretKey = nacl.util.decodeBase64(keyObject.secretKey);
+} catch (err) {
+  secretKey = nacl.randomBytes(32);
+  const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+  fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+    if (ferr) {
+      console.log('There has been an error saving the key data.');
+      console.log(err.message);
+      return;
+    }
+  });
 }
 
 server.get('/', (req, res) => {
@@ -140,6 +142,18 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const { id } = req.query;
+  github.gists.get({ id })
+  .then((response) => {
+    const files = response.data.files;
+    const encryptedContent = files[Object.keys(files)[0]].content;
+    const decryptedContent = nacl.util.decodeBase64(encryptedContent);
+    res.json(decryptedContent);
+  })
+  .catch((err) => {
+    res.json(err);
+  });
+    
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -158,6 +172,21 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  let { name, content } = req.body;
+  console.log('This is the message', content);
+  const nonce = nacl.randomBytes(24);
+  const encryptedMessage = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+  content = nacl.util.encodeBase64(encryptedMessage);
+  const files = { [name]: { content } };
+  console.log(files);
+
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
