@@ -80,7 +80,8 @@ server.get('/', (req, res) => {
 });
 
 server.get('/keyPairGen', (req, res) => {
-  const keypair = nacl.box.keyPair.fromSecretKey(key.secretKey);
+  key = nacl.box.keyPair.fromSecretKey(key.secretKey);
+  const keypair = key;
   // Display both keys as strings
   res.send(`
   <html>
@@ -126,13 +127,7 @@ server.get('/setkey:keyString', (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO:
-    github.gists.getForUser({ username })
-    .then((response) => {
-      res.json(response.data);
-    })
-    .catch((err) => {
-      res.json(err);
-    });
+    key = nacl.box.keyPair.fromSecretKey(keyString);
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
@@ -141,6 +136,14 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.query.id;
+  github.gists.get({ id })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -159,7 +162,11 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
-  const { name, content } = req.body;
+  const { name } = req.body;
+  let { content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const encryptedContent = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, key.secretKey);
+  content = nacl.util.encodeBase64(encryptedContent);
   const files = { [name]: { content } };
   github.gists.create({ files, public: false })
     .then((response) => {
