@@ -154,11 +154,17 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
-  const { name, content } = req.body;
+  const { name } = req.body;
+  let { content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const encryptedContent = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+  console.log('unencrypted: ', content);
+  content = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encryptedContent);
+  console.log('encrypted: ', content);
   const files = { [name]: { content } };
   github.gists.create({ files, public: false })
     .then((response) => {
-      res.json(response.data);
+      res.send(response.data);
     })
     .catch((err) => {
       res.json(err);
