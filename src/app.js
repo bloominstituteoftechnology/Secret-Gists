@@ -19,22 +19,22 @@ github.authenticate({
   type: 'oauth',
   token: process.env.GITHUB_TOKEN
 });
-
-const data = fs.readFileSync('./config.json');
-let secretKey;
-try {
-  const keyObject = JSON.parse(data);
-  secretKey = nacl.util.decodeBase64(keyObject.secretKey);
-} catch (err) {
-  secretKey = nacl.randomBytes(32);
-  const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
-  fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
-    if (ferr) {
-      console.log('line 34', err.message);
-      return;
-    }
-  });
-}
+const secretKey = nacl.randomBytes(32);
+// const data = fs.readFileSync('./config.json');
+// let secretKey;
+// try {
+//   const keyObject = JSON.parse(data);
+//   secretKey = nacl.util.decodeBase64(keyObject.secretKey);
+// } catch (err) {
+//   secretKey = nacl.randomBytes(32);
+//   const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+//   fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+//     if (ferr) {
+//       console.log('line 34', err.message);
+//       return;
+//     }
+//   });
+// }
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -90,7 +90,8 @@ server.get('/', (req, res) => {
 });
 
 server.get('/keyPairGen', (req, res) => {
-  const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
+  let keypair;
+   // = nacl.box.keyPair.fromSecretKey(secretKey);
   // Display both keys as strings
   res.send(`
   <html>
@@ -119,6 +120,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.send(nacl.util.encodeBase64(secretKey));
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -152,6 +154,15 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content } = req.body;
+  const files = { [name]: { content } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
@@ -183,4 +194,6 @@ Still want to write code? Some possibilities:
 -Let the user pass in their private key via POST
 */
 
-server.listen(3000);
+server.listen(8080, () => {
+  console.log('server up on 8080');
+});
