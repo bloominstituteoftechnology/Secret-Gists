@@ -149,13 +149,13 @@ server.get('/fetchmessagefromself:id', (req, res) => {
     .then((result) => {
       const name = Object.keys(result.data.files)[0];
       const encryptedContent = result.data.files[name].content;
-      const nonce = encryptedContent.slice(0, 24);
-      const encryptedMessage = encryptedContent.slice(24);
-      console.log('before message');
-      // let message = nacl.secretbox.open(encryptedMessage, nonce, secretKey);
-      // message = nacl.util.decodeUTF8(message);
-      // console.log(message);
-      res.json({ nonce, encryptedMessage, encryptedContent });
+      const nonce = nacl.util.decodeBase64(encryptedContent.slice(0, 32));
+      const encryptedMessage = nacl.util.decodeBase64(
+        encryptedContent.slice(32)
+      );
+      let message = nacl.secretbox.open(encryptedMessage, nonce, secretKey);
+      message = nacl.util.encodeUTF8(message);
+      res.json({ message });
     })
     .catch(err => res.json(err));
 });
@@ -178,7 +178,8 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
-  let { name, content } = req.body;
+  let { content } = req.body;
+  const { name } = req.body;
 
   // TODO: Encrypt content here
 
