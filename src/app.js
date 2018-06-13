@@ -37,7 +37,6 @@ else {
       if (err)
         throw(err);
     });
-
   });
 }
 // let secretKey = process.env.secretKey;
@@ -203,9 +202,9 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
-  const keyPair = {};
   
   let { name, content, publicKeyString } = req.body;
+
   publicKeyString = nacl.util.decodeBase64(publicKeyString);
   const nonce = nacl.randomBytes(24);
   const encryptedContent = nacl.box(nacl.util.decodeUTF8(content), nonce, publicKeyString, secretKey);
@@ -225,7 +224,7 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
-  const { messageString } = req.body;
+  const messageString = req.query.messageString;
   let publicKey = messageString.slice(0,44);
   const gist_id = messageString.slice(44);
 
@@ -237,9 +236,12 @@ server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res)
       encryptedContent = files[key].content;
     }
     console.log(encryptedContent);
+    
     const nonce = nacl.util.decodeBase64(encryptedContent.slice(0, 32));
     let box = nacl.util.decodeBase64(encryptedContent.slice(32));
-    let content = nacl.box.open(box, nonce, publicKey, secretKey);
+    console.log(publicKey);
+    console.log(secretKey);
+    let content = nacl.box.open(box, nonce, nacl.util.decodeBase64(publicKey), secretKey);
     content = nacl.util.encodeUTF8(content);
     console.log(content);
     res.send(content);
