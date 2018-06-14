@@ -21,10 +21,14 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-let key;
-if (process.env.GIST_KEY) {
-  key = nacl.box.keyPair.fromSecretKey(process.env.GIST_KEY);
-} else key = nacl.box.keyPair();
+let privateKey;
+let CONFIG;
+try {
+  CONFIG = JSON.parse(fs.readFileSync('config.json', 'utf8'));
+  privateKey = nacl.util.decodeUTF8(CONFIG.privateKey);
+} catch (err) {
+  privateKey = nacl.randomBytes(32);
+}
 
 
 server.get('/', (req, res) => {
@@ -82,9 +86,8 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-    key = nacl.box.keyPair.fromSecretKey(key.secretKey);
-    const keypair = key;
-    // Display both keys as strings
+  const keypair = nacl.box.keyPair.fromSecretKey(privateKey);
+  // Display both keys as strings
   res.send(`
   <html>
     <header><title>Keypair</title></header>
@@ -112,14 +115,14 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
-    res.send(`
+  res.send(`
   <html>
     <header><title>Keypair</title></header>
     <body>
-      <h1>Keypair</h1>
+      <h1>It's a secret</h1>
       <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
       <br/>
-      <div>Secret Key: ${nacl.util.encodeBase64(key.secretKey)}</div>
+      <div>Secret Key: ${nacl.util.encodeBase64(privateKey)}</div>
     </body>
   `);
 
@@ -127,10 +130,22 @@ server.get('/key', (req, res) => {
 
 server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
-  const keyString = req.query.keyString;
+  const keyString = nacl.util.decodeUTF8(req.query.keyString);
   try {
     // TODO:
-    key = nacl.box.keyPair.fromSecretKey(keyString);
+    nacl.box.keyPair.fromSecretKey(keyString);
+    privateKey = keyString;
+    // write to config.json
+    res.send(`
+      <html>
+        <header><title>NEW SECRET KEY</title></header>
+        <body>
+          <h1>It's a secret</h1>
+          <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
+          <br/>
+          <div>Secret Key: ${nacl.util.encodeBase64(privateKey)}</div>
+        </body>
+      `);
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
@@ -142,7 +157,19 @@ server.get('/fetchmessagefromself:id', (req, res) => {
   const id = req.query.id;
   github.gists.get({ id })
     .then((response) => {
-      res.json(response.data);
+  const obj = Object.keys(response.data.files)[0];
+  const contentResponse = response.data.files[obj].content;
+  const nonce = nacl.util.decodeBase64(contentResponse.slice(contentResponse.length - 32, contentResponse.length));
+  const box = nacl.util.decodeBase64(contentResponse.slice(0, contentResponse.length - 32));
+  const message = nacl.secretbox.open(box, nonce, privateKey);
+      res.send(`
+        <html>
+         <header><title>Message from ID</title></header>
+          <body>
+            <h1>Message</h1>
+            <div>Message: ${nacl.util.encodeUTF8(message)}</div>
+          </body>
+        `);
     })
     .catch((err) => {
       res.json(err);
@@ -166,15 +193,15 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
-    const { name } = req.body;
-    let { content } = req.body;
-    const nonce = nacl.randomBytes(24);
-    const encryptedContent = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, key.secretKey);
-    content = nacl.util.encodeBase64(encryptedContent);
-    const files = { [name]: { content } };
+  const { name } = req.body;
+  let { content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const encryptedContent = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, key.privateKey);
+  content = nacl.util.encodeBase64(encryptedContent)+ nacl.util.encodeBase64(nonce);
+  const files = { [name]: { content } };
   github.gists.create({ files, public: false })
     .then((response) => {
-     res.json(response.data);
+      res.json(response.data);
     })
     .catch((err) => {
       res.json(err);
