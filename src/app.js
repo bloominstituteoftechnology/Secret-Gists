@@ -10,8 +10,9 @@ nacl.util = require('tweetnacl-util');
 // my personal js files
 const details = require('./details');
 
+const file = './src/config.json';
 // config json file
-const configData = fs.readFileSync('./src/config.json', 'utf8');
+const configData = fs.readFileSync(file, 'utf8');
 const config = JSON.parse(configData);
 
 const username = details.username; // TODO: Replace with your username
@@ -21,8 +22,11 @@ const server = express();
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
+// key length
+const keyLength = 32;
+
 // added parser to express
-express.use(urlencodedParser);
+server.use(urlencodedParser);
 
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
@@ -32,7 +36,27 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+const randomBytes = () => {
+  // create random byte
+  const secretKey = nacl.randomBytes(keyLength);
 
+  // config.secretKey = secretKey.toString();
+  config.secretKey = [];
+  secretKey.forEach(elem => config.secretKey.push(elem));
+
+  // save random secretKey to config
+  fs.writeFile(file, JSON.stringify(config), 'utf8', () => {
+    console.log('new secret key created!');
+  });
+
+  return secretKey;
+};
+// Set up the encryption - use process.env.SECRET_KEY if it exists
+// const key = config.secretKey
+//   ? nacl.util.decodeBase64(config.secretKey)
+//   : randomBytes();
+const key = config.secretKey ? config.secretKey : randomBytes();
+const userKey = nacl.util.encodeBase64(key);
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
   res.send(`
@@ -120,6 +144,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.json({ key: userKey });
 });
 
 server.get('/setkey:keyString', (req, res) => {
