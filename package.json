@@ -10,11 +10,14 @@
     "eslint": "^3.17.1",
     "eslint-config-airbnb": "^14.1.0",
     "eslint-plugin-import": "^2.2.0",
-    "express": "^4.15.4",
+    "express": "^4.16.3",
     "tweetnacl": "^1.0.0",
     "tweetnacl-util": "^0.15.0"
   },
   "scripts": {
-    "start": "eslint src/*.js && node src/app.js"
+    "start": "eslint src/*.js && nodemon src/app.js"
+  },
+  "devDependencies": {
+    "nodemon": "^1.17.5"
   }
 }
