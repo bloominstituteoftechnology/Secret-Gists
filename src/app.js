@@ -140,14 +140,13 @@ server.get('/setkey:keyString', (req, res) => {
 });
 
 server.get('/fetchmessagefromself:id', (req, res) => {
-  // DONE:  Retrieve and decrypt the secret gist corresponding to the given ID
+  // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
   const id = req.query.id;
 
   github.gists
     .get({ id })
     .then((result) => {
       // find gist content in result
-      // const { filename } = Object.values(result.data.files)[0];
       let { content } = Object.values(result.data.files)[0];
 
       content = nacl.util.decodeBase64(content);
