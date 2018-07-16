@@ -6,7 +6,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'jekm321'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -14,11 +14,16 @@ const server = express();
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
 // Generate an access token: https://github.com/settings/tokens
+
 // Set it to be able to create gists
 github.authenticate({
   type: 'oauth',
   token: process.env.GITHUB_TOKEN
 });
+
+// github.users.getForUser({username: username}).then(response => {
+//   console.log(response.data);
+// })
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
 
