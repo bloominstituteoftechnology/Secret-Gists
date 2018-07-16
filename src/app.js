@@ -22,7 +22,7 @@ github.authenticate({
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
 const naclSecret = nacl.util.decodeBase64(process.env.NACL_SECRET);
-const keypair = nacl.box.keyPair.fromSecretKey(naclSecret);
+let keypair = nacl.box.keyPair.fromSecretKey(naclSecret);
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -108,13 +108,24 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.send(`
+  <html>
+    <header><title>Keypair</title></header>
+    <body>
+      <h1>Secret Key</h1>
+      <div>This is the secret key used to sign your encrypted gists. Do not share this key!</div>
+      <br/>
+      <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
+    </body>
+  `);
 });
 
 server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
-  const keyString = req.query.keyString;
+  const keyString = nacl.util.decodeBase64(req.query.keyString);
   try {
-    // TODO:
+    keypair = nacl.box.keyPair.fromSecretKey(keyString);
+    res.redirect('/keyPairGen');
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
