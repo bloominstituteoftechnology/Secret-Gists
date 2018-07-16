@@ -6,9 +6,10 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'CruiseBrantley'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
+const keypair = {};
 
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
@@ -91,6 +92,7 @@ server.get('/keyPairGen', (req, res) => {
       <div>Public Key: ${nacl.util.encodeBase64(keypair.publicKey)}</div>
       <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
     </body>
+  </html>
   `);
 });
 
@@ -114,6 +116,7 @@ server.get('/setkey:keyString', (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO:
+
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
