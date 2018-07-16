@@ -21,6 +21,10 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+// Adding clientside encryption
+const secretKey = process.env.SECRET_KEY
+  ? nacl.util.decodeBase64(process.env.SECRET_KEY)
+  : nacl.randomBytes(32); // symmetric clientside encription
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -77,7 +81,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-
+  const keypair = nacl.box.keyPair.fromSecretKey(secretKey); //asymetric encryption
   // Display both keys as strings
   res.send(`
   <html>
@@ -106,6 +110,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.send(nacl.util.encodeBase64(secretKey));
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -121,6 +126,20 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const { id } = req.params;
+  github.gists
+    .get({ id })
+    .then((response) => {
+      const name = Object.keys(response.data.files)[0];
+      const data = response.data.files[name].content;
+      const nonce = nacl.util.decodeBase64(data.substring(0, 32));
+      const box = nacl.util.decodeBase64(data.substring(32));
+      const encodedMessage = nacl.secretbox.open(box, nonce, secretKey);
+      res.json({ Message: nacl.util(encodedMessage) });
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -139,6 +158,18 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const message = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+  const final = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(message);
+  const files = { [name]: { const: final } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
