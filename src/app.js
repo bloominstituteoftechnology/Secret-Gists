@@ -87,7 +87,7 @@ server.get ('/', (req, res) => {
 
 server.get ('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  const keypair = {};
+  const keypair = nacl.box.keyPair.fromSecretKey(privateKey);
   // Display both keys as strings
   res.send (`
   <html>
@@ -116,6 +116,7 @@ server.get ('/gists', (req, res) => {
 
 server.get ('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.json(nacl.util.encodeBase64(privateKey))
 });
 
 server.get ('/setkey:keyString', (req, res) => {
