@@ -6,7 +6,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'nedu'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -21,7 +21,15 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-
+let secretKey;
+let loading 
+try {
+  loading = JSON.parse(fs.readFileSync('config.json', 'utf8'));
+  secretKey = nacl.util.decodeUTF8(loading.privateKey)
+}
+catch (err) {
+  secretKey = nacl.randomBytes(32);
+}
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -78,7 +86,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-
+  const keypair = nacl.box.keyPair.fromSecretKey(secretKey)
   // Display both keys as strings
   res.send(`
   <html>
@@ -107,6 +115,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.json(nacl.util.encodeBase64(secretKey))
 });
 
 server.get('/setkey:keyString', (req, res) => {
