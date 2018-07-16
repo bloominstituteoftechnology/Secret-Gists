@@ -16,5 +16,18 @@
   },
   "scripts": {
     "start": "eslint src/*.js && node src/app.js"
-  }
+  },
+  "description": "Save and read secure notes using GitHub gists",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Anthony-Calderaro/Secret-Gists.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Anthony-Calderaro/Secret-Gists/issues"
+  },
+  "homepage": "https://github.com/Anthony-Calderaro/Secret-Gists#readme"
 }
