@@ -27,19 +27,13 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-let secretKey;
-if(process.env.secretKey) {
-  secretKey = process.env.secretKey;
-} else {
+let secretKey = process.env.secretKey;
+if (!process.env.secretKey) {
   secretKey = nacl.randomBytes(32);
-  fs.open('./.env', (err, fd) => {
-    if(err) console.error(err);
-    fs.write(fd, `secretKey=${nacl.util.encodeBase64(secretKey)}\n`, (err, bw, buff) => {
-      if(err) console.error(err);
-    });
-    fs.close(fd, err => {
-      if(err) console.error(err);
-    });
+  fs.open('./.env', 'a', (error, fd) => {
+    if (error) throw (error);
+    fs.writeSync(fd, `secretKey=${nacl.util.encodeBase64(secretKey)}\n`);
+    fs.closeSync(fd);
   });
 }
 
@@ -144,7 +138,7 @@ server.get('/key', (req, res) => {
       <header><title>Your Secret Key</title></header>
       <body>
         <h1>Secret Key</h1>
-        <p>The Secret Key Is: ${nacl.util.encodeBase64(secretKey)}</p>
+        <p>The Secret Key Is: ${secretKey}</p>
       </body>
     `);
   } else {
@@ -165,13 +159,13 @@ server.get('/setkey:keyString', (req, res) => {
   try {
     // TODO:
     if (keyString) {
-      this.secretKey = nacl.util.encodeBase64(keyString);
+      secretKey = nacl.util.encodeBase64(keyString);
       res.send(`
       <html>
         <header><title>New Key Set</title></header>
         <body>
           <h1>Secret Key</h1>
-          <p>The new Secret Key Is: ${this.secretKey}</p>
+          <p>The new Secret Key Is: ${secretKey}</p>
           <br/>
           <div>You can now <a href="/key">view</a> your Secret Key</div>
         </body>
