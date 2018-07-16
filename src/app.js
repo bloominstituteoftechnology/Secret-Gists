@@ -6,12 +6,14 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'fmarkwong'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
+
+let mySecretKeyString;
 
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
@@ -114,13 +116,15 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.send(mySecretKeyString);
 });
 
 server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
   const keyString = req.query.keyString;
   try {
-    // TODO:
+    mySecretKeyString = keyString;
+    res.status(200).redirect('/');
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
