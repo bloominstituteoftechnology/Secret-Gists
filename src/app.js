@@ -102,7 +102,7 @@ server.get('/keyPairGen', (req, res) => {
       <div>Public Key: ${nacl.util.encodeBase64(keypair.publicKey)}</div>
       <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
       <br/>
-      <div><a href="/key">View Keys</a></div>
+      <div><a href="/key">View Secret Key</a></div>
     </body>
   `);
 });
@@ -123,7 +123,7 @@ server.get('/key', (req, res) => {
   if (this.secretKey) {
     res.send(`
     <html>
-      <header></header>
+      <header><title>Your Secret Key</title></header>
       <body>
         <h1>Secret Key</h1>
         <p>The Secret Key Is: ${this.secretKey}</p>
@@ -146,6 +146,19 @@ server.get('/setkey:keyString', (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO:
+    if (keyString) {
+      this.secretKey = keyString;
+      res.send(`
+      <html>
+        <header><title>New Key Set</title></header>
+        <body>
+          <h1>Secret Key</h1>
+          <p>The new Secret Key Is: ${this.secretKey}</p>
+          <br/>
+          <div>You can now <a href="/key">view</a> your Secret Key</div>
+        </body>
+      `);
+    }
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
