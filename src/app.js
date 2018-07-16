@@ -6,7 +6,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'hillal20'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -21,6 +21,12 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+
+
+let keypair = {
+  secretKey: `${process.env.GITHUB_TOKEN}privatekey`,
+  publicKey: `${process.env.GITHUB_TOKEN}publickey`,
+}
 
 
 server.get('/', (req, res) => {
@@ -78,7 +84,6 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-
   // Display both keys as strings
   res.send(`
   <html>
@@ -95,7 +100,7 @@ server.get('/keyPairGen', (req, res) => {
 });
 
 server.get('/gists', (req, res) => {
-  // Retrieve a list of all gists for the currently authed user
+  // Retrieve a list of all gists for the currently Oauth user
   github.gists.getForUser({ username })
     .then((response) => {
       res.json(response.data);
@@ -107,6 +112,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.send(nacl.util.encodeBase64(keypair.secretKey))
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -171,4 +177,6 @@ Still want to write code? Some possibilities:
 -Let the user pass in their private key via POST
 */
 
-server.listen(3000);
+server.listen(3000, () => {
+  console.log(`\n=== server is running on 3000 ==`)
+});
