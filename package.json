@@ -12,6 +12,6 @@
     "tweetnacl-util": "^0.15.0"
   },
   "scripts": {
-    "start": "node src/app.js"
+    "start": "node src/server.js"
   }
 }
