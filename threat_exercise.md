@@ -57,24 +57,22 @@ Zaida, 37, is a senior IT Security manager for the Washington, DC Embassy of a c
 Zaida is an expert in her field.  At work, she and her team follow the latest best practices in account and network security.  She keeps her work and home life private - using separate phones and computers for each.  He job is high stress, so she values her time off as a chance to relax and step away from the high-stakes world of her job, and enjoys not having to worry about someone hacking her devices or accounts.  
 
 Adversaries - 
-
+  Spies, foreign intelligence agencies
 
 Attack surface - 
-
+  Laptop computers, mobile phone, physical access
 
 Attack vectors -
-
+  Flaws in software utilized by Embassy, physical theft of computer / mobile phone, attack when visiting foreign country(terrorist)
 
 Risks (Confidentiality, Integrity, Availability, etc) -
-
+  Leak of National Security, confidentality
 
 Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
-
+  Flaws in software utilized by Embassy, physical theft of computer / mobile phone
 
 Mitigation -
-
-
-
+  High security on premises, remote wipe of devices when it is stolen, security audits of software finding any flaws or possible points of entry for hackers
 
 Rashad is a web developer for a small UI/UX firm.  He just had one of his projects hit the front pages of all the trendy design subreddits and blogs.  He’s very excited, but a little concerned that his twitter, instagram, and github handles are now being shared all over the internet.  
 
