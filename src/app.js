@@ -6,7 +6,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = process.env.GITHUB_USERNAME || 'your_name_here'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -80,6 +80,7 @@ server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
 
   // Display both keys as strings
+  /*
   res.send(`
   <html>
     <header><title>Keypair</title></header>
@@ -92,6 +93,7 @@ server.get('/keyPairGen', (req, res) => {
       <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
     </body>
   `);
+  */
 });
 
 server.get('/gists', (req, res) => {
@@ -171,4 +173,4 @@ Still want to write code? Some possibilities:
 -Let the user pass in their private key via POST
 */
 
-server.listen(3000);
+server.listen(3000, ()=> console.log('server is running on port 3000...'));
