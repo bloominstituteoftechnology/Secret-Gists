@@ -4,22 +4,22 @@ Bob is a 58 year old independent CPA.  He primarily services medium-income indiv
 
 These days, Bob does most of his work by computer.  He regularly uses email, an online file sharing website, and desktop tax software in his work.  Although he has had to learn many new things as his work has changed, Bob has gained a reasonable understanding of the technology he uses.  The records for each of his clients are encrypted using a different password.  He also used different passwords for each online service.  These passwords are kept in a notebook, which Bob diligently keeps locked in his file cabinet when not in use.
 
-Adversaries - 
+Adversaries - The other CPA's that work in his office space, hackers that want the information
 
 
-Attack surface - 
+Attack surface - Bob's notebook, his desktop computer
 
 
-Attack vectors -
+Attack vectors - using stolen passwords
 
 
-Risks (Confidentiality, Integrity, Availability, etc) -
+Risks (Confidentiality, Integrity, Availability, etc) - confindentiality
 
 
-Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
+Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - Stealing the notebook, keylogging, brute force
 
 
-Mitigation -
+Mitigation - use password encryption, antivirus, or take notebook home
 
 
 Yolanda, 17, is the most popular girl in her school.  Her Insta is perfectly curated, her Snaps are da bomb, and her Facebook account exists so she can talk to her grandma every other Sunday.  
@@ -28,44 +28,44 @@ She is on her phone constantly.  Typing in pin numbers or doing those silly patt
 
 Yolanda gets along well with most of classmates, except Jennifer, but there are always haters who want to take people down.
 
-Adversaries - 
+Adversaries - Jennifer
 
 
-Attack surface - 
+Attack surface - any place that Jennifer can steal Yolanda's phone
 
 
-Attack vectors -
+Attack vectors - using Yolanda's stolen phone
 
 
-Risks (Confidentiality, Integrity, Availability, etc) -
+Risks (Confidentiality, Integrity, Availability, etc) - confidentiality, integrity
 
 
-Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
+Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - social
 
 
-Mitigation -
+Mitigation - use passwords and log out of applications
 
 
 Zaida, 37, is a senior IT Security manager for the Washington, DC Embassy of a country whose relationship with the United States is, at best, complicated.  She oversees accounts, permissions, and access for the embassy’s personnel, including locally employed staff.  
 
 Zaida is an expert in her field.  At work, she and her team follow the latest best practices in account and network security.  She keeps her work and home life private - using separate phones and computers for each.  He job is high stress, so she values her time off as a chance to relax and step away from the high-stakes world of her job, and enjoys not having to worry about someone hacking her devices or accounts.  
 
-Adversaries - 
+Adversaries - those who oppose the united states, those who want to steal information
 
 
-Attack surface - 
+Attack surface - through embassy computers or backdoor/malicious viruses
 
 
-Attack vectors -
+Attack vectors - locally hacking the computers, hacking the computers externally
 
 
-Risks (Confidentiality, Integrity, Availability, etc) -
+Risks (Confidentiality, Integrity, Availability, etc) - confidentiality, integrity, valuable information, security
 
 
-Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
+Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - man in the middle, backdoor/malware, physical
 
 
-Mitigation -
+Mitigation - security agents, active monitoring of requests going into and out of servers
 
 
 
@@ -76,22 +76,22 @@ He currently uses different passphrases for all of his accounts, except that he 
 
 Rashad is himself an avid blogger.  He has a moderately popular, weekly column where he shares the weeks adventures, hangouts, vacations, etc.  He is excited that next week he will be heading out to his favorite vacation spot since childhood - Rehoboth Beach, DE.
 
-Adversaries - 
+Adversaries - People who want to steal his private repo     
 
 
-Attack surface - 
+Attack surface - any websites has is a part of
 
 
-Attack vectors -
+Attack vectors - stealing his password and logging onto his github
 
 
-Risks (Confidentiality, Integrity, Availability, etc) -
+Risks (Confidentiality, Integrity, Availability, etc) - confidentiality, integrity
 
 
-Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
+Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - backdoors/malware
 
 
-Mitigation -
+Mitigation - encrypt passwords
 
 
 
