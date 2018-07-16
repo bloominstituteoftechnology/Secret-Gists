@@ -80,23 +80,24 @@ He currently uses different passphrases for all of his accounts, except that he 
 
 Rashad is himself an avid blogger.  He has a moderately popular, weekly column where he shares the weeks adventures, hangouts, vacations, etc.  He is excited that next week he will be heading out to his favorite vacation spot since childhood - Rehoboth Beach, DE.
 
-Adversaries - 
+Adversaries - Anyone wanting to deface his work for websites, hackers trying to grab info on clients.
 
 
-Attack surface - 
+Attack surface - Email account, databases of social accounts
 
 
-Attack vectors -
+Attack vectors - Hacking into a database of a social media database, if one gets hacked, then it leaks the other accounts, making it have 3 accounts easily accessed.
+Secret questions can be circumvented by the fact he blogs about himself and posts favorite vacation spot online. Phsyical location is leaked so anyone wanting to harass or stalk him can find him.
 
 
 Risks (Confidentiality, Integrity, Availability, etc) -
-
+Safety of himself, company related data, sites can be damaged or defaced.
 
 Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
-
+Social Engineering, man-in-the-middle.
 
 Mitigation -
-
+Use a password manager, stay anonymous online or under a online handle without using real name. 
 
 
 
