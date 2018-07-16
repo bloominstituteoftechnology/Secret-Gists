@@ -7,7 +7,7 @@ const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
 const nonceLength = 24;
-const keyLength = 32;
+
 // Hard Coded my Keys to ENV for Later use in Decrypting
 const keypair = {
   publicKey: JSON.parse(process.env.PUBLIC_KEY),
@@ -172,7 +172,9 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   const { name, content } = req.body;
   const secretKey = nacl.util.encodeBase64(keypair.secretKey);
   const encodedKey = nacl.util.decodeBase64(secretKey);
-  const encodedContent = nacl.util.decodeBase64(content)
+
+  const encodedContent = nacl.util.decodeUTF8(content); // Tranforming content into Unit8Array
+  console.log('encoded content before encrypting', encodedContent, typeof encodedContent);
 
   const nonce = nacl.randomBytes(nonceLength);
 
@@ -184,6 +186,7 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
 
   console.log('encrypted msg', utf8EncryptedContent);
 
+  // TODO: Decrypt the message later if possible. Using nacl.secretbox.open()
   let encryptedContent = 'THIS IS A PERMANENT THING' // ENCRYPT THIS SOMEHOW?
   const files = { [name]: { content: utf8EncryptedContent } }
   github.gists.create({ files, public: false })
