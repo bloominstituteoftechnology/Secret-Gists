@@ -6,9 +6,11 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'phantomflynn';
 const github = octokit({ debug: true });
 const server = express();
+
+const keypair = {};
 
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
@@ -21,7 +23,18 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+let secret, temp;
+const data = fs.readFileSync('./config.json');
 
+try {
+  temp = JSON.parse(data);
+  secret = nacl.util.decodeBase64(temp.secretKey);
+} 
+catch (err) {
+  secret = nacl.randomBytes(32);
+  temp = { secretKey: nacl.util.encodeBase64(secret) };
+  fs.writeFileSync('./config.json', JSON.stringify(temp));
+}
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -78,6 +91,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
+  // nacl.sign.keyPair.fromSecretKey(process.env.GITHUB_TOKEN);
 
   // Display both keys as strings
   res.send(`
@@ -97,12 +111,8 @@ server.get('/keyPairGen', (req, res) => {
 server.get('/gists', (req, res) => {
   // Retrieve a list of all gists for the currently authed user
   github.gists.getForUser({ username })
-    .then((response) => {
-      res.json(response.data);
-    })
-    .catch((err) => {
-      res.json(err);
-    });
+    .then(response => res.json(response.data))
+    .catch(err => res.json(err));
 });
 
 server.get('/key', (req, res) => {
@@ -129,12 +139,8 @@ server.post('/create', urlencodedParser, (req, res) => {
   const { name, content } = req.body;
   const files = { [name]: { content } };
   github.gists.create({ files, public: false })
-    .then((response) => {
-      res.json(response.data);
-    })
-    .catch((err) => {
-      res.json(err);
-    });
+    .then(response => res.json(response.data))
+    .catch(err => res.json(err));
 });
 
 server.post('/createsecret', urlencodedParser, (req, res) => {
