@@ -83,8 +83,9 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  const key = nacl.randomBytes();
+  const key = nacl.randomBytes(32);
   const nonce = nacl.randomBytes(24);
+  this.secretKey = key;
   const keypair = {
     publicKey: nonce,
     secretKey: key,
@@ -100,6 +101,8 @@ server.get('/keyPairGen', (req, res) => {
       <br/>
       <div>Public Key: ${nacl.util.encodeBase64(keypair.publicKey)}</div>
       <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
+      <br/>
+      <div><a href="/key">View Keys</a></div>
     </body>
   `);
 });
@@ -117,6 +120,25 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  if (this.secretKey) {
+    res.send(`
+    <html>
+      <header></header>
+      <body>
+        <h1>Secret Key</h1>
+        <p>The Secret Key Is: ${this.secretKey}</p>
+      </body>
+    `);
+  } else {
+    res.send(`
+    <html>
+      <header></header>
+      <body>
+        <h1>No Key Yet</h1>
+        <p>The Secret Key has not been generated, please <a href="/keyPairGen">generate</a> a key first.</p>
+      </body>
+    `);
+  }
 });
 
 server.get('/setkey:keyString', (req, res) => {
