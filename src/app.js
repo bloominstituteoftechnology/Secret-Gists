@@ -78,7 +78,10 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-
+  const keypair = {
+    publicKey: 'stuff',
+    secretKey: 'thangs',
+  };
   // Display both keys as strings
   res.send(`
   <html>
