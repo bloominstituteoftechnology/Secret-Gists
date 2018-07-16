@@ -12,7 +12,7 @@ Generate the public key from the secret key, and display both.
 
 **Status**
 
-Incomplete
+Completed
 
 # GET/Gists
 
