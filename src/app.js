@@ -15,18 +15,35 @@ const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
 // Generate an access token: https://github.com/settings/tokens
 
+// github.users.getForUser({ username: username }).then(response => {
+//   console.log(response.data);
+//   res.send({ reply: response.data });
+// });
+
 // Set it to be able to create gists
 github.authenticate({
   type: 'oauth',
   token: process.env.GITHUB_TOKEN
 });
 
-// github.users.getForUser({username: username}).then(response => {
-//   console.log(response.data);
-// })
-
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+let secretKey;
+if(process.env.secretKey) {
+  secretKey = process.env.secretKey;
+} else {
+  secretKey = nacl.randomBytes(32);
+  fs.open('./.env', (err, fd) => {
+    if(err) console.error(err);
+    fs.write(fd, `secretKey=${nacl.util.encodeBase64(secretKey)}\n`, (err, bw, buff) => {
+      if(err) console.error(err);
+    });
+    fs.close(fd, err => {
+      if(err) console.error(err);
+    });
+  });
+}
 
+secretKey = nacl.util.decodeBase64(secretKey);
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -83,13 +100,14 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  const key = nacl.randomBytes(32);
-  const nonce = nacl.randomBytes(24);
-  this.secretKey = key;
-  const keypair = {
-    publicKey: nonce,
-    secretKey: key,
-  };
+  // const key = nacl.randomBytes(32);
+  // const nonce = nacl.randomBytes(24);
+  // this.secretKey = nacl.util.encodeBase64(key);
+  // const keypair = {
+  //   publicKey: nonce,
+  //   secretKey: key,
+  // };
+  const keypair = nacl.box.keyPay.fromSecretKey(secretKey);
   // Display both keys as strings
   res.send(`
   <html>
@@ -120,13 +138,13 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
-  if (this.secretKey) {
+  if (secretKey) {
     res.send(`
     <html>
       <header><title>Your Secret Key</title></header>
       <body>
         <h1>Secret Key</h1>
-        <p>The Secret Key Is: ${this.secretKey}</p>
+        <p>The Secret Key Is: ${nacl.util.encodeBase64(secretKey)}</p>
       </body>
     `);
   } else {
@@ -147,7 +165,7 @@ server.get('/setkey:keyString', (req, res) => {
   try {
     // TODO:
     if (keyString) {
-      this.secretKey = keyString;
+      this.secretKey = nacl.util.encodeBase64(keyString);
       res.send(`
       <html>
         <header><title>New Key Set</title></header>
