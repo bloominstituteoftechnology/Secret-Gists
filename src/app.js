@@ -8,7 +8,7 @@ nacl.util = require('tweetnacl-util');
 
 let keypair = {};
 
-const username = '2940cris'; // TODO: Replace with your username
+const username = '2940cristian'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -123,13 +123,14 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.send(nacl.util.encodeBase64(keypair.secretKey));
 });
 
 server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
-  const keyString = req.query.keyString;
+  let keyString = req.query.keyString;
   try {
-    // TODO:
+    keypair.secretKey = keyString
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
@@ -156,6 +157,17 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+
+  let { name, content } = req.body;
+  content = nacl.util.encodeBase64(content)
+  const files = { [name]: { content } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
