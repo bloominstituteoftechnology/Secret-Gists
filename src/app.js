@@ -6,7 +6,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'tylarpierson'; // TODO: Replace with your username
+const username = process.env.GITHUB_USERNAME || 'tylarpierson'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -22,7 +22,25 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-
+// Step 1 TRY to load the key from config.json file
+  // Step 1.a create a key variable
+const data = fs.readFileSync('./config.json');
+let secretKey;
+try {
+  const keyObject = JSON.parse(data);
+}
+// Step 2 if unable to load/found, CATCH the err
+catch (err) {
+  // Step 2.a make a new key (32)
+  secretKey = nacl.randomBytes(32);
+  // Step 2.b save new key to config.json file 
+  fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+    if (ferr) {
+      json.send('There was an error saving key data.');
+      return;
+    }
+  });
+}
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
