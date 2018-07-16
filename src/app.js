@@ -134,6 +134,27 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+
+  github.gists.get({ gist_id: req.query.id })
+    .then(({ data }) => {
+      const gist = Object.values(data.files)[0];
+      const [nonce, encryptedBytes] = gist.content
+        .split(' ')
+        .map(base64 => nacl.util.decodeBase64(base64));
+
+      const decrypted = nacl.secretbox.open(encryptedBytes, nonce, keypair.secretKey);
+      const encoded = nacl.util.encodeUTF8(decrypted);
+
+      res.send(`
+      <html>
+        <header><title>Keypair</title></header>
+        <body>
+          <h1>${gist.filename}</h1>
+          <div>${encoded}</div>
+        </body>
+      `);
+    })
+    .catch(err => res.json(err));
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
