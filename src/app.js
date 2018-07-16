@@ -24,10 +24,11 @@ github.authenticate({
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
 // Step 1 TRY to load the key from config.json file
   // Step 1.a create a key variable
-const data = fs.readFileSync('./config.json');
+const data = fs.readFileSync('./config.json', 'utf8');
 let secretKey;
 try {
   const keyObject = JSON.parse(data);
+  secretKey = nacl.util.decodeUTF8(keyObject.secretKey); 
 }
 // Step 2 if unable to load/found, CATCH the err
 catch (err) {
@@ -36,7 +37,7 @@ catch (err) {
   // Step 2.b save new key to config.json file 
   fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
     if (ferr) {
-      json.send('There was an error saving key data.');
+      res.send('There was an error saving key data.');
       return;
     }
   });
@@ -97,7 +98,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-
+  const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
   // Display both keys as strings
   res.send(`
   <html>
@@ -126,6 +127,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.send(nacl.util.encodeBase64(secretKey));
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -133,6 +135,7 @@ server.get('/setkey:keyString', (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO:
+    
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
