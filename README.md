@@ -1,3 +1,15 @@
+curl examples in case I forget
+
+curl -get http://localhost:3000/gists
+-- to get list of gisties
+
+curl -d name='Dash' content='hello' http://localhost:3000/create
+-- to create gisty
+
+curl -u nickbrenn:{token or password} https://api.github.com/user
+-- to authenticate or w/e
+
+
 # Secret Gists
 Save and read secure notes using GitHub gists
 
