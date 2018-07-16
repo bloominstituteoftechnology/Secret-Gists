@@ -1,7 +1,7 @@
 # BOB RISK ASSESSMENT
 
 ## Adversaries:
-* 
+* Other CPA's (They have physical access)
 * 
 ## Attack surface:
 * 
