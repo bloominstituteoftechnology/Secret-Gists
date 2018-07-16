@@ -10,8 +10,6 @@ const username = 'phantomflynn';
 const github = octokit({ debug: true });
 const server = express();
 
-const keypair = {};
-
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
@@ -117,6 +115,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.send(nacl.util.encodeBase64(secret));
 });
 
 server.get('/setkey:keyString', (req, res) => {
