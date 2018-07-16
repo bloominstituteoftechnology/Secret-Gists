@@ -110,6 +110,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.json({ 'Secret Key': keypair.secretKey });
 });
 
 server.get('/setkey:keyString', (req, res) => {
