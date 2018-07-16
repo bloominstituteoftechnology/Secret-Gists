@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -6,12 +8,15 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'sagdish'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
+
+
+const keypair = {};
 
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
