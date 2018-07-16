@@ -124,6 +124,8 @@ server.get ('/setkey:keyString', (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO:
+    privateKey = nacl.util.decodeBase64(keyString);
+    res.send(`<div>Key set to new value: ${keyString}</div>`);
   } catch (err) {
     // failed
     res.send ('Failed to set key.  Key string appears invalid.');
