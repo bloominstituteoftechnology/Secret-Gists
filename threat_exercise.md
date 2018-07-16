@@ -35,22 +35,22 @@ She is on her phone constantly.  Typing in pin numbers or doing those silly patt
 Yolanda gets along well with most of classmates, except Jennifer, but there are always haters who want to take people down.
 
 Adversaries - 
-
+  Jennifer, anyone that hacks into Insta account to obtain information of people that follow her & who she follows
 
 Attack surface - 
-
+  Phone, Social Media Insta account
 
 Attack vectors -
-
+  Spoofing, fake apps, stolen phone, grandma
 
 Risks (Confidentiality, Integrity, Availability, etc) -
-
+  Reputation, Popularity, Cyberbullying
 
 Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
-
+  Phishing, Social Media Account, stolen phone
 
 Mitigation -
-
+  Locking the phone with fingerprint/biometrics, signing out of her apps
 
 Zaida, 37, is a senior IT Security manager for the Washington, DC Embassy of a country whose relationship with the United States is, at best, complicated.  She oversees accounts, permissions, and access for the embassy’s personnel, including locally employed staff.  
 
