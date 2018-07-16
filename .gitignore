@@ -57,3 +57,8 @@ typings/
 # dotenv environment variables file
 .env
 
+# store details you don't want shared with everyone
+details.js
+
+# config files with the keys
+config.json

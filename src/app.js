@@ -6,23 +6,57 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+// load local files
+// my personal js files
+const details = require('./details');
+
+const file = './src/config.json';
+// config json file
+const configData = fs.readFileSync(file, 'utf8');
+const config = JSON.parse(configData);
+
+const username = details.username; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
+// key length
+const keyLength = 32;
+
+// added parser to express
+server.use(urlencodedParser);
+
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
 github.authenticate({
   type: 'oauth',
-  token: process.env.GITHUB_TOKEN
+  token: process.env.GITHUB_TOKEN,
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+const randomBytes = () => {
+  // create random byte
+  const secretKey = nacl.randomBytes(keyLength);
 
+  // config.secretKey = secretKey.toString();
+  config.secretKey = [];
+  secretKey.forEach(elem => config.secretKey.push(elem));
 
+  // save random secretKey to config
+  fs.writeFile(file, JSON.stringify(config), 'utf8', () => {
+    console.log('new secret key created!');
+  });
+
+  return secretKey;
+};
+// Set up the encryption - use process.env.SECRET_KEY if it exists
+// const key = config.secretKey
+//   ? nacl.util.decodeBase64(config.secretKey)
+//   : randomBytes();
+const key = config.secretKey ? config.secretKey : randomBytes();
+const userKey = nacl.util.encodeBase64(key);
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
   res.send(`
@@ -78,6 +112,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
+  const keypair = { publicKey: config.publicKey, secretKey: config.secretKey };
 
   // Display both keys as strings
   res.send(`
@@ -94,9 +129,11 @@ server.get('/keyPairGen', (req, res) => {
   `);
 });
 
+// prettier-ignore
 server.get('/gists', (req, res) => {
   // Retrieve a list of all gists for the currently authed user
-  github.gists.getForUser({ username })
+  github.gists
+    .getForUser({ username })
     .then((response) => {
       res.json(response.data);
     })
@@ -107,6 +144,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.json({ key: userKey });
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -124,11 +162,13 @@ server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
 });
 
+// prettier-ignore
 server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
   const { name, content } = req.body;
   const files = { [name]: { content } };
-  github.gists.create({ files, public: false })
+  github.gists
+    .create({ files, public: false })
     .then((response) => {
       res.json(response.data);
     })
@@ -149,9 +189,13 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // NOTE - we're only encrypting the content, not the filename
 });
 
-server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
-  // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
-});
+server.get(
+  '/fetchmessagefromfriend:messageString',
+  urlencodedParser,
+  (req, res) => {
+    // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  }
+);
 
 /* OPTIONAL - if you want to extend functionality */
 server.post('/login', (req, res) => {
