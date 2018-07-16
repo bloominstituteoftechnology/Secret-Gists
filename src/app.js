@@ -6,7 +6,8 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'jtla3@yahoo.com'; // TODO: Replace with your username
+const keypair = nacl.box.keyPair(); // creates keypair
+const username = 'jtla3'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -81,6 +82,7 @@ server.get('/', (req, res) => {
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
 
+
   // Display both keys as strings
   res.send(`
   <html>
@@ -143,6 +145,7 @@ server.post('/create', urlencodedParser, (req, res) => {
 
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
+  // need to do tomorrow -- figure out nonce and other functions
   // NOTE - we're only encrypting the content, not the filename
 });
 
