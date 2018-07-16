@@ -170,18 +170,29 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   const { name, content } = req.body;
+  const secretKey = nacl.util.encodeBase64(keypair.secretKey);
+  const encodedKey = nacl.util.decodeBase64(secretKey);
+  const encodedContent = nacl.util.decodeBase64(content)
 
   const nonce = nacl.randomBytes(nonceLength);
 
-  // let encryptedContent = 'THIS IS A PERMANENT THING' // ENCRYPT THIS SOMEHOW?
-  // const files = { [name]: { content: encryptedContent } }
-  // github.gists.create({ files, public: false })
-  //   .then((response) => {
-  //     res.json(response.data);
-  //   })
-  //   .catch((err) => {
-  //     res.json(err);
-  //   });
+  console.log('nonce', nonce);
+  console.log('secret key', encodedKey)
+
+  const ecryptedContent = nacl.secretbox(encodedContent, nonce, encodedKey);
+  const utf8EncryptedContent = nacl.util.encodeBase64(ecryptedContent);
+
+  console.log('encrypted msg', utf8EncryptedContent);
+
+  let encryptedContent = 'THIS IS A PERMANENT THING' // ENCRYPT THIS SOMEHOW?
+  const files = { [name]: { content: utf8EncryptedContent } }
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
