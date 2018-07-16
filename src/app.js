@@ -13,6 +13,8 @@ const server = express();
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
+const keypair = nacl.box.keyPair();
+
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
 github.authenticate({
@@ -77,8 +79,6 @@ server.get("/", (req, res) => {
 
 server.get("/keyPairGen", (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  const keypair = nacl.box.keyPair();
-
   // Display both keys as strings
   res.send(`
   <html>
@@ -108,6 +108,7 @@ server.get("/gists", (req, res) => {
 
 server.get("/key", (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.send(`${nacl.util.encodeBase64(keypair.secretKey)}`);
 });
 
 server.get("/setkey:keyString", (req, res) => {
