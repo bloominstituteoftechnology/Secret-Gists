@@ -82,16 +82,17 @@ server.get('/keyPairGen', (req, res) => {
 
   // Display both keys as strings
   res.send(`
-  <html>
-    <header><title>Keypair</title></header>
-    <body>
-      <h1>Keypair</h1>
-      <div>Share your public key with anyone you want to be able to leave you secret messages.</div>
-      <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
-      <br/>
-      <div>Public Key: ${nacl.util.encodeBase64(keypair.publicKey)}</div>
-      <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
-    </body>
+    <html>
+      <header><title>Keypair</title></header>
+      <body>
+        <h1>Keypair</h1>
+        <div>Share your public key with anyone you want to be able to leave you secret messages.</div>
+        <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
+        <br/>
+        <div>Public Key: ${nacl.util.encodeBase64(keypair.publicKey)}</div>
+        <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
+      </body>
+    </html>
   `);
 });
 
@@ -109,14 +110,15 @@ server.get('/gists', (req, res) => {
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
   res.send(`
-  <html>
-    <header><title>Keypair</title></header>
-    <body>
-      <h1>Secret Key</h1>
-      <div>This is the secret key used to sign your encrypted gists. Do not share this key!</div>
-      <br/>
-      <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
-    </body>
+    <html>
+      <header><title>Keypair</title></header>
+      <body>
+        <h1>Secret Key</h1>
+        <div>This is the secret key used to sign your encrypted gists. Do not share this key!</div>
+        <br/>
+        <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
+      </body>
+    </html>
   `);
 });
 
@@ -146,12 +148,13 @@ server.get('/fetchmessagefromself:id', (req, res) => {
       const encoded = nacl.util.encodeUTF8(decrypted);
 
       res.send(`
-      <html>
-        <header><title>Keypair</title></header>
-        <body>
-          <h1>${gist.filename}</h1>
-          <div>${encoded}</div>
-        </body>
+        <html>
+          <header><title>Keypair</title></header>
+          <body>
+            <h1>${gist.filename}</h1>
+            <div>${encoded}</div>
+          </body>
+        </html>
       `);
     })
     .catch(err => res.json(err));
