@@ -91,7 +91,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  // nacl.sign.keyPair.fromSecretKey(process.env.GITHUB_TOKEN);
+  const keypair = nacl.sign.keyPair.fromSecretKey(secret);
 
   // Display both keys as strings
   res.send(`
