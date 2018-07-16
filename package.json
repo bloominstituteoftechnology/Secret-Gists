@@ -16,5 +16,8 @@
   },
   "scripts": {
     "start": "eslint src/*.js && node src/app.js"
+  },
+  "devDependencies": {
+    "nodemon": "^1.18.2"
   }
 }
