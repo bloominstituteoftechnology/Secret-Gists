@@ -4,23 +4,29 @@ Bob is a 58 year old independent CPA.  He primarily services medium-income indiv
 
 These days, Bob does most of his work by computer.  He regularly uses email, an online file sharing website, and desktop tax software in his work.  Although he has had to learn many new things as his work has changed, Bob has gained a reasonable understanding of the technology he uses.  The records for each of his clients are encrypted using a different password.  He also used different passwords for each online service.  These passwords are kept in a notebook, which Bob diligently keeps locked in his file cabinet when not in use.
 
-Adversaries - 
+Adversaries - Rival CPAs, hackers wanting infomation on customers or company trade secrets to sell on black markets.
 
 
-Attack surface - 
+Attack surface - (amount of openings available)
+Online: Email, flaws in tax software & file sharing website.  
+Physical: Other CPAs can break into his file cabinet to access the notebook or take looks while Bob isn't paying attention, making it risky.
 
+Attack vectors - (methods where hacker can extract info)
 
-Attack vectors -
-
+Malware when Bob downloads files from his file sharing website and email.
+Spoofed adresses for emails.
+Stolen notebook or illegally accessed notebook.
 
 Risks (Confidentiality, Integrity, Availability, etc) -
-
+Passwords are available on a notebook, which is a big risk even if locked up. File cabinets aren't particulary designed to be secrure with locks, it acts a deterrents. 
+Customer infomation is protected by one form of protection, passwords. Once that password is found out, that customer data is available and presents a huge risk to Bob's consumer base.
 
 Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
-
+Backdoors/malware, social engineering
 
 Mitigation -
-
+Use a password manager, ensure files downloaded are free of viruses and only download from trusted sources, get rid of notebook of passwords
+Encypt valuable pieces of infomation for clients, such as social secruity numbers and credit card numbers.
 
 Yolanda, 17, is the most popular girl in her school.  Her Insta is perfectly curated, her Snaps are da bomb, and her Facebook account exists so she can talk to her grandma every other Sunday.  
 
