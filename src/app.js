@@ -122,9 +122,9 @@ server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
   const keyString = req.query.keyString;
   try {
-    // TODO:
+    secret = { secretKey: nacl.util.encodeBase64(keyString) };
+    fs.writeFileSync('./config.json', JSON.stringify(secret));
   } catch (err) {
-    // failed
     res.send('Failed to set key.  Key string appears invalid.');
   }
 });
