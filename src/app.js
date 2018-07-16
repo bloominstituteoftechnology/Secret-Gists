@@ -29,7 +29,8 @@ server.get('/', (req, res) => {
     <html>
       <header><title>Secret Gists!</title></header>
       <body>
-        <h1>Secret Gists!</h1>
+        <h1>Secret Gists!
+        </h1>
         <div>This is an educational implementation.  Do not use for truly valuable information</div>
         <h2>Supported operations:</h2>
         <ul>
