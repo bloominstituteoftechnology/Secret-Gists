@@ -4,23 +4,29 @@ Bob is a 58 year old independent CPA.  He primarily services medium-income indiv
 
 These days, Bob does most of his work by computer.  He regularly uses email, an online file sharing website, and desktop tax software in his work.  Although he has had to learn many new things as his work has changed, Bob has gained a reasonable understanding of the technology he uses.  The records for each of his clients are encrypted using a different password.  He also used different passwords for each online service.  These passwords are kept in a notebook, which Bob diligently keeps locked in his file cabinet when not in use.
 
-Adversaries - 
+Adversaries - Rival CPAs, hackers wanting infomation on customers or company trade secrets to sell on black markets.
 
 
-Attack surface - 
+Attack surface - (amount of openings available)
+Online: Email, flaws in tax software & file sharing website.  
+Physical: Other CPAs can break into his file cabinet to access the notebook or take looks while Bob isn't paying attention, making it risky.
 
+Attack vectors - (methods where hacker can extract info)
 
-Attack vectors -
-
+Malware when Bob downloads files from his file sharing website and email.
+Spoofed adresses for emails.
+Stolen notebook or illegally accessed notebook.
 
 Risks (Confidentiality, Integrity, Availability, etc) -
-
+Passwords are available on a notebook, which is a big risk even if locked up. File cabinets aren't particulary designed to be secrure with locks, it acts a deterrents. 
+Customer infomation is protected by one form of protection, passwords. Once that password is found out, that customer data is available and presents a huge risk to Bob's consumer base.
 
 Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
-
+Backdoors/malware, social engineering
 
 Mitigation -
-
+Use a password manager, ensure files downloaded are free of viruses and only download from trusted sources, get rid of notebook of passwords
+Encypt valuable pieces of infomation for clients, such as social secruity numbers and credit card numbers.
 
 Yolanda, 17, is the most popular girl in her school.  Her Insta is perfectly curated, her Snaps are da bomb, and her Facebook account exists so she can talk to her grandma every other Sunday.  
 
@@ -29,46 +35,44 @@ She is on her phone constantly.  Typing in pin numbers or doing those silly patt
 Yolanda gets along well with most of classmates, except Jennifer, but there are always haters who want to take people down.
 
 Adversaries - 
-
+  Jennifer, anyone that hacks into Insta account to obtain information of people that follow her & who she follows
 
 Attack surface - 
-
+  Phone, Social Media Insta account
 
 Attack vectors -
-
+  Spoofing, fake apps, stolen phone, grandma
 
 Risks (Confidentiality, Integrity, Availability, etc) -
-
+  Reputation, Popularity, Cyberbullying
 
 Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
-
+  Phishing, Social Media Account, stolen phone
 
 Mitigation -
-
+  Locking the phone with fingerprint/biometrics, signing out of her apps
 
 Zaida, 37, is a senior IT Security manager for the Washington, DC Embassy of a country whose relationship with the United States is, at best, complicated.  She oversees accounts, permissions, and access for the embassy’s personnel, including locally employed staff.  
 
 Zaida is an expert in her field.  At work, she and her team follow the latest best practices in account and network security.  She keeps her work and home life private - using separate phones and computers for each.  He job is high stress, so she values her time off as a chance to relax and step away from the high-stakes world of her job, and enjoys not having to worry about someone hacking her devices or accounts.  
 
 Adversaries - 
-
+  Spies, foreign intelligence agencies
 
 Attack surface - 
-
+  Laptop computers, mobile phone, physical access
 
 Attack vectors -
-
+  Flaws in software utilized by Embassy, physical theft of computer / mobile phone, attack when visiting foreign country(terrorist)
 
 Risks (Confidentiality, Integrity, Availability, etc) -
-
+  Leak of National Security, confidentality
 
 Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
-
+  Flaws in software utilized by Embassy, physical theft of computer / mobile phone
 
 Mitigation -
-
-
-
+  High security on premises, remote wipe of devices when it is stolen, security audits of software finding any flaws or possible points of entry for hackers
 
 Rashad is a web developer for a small UI/UX firm.  He just had one of his projects hit the front pages of all the trendy design subreddits and blogs.  He’s very excited, but a little concerned that his twitter, instagram, and github handles are now being shared all over the internet.  
 
@@ -76,23 +80,24 @@ He currently uses different passphrases for all of his accounts, except that he 
 
 Rashad is himself an avid blogger.  He has a moderately popular, weekly column where he shares the weeks adventures, hangouts, vacations, etc.  He is excited that next week he will be heading out to his favorite vacation spot since childhood - Rehoboth Beach, DE.
 
-Adversaries - 
+Adversaries - Anyone wanting to deface his work for websites, hackers trying to grab info on clients.
 
 
-Attack surface - 
+Attack surface - Email account, databases of social accounts
 
 
-Attack vectors -
+Attack vectors - Hacking into a database of a social media database, if one gets hacked, then it leaks the other accounts, making it have 3 accounts easily accessed.
+Secret questions can be circumvented by the fact he blogs about himself and posts favorite vacation spot online. Phsyical location is leaked so anyone wanting to harass or stalk him can find him.
 
 
 Risks (Confidentiality, Integrity, Availability, etc) -
-
+Safety of himself, company related data, sites can be damaged or defaced.
 
 Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
-
+Social Engineering, man-in-the-middle.
 
 Mitigation -
-
+Use a password manager, stay anonymous online or under a online handle without using real name. 
 
 
 
