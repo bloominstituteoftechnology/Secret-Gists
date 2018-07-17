@@ -131,6 +131,13 @@ server.get('/key', (req, res) => {
 
 server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
+  // Grab parameter from url and store it as key
+  const keyObject = { secretKey: req.query.keyString };
+  fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+    if (ferr) console.log(`Error saving config.json: ${ferr.message}`);
+  });
+
+  res.json(keyObject);
 });
 
 server.get('/fetchmessagefromself:id', (req, res) => {
