@@ -30,7 +30,25 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+const data = fs.readFileSync('./config.json');
+let secretKey;
 
+try {
+  const keyObject = JSON.parse(data);
+  // TODO get secret key from object
+  secretKey = nacl.util.decodeBase64(keyObject.secretKey);
+} catch (err) {
+  // Key not found in file, so write it to the file
+  secretKey = nacl.randomBytes(32);
+  const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) }
+  fs.writeFile('./config.json', JSON.stringify(keyObject), (fsErr) => {
+    if (fsErr) {
+      console.log('Error saving config.json: ' + fsErr.message);
+    }
+  });
+}
+
+console.log('Current Secret Key is', nacl.util.encodeBase64(secretKey));
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -90,8 +108,7 @@ server.get('/keyPairGen', (req, res) => {
   // const randomKeys = nacl.box.keyPair();
   // keypair.publicKey = randomKeys.publicKey;
   // keypair.secretKey = randomKeys.secretKey;
-
-  // Display both keys as strings
+  // Saved both keys as strings
 
   res.send(`
   <html>
@@ -171,11 +188,12 @@ server.get('/fetchmessagefromself:id', (req, res) => {
       let message = responseContent.slice(32, responseContent.length); // Extract Message
       message = nacl.util.decodeBase64(message); // Decode message into Unit8Array
 
-      const secretKey = nacl.util.encodeBase64(keypair.secretKey); // Encode Key from ENV
-      const encodedKey = nacl.util.decodeBase64(secretKey); // Decode Key for Usage
+      // The code bellow was used in the older version when secretKey came from .env
+      // const secretKey = nacl.util.encodeBase64(keypair.secretKey); // Encode Key from ENV
+      // const encodedKey = nacl.util.decodeBase64(secretKey); // Decode Key for Usage
 
       // Unlock the content: Return will be in Unit8Array
-      const decypheredBox = nacl.secretbox.open(message, nonce, encodedKey)
+      const decypheredBox = nacl.secretbox.open(message, nonce, secretKey)
 
       // encode Unit 8 Array Content into UTF8 Readable Text
       const utf8DecypheredBox = nacl.util.encodeUTF8(decypheredBox)
@@ -210,8 +228,9 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
     had to encode it into base64
     and then decode it into Unit8Array
   */
-  const secretKey = nacl.util.encodeBase64(keypair.secretKey);
-  const encodedKey = nacl.util.decodeBase64(secretKey);
+  // The lines bellow was used in the older version that used .env for secret key
+  // const secretKey = nacl.util.encodeBase64(keypair.secretKey);
+  // const encodedKey = nacl.util.decodeBase64(secretKey);
 
   /* 
     Transforming content into Unit8Array from string
@@ -224,7 +243,7 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
     Using encoded content, nonce and key to encrypt message
     Formatting encryptedMessage as UTF8 for easy saving into Gists
   */
-  const ecryptedContent = nacl.secretbox(encodedContent, nonce, encodedKey);
+  const ecryptedContent = nacl.secretbox(encodedContent, nonce, secretKey);
 
   // Encode nonce and encrypted content to be saved on Gists as UTF8 Joined
   const utf8EncryptedContent = nacl.util.encodeBase64(ecryptedContent);
