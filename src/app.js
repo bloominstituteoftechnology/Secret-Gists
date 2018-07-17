@@ -89,7 +89,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  const keypair = nacl.sign.keyPair.fromSecretKey(secretKey);
+  const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
 
   // Display both keys as strings
   res.send(`
@@ -155,6 +155,15 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+  const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(ciphertext);
+  const files = { [name]: { content: blob } };
+
+  github.gists.create({ files, public: false })
+    .then(response => res.json(response.data))
+    .catch(err => res.json(err));
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
@@ -162,6 +171,29 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
+  const { name, publicKeyString, content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const ciphertext = nacl.box(nacl.util.decodeUTF8(content), nonce, nacl.util.decodeBase64(publicKeyString), secretKey);
+  const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(ciphertext);
+  const files = { [name]: { content: blob } };
+
+  github.gists.create({ files, public: true })
+    .then(response => {
+      const { id } = response.data;
+      const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
+      const message = nacl.util.encodeBase64(keypair.publicKey) + id;
+      res.send(`
+        <html>
+          <header>
+            <title>Message Saved</title>
+          </header>
+          <body>
+            <h1>Message Saved</h1>
+            <h5>Decode: ${message}</h5>
+          </body>
+        </html>
+      `);
+    }).catch(err => res.json(err));
 });
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
