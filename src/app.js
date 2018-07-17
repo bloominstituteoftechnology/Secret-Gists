@@ -107,7 +107,14 @@ server.get('/gists', (req, res) => {
   // Retrieve a list of all gists for the currently authed user
   github.gists.getForUser({ username })
     .then((response) => {
-      res.json(response.data);
+      const data = response.data.map( gist => {
+        const fileName = Object.values(gist.files)[0].filename;
+        return {
+          fileName: fileName,
+          id: gist.id
+        };
+      });
+      res.json(data);
     })
     .catch((err) => {
       res.json(err);
