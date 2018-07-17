@@ -142,9 +142,27 @@ server.get('/fetchmessagefromself:id', asyncHandler(async (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
   const gist_id = req.query.id;
   const gist = await github.gists.get({id: gist_id });
+  let content = Object.values(gist.data.files)[0].content;
 
-  res.status(200).send(Object.values(gist.data.files)[0].content);
+  let contentArray = content.split('');
+  let nonceArray = contentArray.splice(0, 32);
+
+
+  content = contentArray.join('');
+  nonce = nonceArray.join('');
+
+  // console.log('content is ', content);
+  // console.log('nonce is ', nonce);
+
+  let decodedContentArray = nacl.util.decodeBase64(content);
+  let decodedNonceArray = nacl.util.decodeBase64(nonce);
+
+
+  content = nacl.secretbox.open(decodedContentArray, decodedNonceArray, mySecretKeyString)
+  res.status(200).send(nacl.util.encodeUTF8(content));
 }));
+
+
 
 server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
@@ -163,9 +181,22 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   const { name, content } = req.body;
-  // const secretContent = nacl.util.encodeUTF8(content.split());
 
-  const files = { [name]: { content } };
+  let key = nacl.randomBytes(nacl.secretbox.keyLength);
+  mySecretKeyString = key;
+
+  let nonce = nacl.randomBytes(nacl.secretbox.nonceLength);
+  let msg = nacl.util.decodeUTF8(content);
+
+  let encryptedNonceAndMessageArray = nacl.secretbox(msg, nonce, key);
+
+  const encryptedGist = nacl.util.encodeBase64(encryptedNonceAndMessageArray);
+  const encodedNonce = nacl.util.encodeBase64(nonce);
+
+  // console.log('encryptegist is ', encryptedGist);
+  // console.log('encondedNonce is ', encodedNonce);
+
+  const files = { [name]: { content: encodedNonce + encryptedGist } };
   github.gists.create({ files, public: false })
     .then((response) => {
       res.json(response.data);
