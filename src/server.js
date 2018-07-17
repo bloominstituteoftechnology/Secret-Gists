@@ -8,21 +8,21 @@ const github = require('@octokit/rest')({ debug: true, timeout: 0, headers: 'app
 github.authenticate({ type: 'oauth', token: process.env.GITHUB_TOKEN });
 const username = process.env.GITHUB_USERNAME;
 
-const keypair = {}; // nacl.box.keyPair();
 let secretKey; // Why? Its fine I guess.
 try {
 	const data = fs.readFileSync('./config.json');
 	const keyObject = JSON.parse(data);
+	secretKey = nacl.util.decodeBase64(keyObject.secretKey);
 }
 catch (err) {
 	secretKey = nacl.randomBytes(32);
 	const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) }
-	fs.writeFile('./config.json', JSON.stringify(keyObject, null, 4), (file_error) => { if (file_error) console.log('Something went wrong writing to ./config.json... ', file_error.message);
-	})
+	fs.writeFile('./config.json', JSON.stringify(keyObject, null, 4), (file_error) => { if (file_error) console.log('Something went wrong writing to ./config.json... ', file_error.message); });
 }
 
 server.get('/', (req, res) => { res.send(require('./index_1.js')()); });
-server.get('/keyPairGen', (req, res) => { res.send(require('./index_2.js')(nacl, keypair)); });
+server.get('/keyPairGen', (req, res) => { const keypair = {}; res.send(require('./index_2.js')(nacl, keypair)); });
+
 server.get('/gists', (req, res) => { github.gists.getForUser({ username }).then((response) => { res.json(response.data); }).catch((err) => { res.json(err); }); });
 server.get('/fetchmessagefromself:id', (req, res) => { let { id } = req.query.data; github.gists.get({id}).then((res) => { let gist = responce.data; let filename = Object.keys(gist.files); }).catch((err) => res.json(err.message)); }); // TODO: handle .then logic
 
