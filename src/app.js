@@ -23,6 +23,24 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+let secretKey;
+
+const data = fs.readFileSync("./config.json"); // read config.json for the secret key
+let secretKeyObject = JSON.parse(data); // holds the secret key
+
+if (data) {
+  secretKey = nacl.util.encodeBase64(secretKeyObject.secretKey); // encode to base 64 to save offline
+} else {
+  // secret key was not found
+  secretKey = nacl.randomBytes(32);
+  secretKeyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+  // save key to config.json file
+  fs.writeFile("./config.json", JSON.stringify(secretKeyObject), err => {
+    if (err) {
+      console.error(err);
+    }
+  });
+}
 
 server.get("/", (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -114,8 +132,12 @@ server.get("/key", (req, res) => {
 server.get("/setkey:keyString", (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
   const keyString = req.query.keyString;
+  console.log(`key set by user ${keyString}`);
   try {
     // TODO:
+    if (keyString === `${nacl.util.encodeBase64(keypair.publicKey)}`) {
+      res.send("successfully set key");
+    }
   } catch (err) {
     // failed
     res.send("Failed to set key.  Key string appears invalid.");
@@ -143,6 +165,8 @@ server.post("/create", urlencodedParser, (req, res) => {
 server.post("/createsecret", urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content } = req.body;
+  const files = { [name]: { content } };
 });
 
 server.post("/postmessageforfriend", urlencodedParser, (req, res) => {
