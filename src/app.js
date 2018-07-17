@@ -89,7 +89,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  const keypair = nacl.sign.keyPair.fromSecretKey(secret);
+  const keypair = nacl.sign.keyPair.fromSecretKey(secretKey);
 
   // Display both keys as strings
   res.send(`
@@ -115,17 +115,17 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
-  res.send(nacl.util.encodeBase64(secret));
+  res.send(nacl.util.encodeBase64(secretKey));
 });
 
 server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
   const keyString = req.query.keyString;
   try {
-    secret = { secretKey: nacl.util.encodeBase64(keyString) };
-    fs.writeFileSync('./config.json', JSON.stringify(secret));
+    secretKey = { secretKey: nacl.util.decodeBase64(keyString) };
+    res.send(keyString);
   } catch (err) {
-    res.send('Failed to set key.  Key string appears invalid.');
+    res.send('Failed to set key. Key string appears invalid.');
   }
 });
 
