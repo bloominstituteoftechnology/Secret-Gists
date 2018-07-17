@@ -22,8 +22,6 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
-const keypair = {};
-
 // TODO:  Attempt to load the key from config.json.  If it is not found,
 // create a new 32 byte key.
 let secretKey;
@@ -114,12 +112,13 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-
+  const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
   // Display both keys as strings
   res.send(`
   <html>
     <header><title>Keypair</title></header>
     <body>
+      <br/>
       <h1>Keypair</h1>
       <div>Share your public key with anyone you want to be able to leave you secret messages.</div>
       <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
@@ -143,6 +142,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.send(`<br/><h3>The secret key used is: </h3>${nacl.util.encodeBase64(secretKey)}`);
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -182,6 +182,7 @@ server.get('/fetchmessagefromself:id', (req, res) => {
 server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
   const { name, content } = req.body;
+  console.log(req.body);
   const files = { [name]: { content } };
   github.gists.create({ files, public: false })
     .then((response) => {
@@ -219,10 +220,46 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content } = req.body;
+
+  const nonce = nacl.randomBytes(24);
+
+  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+
+  const blob = nacl.util.encodeBase64(nonce) + ' ' +
+    nacl.util.encodeBase64(ciphertext);
+
+  const files = { [name]: { content: blob } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.query.messageString;
+
+  github.gists.get({ id }).then((response) => {
+    const gist = response.data;
+    const filename = Object.keys(gist.files)[0];
+
+    const blob = gist.files[filename].content;
+
+    let [nonce, ciphertext] = blob.split(' ');
+
+    nonce = nacl.util.decodeBase64(nonce);
+    ciphertext = nacl.util.decodeBase64(ciphertext);
+
+    const plaintext = nacl.secretbox.open(ciphertext, nonce, secretKey);
+
+    res.send(nacl.util.encodeUTF8(plaintext));
+  }).catch(err => {
+    res.send("Couldn't get ID");
+  });
 });
 
 /* OPTIONAL - if you want to extend functionality */
@@ -244,3 +281,4 @@ Still want to write code? Some possibilities:
 */
 
 server.listen(3000);
+console.log("Server running on port: 3000");
