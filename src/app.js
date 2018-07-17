@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -20,22 +22,28 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
-// TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+// TODO:  Attempt to load the key from config.json.  If it is not found,
+// create a new 32 byte key.
 let secretKey;
-const data = fs.readFileSync('./config.json');
-try {
-  const keyObject = JSON.parse(data);
-  secretKey = nacl.util.decodeBase64(keyObject.secretKey);
-} catch (err) {
-  secretKey = nacl.randomBytes(32);
-  const keyObject = { secretKey: nacl.util.decodeBase64(secretKey)}
 
-  fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
-    if (ferr) {
-      console.log('error saving config.json: ' + error.message) 
-    }
-  })
+try {
+	const data = fs.readFileSync('./config.json');
+
+	// Read the key from the file
+	const keyObject = JSON.parse(data);
+	secretKey = nacl.util.decodeBase64(keyObject.secretKey);
+} catch (err) {
+	// Key not found in file, so write it to the file
+	secretKey = nacl.randomBytes(32);
+	const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+
+	fs.writeFile('./config.json', JSON.stringify(keyObject, null, 4), (ferr) => {
+		if (ferr) {
+			console.log('Error saving config.json: ' + ferr.message);
+		}
+	});
 }
+
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -53,36 +61,49 @@ server.get('/', (req, res) => {
         </ul>
         <h3>Set your secret key to a specific key</h3>
         <form action="/setkey:keyString" method="get">
-          Key String: <input type="text" name="keyString"><br>
+          Key String: <input type="text" name="keyString">
+
           <input type="submit" value="Submit">
         </form>
         <h3>Create an *unencrypted* gist</h3>
         <form action="/create" method="post">
-          Name: <input type="text" name="name"><br>
-          Content:<br><textarea name="content" cols="80" rows="10"></textarea><br>
+          Name: <input type="text" name="name">
+
+          Content:
+<textarea name="content" cols="80" rows="10"></textarea>
+
           <input type="submit" value="Submit">
         </form>
         <h3>Create an *encrypted* gist for yourself</h3>
         <form action="/createsecret" method="post">
-          Name: <input type="text" name="name"><br>
-          Content:<br><textarea name="content" cols="80" rows="10"></textarea><br>
+          Name: <input type="text" name="name">
+
+          Content:
+<textarea name="content" cols="80" rows="10"></textarea>
+
           <input type="submit" value="Submit">
         </form>
         <h3>Retrieve an *encrypted* gist you posted for yourself</h3>
         <form action="/fetchmessagefromself:id" method="get">
-          Gist ID: <input type="text" name="id"><br>
+          Gist ID: <input type="text" name="id">
+
           <input type="submit" value="Submit">
         </form>
         <h3>Create an *encrypted* gist for a friend to decode</h3>
         <form action="/postmessageforfriend" method="post">
-          Name: <input type="text" name="name"><br>
-          Friend's Public Key String: <input type="text" name="publicKeyString"><br>
-          Content:<br><textarea name="content" cols="80" rows="10"></textarea><br>
+          Name: <input type="text" name="name">
+
+          Friend's Public Key String: <input type="text" name="publicKeyString">
+
+          Content:
+<textarea name="content" cols="80" rows="10"></textarea>
+
           <input type="submit" value="Submit">
         </form>
         <h3>Retrieve an *encrypted* gist a friend has posted</h3>
         <form action="/fetchmessagefromfriend:messageString" method="get">
-          String From Friend: <input type="text" name="messageString"><br>
+          String From Friend: <input type="text" name="messageString">
+
           <input type="submit" value="Submit">
         </form>
       </body>
@@ -140,24 +161,20 @@ server.get('/fetchmessagefromself:id', (req, res) => {
   const id = req.query.id;
 
   github.gists.get({id}).then((response) => {
-    console.log(response)
-    
-    const gist = response.data;
-    const filename = Object.keys(gist.files)[0];
-    
-    console.log(gist.files[filename]);
-    
-    const blob = gist.files[filename].content;
+	  const gist = response.data;
+	  const filename = Object.keys(gist.files)[0];
 
-    let [nonce, ciphertext] = blob.split(' ');
+	  const blob = gist.files[filename].content;
 
-    nonce = nacl.util.decodeBase64(nonce);
-    ciphertext = nacl.util.decodeBase64(ciphertext);
+	  let [nonce, ciphertext] = blob.split(' ');
 
-    const plaintext = nacl.secretbox.open(ciphertext, nonce, secretKey);
+	  nonce = nacl.util.decodeBase64(nonce);
+	  ciphertext = nacl.util.decodeBase64(ciphertext);
 
-    res.send(nacl.util.encodeUTF8(plaintext))
-  })
+	  const plaintext = nacl.secretbox.open(ciphertext, nonce, secretKey);
+
+	  res.send(nacl.util.encodeUTF8(plaintext));
+  });
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -182,7 +199,8 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   
   const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
 
-  const blob = nacl.util.encodeBase64(nonce) + '' + nacl.util.encodeBase64(ciphertext);
+  const blob = nacl.util.encodeBase64(nonce) + ' ' +
+  	nacl.util.encodeBase64(ciphertext);
 
   const files = { [name]: { content: blob } };
   github.gists.create({ files, public: false })
