@@ -24,7 +24,6 @@ let keypair = {};
 let secretKey;
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-
 try {
   // Try to find and readread file
   const data = fs.readFileSync('./config.json');
@@ -33,7 +32,7 @@ try {
   // Get secret key from object
   secretKey = nacl.util.decodeBase64(keyObject.secretKey);
 } catch (err) {
-  // Key not found in file, so write it to the file
+  // Key not found in file, so generate one and write it to the file
   secretKey = nacl.randomBytes(32);
   const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
   // Make file and write keyObject to it
@@ -127,18 +126,11 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
-  res.json({ 'Secret Key': keypair.secretKey });
+  res.json({ secretKey: nacl.util.encodeBase64(secretKey)});
 });
 
 server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
-  const keyString = req.query.keyString;
-  try {
-    // TODO:
-  } catch (err) {
-    // failed
-    res.send('Failed to set key.  Key string appears invalid.');
-  }
 });
 
 server.get('/fetchmessagefromself:id', (req, res) => {
