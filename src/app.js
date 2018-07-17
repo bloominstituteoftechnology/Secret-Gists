@@ -8,7 +8,6 @@ nacl.util = require('tweetnacl-util');
 
 const nonceLength = 24;
 
-
 // Hard Coded my Keys to ENV for Later use in Decrypting
 const keypair = {
   publicKey: JSON.parse(process.env.PUBLIC_KEY),
@@ -172,7 +171,7 @@ server.get('/fetchmessagefromself:id', (req, res) => {
   const { id } = req.query;
   let responseFiles;
   let responseContent;
-  console.log('The id provided is:', id);
+  // console.log('The id provided is:', id);
   // TODO: Figure how to get a gist by ID
   github.gists.get({ id })
     .then(response => {
@@ -183,10 +182,10 @@ server.get('/fetchmessagefromself:id', (req, res) => {
       }
 
       let nonce = responseContent.slice(0, 32); // Extract Nonce from Message
-      nonce = nacl.util.decodeBase64(nonce); // Decode nonce into Unit8Array
+      nonce = nacl.util.decodeBase64(nonce); // Decode nonce into Uint8Array
 
       let message = responseContent.slice(32, responseContent.length); // Extract Message
-      message = nacl.util.decodeBase64(message); // Decode message into Unit8Array
+      message = nacl.util.decodeBase64(message); // Decode message into Uint8Array
 
       // The code bellow was used in the older version when secretKey came from .env
       // const secretKey = nacl.util.encodeBase64(keypair.secretKey); // Encode Key from ENV
@@ -198,7 +197,7 @@ server.get('/fetchmessagefromself:id', (req, res) => {
       // encode Unit 8 Array Content into UTF8 Readable Text
       const utf8DecypheredBox = nacl.util.encodeUTF8(decypheredBox)
 
-      res.json(utf8DecypheredBox)
+      res.json({ deciphered: utf8DecypheredBox })
     })
     .catch(err => {
       res.json(err);
@@ -249,7 +248,7 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   const utf8EncryptedContent = nacl.util.encodeBase64(ecryptedContent);
   const utf8EncryptedNonce = nacl.util.encodeBase64(nonce);
 
-  console.log('encrypted msg formatted UTF8 Nonce Included', `${utf8EncryptedNonce}${utf8EncryptedContent}`);
+  // console.log('encrypted msg formatted UTF8 Nonce Included', `${utf8EncryptedNonce}${utf8EncryptedContent}`);
 
   const files = { [name]: { content: `${utf8EncryptedNonce}${utf8EncryptedContent}` } }
   github.gists.create({ files, public: false })
