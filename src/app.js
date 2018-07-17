@@ -33,7 +33,6 @@ try {
   secretKey = nacl.util.decodeBase64(keyObject.secretKey);
 } catch (err) {
   // Key not found in file, so write it to the file
-
   secretKey = nacl.randomBytes(32);
   const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
 
@@ -146,6 +145,23 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.query.id;
+
+  github.gists.get({ id }).then(((response) => {
+    const gist = response.data;
+    const filename = Object.keys(gist.files)[0];
+
+    const blob = gist.files[filename].content;
+
+    let [nonce, cypherText] = blob.split(' ');
+
+    nonce = nacl.util.decodeBase64(nonce);
+    cypherText = nacl.util.decodeBase64(cypherText);
+
+    const plainText = nacl.secretbox.open(cypherText, nonce, secretKey);
+
+    res.send(`<h2> Decrypted message for id : ${id}</h2><hr> <div>${nacl.util.encodeUTF8(plainText)}</div>`);
+  }));
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -164,6 +180,22 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content } = req.body;
+
+  const nonce = nacl.randomBytes(24);
+
+  const cypherText = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+
+  const encrypted = `${nacl.util.encodeBase64(nonce)} ${nacl.util.encodeBase64(cypherText)}`;
+
+  const files = { [name]: { content: encrypted } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
