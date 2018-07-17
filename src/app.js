@@ -21,9 +21,27 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+const keypair ={};
 
+let secretKey;
+
+try {
+	const data = fs.readFileSync('./config.json');
+	const keyObject = JSON.parse(data);
+	secretKey = nacl.util.decodeBase64(keyObject.secretKey);
+} catch (err) {
+
+	secretKey = nacl.randomBytes(32);
+	const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+	fs.writeFile('./config.json', JSON.stringify(keyObject, null, 4), (ferr) => {
+		if (ferr) {
+			console.log('Error saving config.json: ' + ferr.message);
+		}
+	});
+}
 
 server.get('/', (req, res) => {
+
   // Return a response that documents the other routes/operations available
   res.send(`
     <html>
@@ -107,7 +125,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
-  res.send(nacl.until.encodebase64(secretKey))
+//  res.send(nacl.until.encodebase64(secretKey))
 });
 
 server.get('/setkey:keyString', (req, res) => {
