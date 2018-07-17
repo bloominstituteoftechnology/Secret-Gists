@@ -9,10 +9,11 @@ nacl.util = require('tweetnacl-util');
 const nonceLength = 24;
 
 // Hard Coded my Keys to ENV for Later use in Decrypting
-const keypair = {
-  publicKey: JSON.parse(process.env.PUBLIC_KEY),
-  secretKey: JSON.parse(process.env.SECRET_KEY)
-};
+// const keypair = {
+//   publicKey: JSON.parse(process.env.PUBLIC_KEY),
+//   secretKey: JSON.parse(process.env.SECRET_KEY)
+// };
+let keypair = {}
 
 const username = process.env.GITHUB_USERNAME || 'your_name_here'; // TODO: Replace with your username
 const github = octokit({ debug: true });
@@ -47,7 +48,7 @@ try {
   });
 }
 
-console.log('Current Secret Key is', nacl.util.encodeBase64(secretKey));
+// console.log('Current Secret Key is', nacl.util.encodeBase64(secretKey));
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -104,10 +105,11 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  // const randomKeys = nacl.box.keyPair();
-  // keypair.publicKey = randomKeys.publicKey;
-  // keypair.secretKey = randomKeys.secretKey;
-  // Saved both keys as strings
+  keypair = nacl.box.keyPair(secretKey); // Uint8Array
+  secretKey = JSON.stringify(nacl.util.encodeBase64(keypair.secretKey))
+  publicKey = JSON.stringify(nacl.util.encodeBase64(keypair.publicKey))
+
+  // console.log(secretKey, publicKey)
 
   res.send(`
   <html>
@@ -117,8 +119,8 @@ server.get('/keyPairGen', (req, res) => {
       <div>Share your public key with anyone you want to be able to leave you secret messages.</div>
       <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
       <br/>
-      <div>Public Key: ${nacl.util.encodeBase64(keypair.publicKey)}</div>
-      <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
+      <div>Public Key: ${secretKey}</div>
+      <div>Secret Key: ${publicKey}</div>
     </body>
   `);
 });
@@ -143,11 +145,7 @@ server.get('/key', (req, res) => {
     <div>
       This is your secret key used for encryption of secret gists:
       <br>
-      <h3>${nacl.util.encodeBase64(keypair.secretKey)}</h3>
-      <br><br>
-      Also this is your public key used for encryption of secret gists:
-      <br>
-      <h3>${nacl.util.encodeBase64(keypair.publicKey)}</h3>
+      <h3>${nacl.util.encodeBase64(secretKey)}</h3>
     </div>
     </body>
     </html>
@@ -157,8 +155,19 @@ server.get('/key', (req, res) => {
 server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
   const keyString = req.query.keyString;
+
   try {
     // TODO:
+    secretKey = nacl.util.decodeBase64(keyString);
+
+    const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) }
+    fs.writeFile('./config.json', JSON.stringify(keyObject), (fsErr) => {
+      if (fsErr) {
+        console.log('Error saving config.json: ' + fsErr.message);
+      }
+    });
+
+    res.send(`Key set: ${keyString}`)
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
@@ -186,10 +195,6 @@ server.get('/fetchmessagefromself:id', (req, res) => {
 
       let message = responseContent.slice(32, responseContent.length); // Extract Message
       message = nacl.util.decodeBase64(message); // Decode message into Uint8Array
-
-      // The code bellow was used in the older version when secretKey came from .env
-      // const secretKey = nacl.util.encodeBase64(keypair.secretKey); // Encode Key from ENV
-      // const encodedKey = nacl.util.decodeBase64(secretKey); // Decode Key for Usage
 
       // Unlock the content: Return will be in Unit8Array
       const decypheredBox = nacl.secretbox.open(message, nonce, secretKey)
