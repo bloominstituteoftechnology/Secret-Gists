@@ -29,7 +29,7 @@ const data = fs.readFileSync("./config.json"); // read config.json for the secre
 let secretKeyObject = JSON.parse(data); // holds the secret key
 
 if (data) {
-  secretKey = nacl.util.encodeBase64(secretKeyObject.secretKey); // encode to base 64 to save offline
+  secretKey = nacl.util.decodeBase64(secretKeyObject.secretKey); // encode to base 64 to save offline
 } else {
   // secret key was not found
   secretKey = nacl.randomBytes(32);
@@ -166,7 +166,27 @@ server.post("/createsecret", urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   const { name, content } = req.body;
-  const files = { [name]: { content } };
+
+  const nonce = nacl.randomBytes(24); // random for every gist
+
+  const cipher = nacl.secretbox(
+    nacl.util.decodeUTF8(content),
+    nonce,
+    secretKey
+  );
+
+  // output
+  const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(cipher);
+
+  const files = { [name]: { content: blob } };
+  github.gists
+    .create({ files, public: false })
+    .then(response => {
+      res.json(response.data);
+    })
+    .catch(err => {
+      res.json(err);
+    });
 });
 
 server.post("/postmessageforfriend", urlencodedParser, (req, res) => {
