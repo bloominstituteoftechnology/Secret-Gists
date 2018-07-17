@@ -4,7 +4,7 @@ For example, after success, send a message to the user instead of simply dumping
 
 All remaining tasks should be completed as described in the `Expected Functionality` sections.  Most of these tasks require the generation or loading of a 32-byte secret key.
 
-# Generate/Load Keypair
+# Generate/Load Keypair 1 // done
 
 **Expected Functionality**
 
@@ -14,7 +14,7 @@ Generate the public key from the secret key, and display both.
 
 Completed
 
-# GET/Gists
+# GET/Gists 2 // done
 
 **Expected Functionality**
 
@@ -24,7 +24,7 @@ Return a JSON object containing all of the current, hardcoded user's gists.
 
 AFTER username is hardcoded in app.js AND a valid Github token is properly saved in .env - Functions as expected.  Upon success, a large json object is returned from github and displayed to the user.  This can be investigated for clues, such as how to find the ids of gists.
 
-# GET/Key
+# GET/Key 3
 
 **Expected Functionality**
 
@@ -34,7 +34,7 @@ Return a base64 string of the user's secretKey
 
 Incomplete
 
-# Set Key
+# Set Key 4
 
 **Expected Functionality**
 
@@ -44,7 +44,7 @@ Set the user's secret key to the string they enter.
 
 Incomplete
 
-# Create an unencrypted gist
+# Create an unencrypted gist 5 // done
 
 **Expected Functionality**
 
@@ -54,7 +54,7 @@ Create a public gist in the hardcoded user's github account.
 
 AFTER username is hardcoded in app.js AND a valid Github token is properly saved in .env - Functions as expected.  Upon success, a large json object is returned from github and displayed to the user.  This can be investigated for clues, such as how to find the ids of gists.
 
-# Create an encrypted gist for yourself
+# Create an encrypted gist for yourself 6
 
 **Expected Functionality**
 
@@ -66,7 +66,7 @@ The nonce + encrypted string should be saved.
 
 Incomplete
 
-# Retrieve an encrypted gist for yourself
+# Retrieve an encrypted gist for yourself 7
 
 **Expected Functionality**
 
@@ -76,7 +76,7 @@ Retrieve the secret gist with the given ID, decrypt, and display.
 
 Incomplete
 
-# Create an encrypted gist for a friend to decode
+# Create an encrypted gist for a friend to decode 8
 
 **Expected Functionality**
 
@@ -90,7 +90,7 @@ Your public key + the gist ID should be displayed.
 
 Incomplete
 
-# Retrieve an encrypted gist a friend has posted
+# Retrieve an encrypted gist a friend has posted 9
 
 **Expected Functionality**
 

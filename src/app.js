@@ -1,4 +1,3 @@
-let keypair = {};
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -21,7 +20,29 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
+let keypair = {};
+let secretKey;
+
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+// const data = fs.readFileSync('./config.json');
+
+try {
+  const data = fs.readFileSync('./config.json');
+  // try reading the key from file
+  const keyObject = JSON.parse(data);
+  secretKey = nacl.util.decodeBase64(keyObject.secretKey);
+} catch (err) {
+  // Key not found in file, so write it to the file
+
+  secretKey = nacl.randomBytes(32);
+  const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+
+  fs.writeFile('./config.json', JSON.stringify(keyObject, null, 4), (ferr) => {
+    if (ferr) {
+      console.log(`Error saving config.json: ${ferr.message}`);
+    }
+  });
+}
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -109,7 +130,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
-  res.send(nacl.box.keyPair.fromSecretKey(secretKey));
+  res.send(nacl.box.keyPair.fromSecretKey(keypair));
 });
 
 server.get('/setkey:keyString', (req, res) => {
