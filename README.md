@@ -108,7 +108,7 @@ To use it, set the token in a `.env` file in the repository. The starter file ha
 help with this task.  Open the file called `dotenv`, paste in your token as described in
 the file, and resave the file with a new name of `.env`.  Be sure to not check in the 
 `.env` file! It's already in `.gitignore` but could still end up explicitly added if you 
-really try to push it.
+really try to push it. [done]
 
 Environment variables can also be declared in the terminal, such as the example below:
 
