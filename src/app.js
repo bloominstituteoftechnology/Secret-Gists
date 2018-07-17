@@ -21,13 +21,13 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-let privateKey;
+let secretKey;
 let CONFIG;
 try {
   CONFIG = JSON.parse(fs.readFileSync("config.json", "utf8"));
-  privateKey = nacl.util.decodeUTF8(CONFIG.privateKey);
+  secretKey = nacl.util.decodeUTF8(CONFIG.secretKey);
 } catch (err) {
-  privateKey = nacl.randomBytes(32);
+  secretKey = nacl.randomBytes(32);
 }
 
 server.get("/", (req, res) => {
@@ -85,7 +85,7 @@ server.get("/", (req, res) => {
 
 server.get("/keyPairGen", (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  const keypair = nacl.box.keyPair.fromSecretKey(privateKey);
+  const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
   // Display both keys as strings
   res.send(`
   <html>
@@ -115,7 +115,7 @@ server.get("/gists", (req, res) => {
 
 server.get("/key", (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
-  res.json(nacl.util.encodeBase64(privateKey));
+  res.json(nacl.util.encodeBase64(secretKey));
 });
 
 server.get("/setkey:keyString", (req, res) => {
@@ -123,7 +123,7 @@ server.get("/setkey:keyString", (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO:
-    privateKey = nacl.util.decodeBase64(keyString);
+    secretKey = nacl.util.decodeBase64(keyString);
     res.send(`<div>new key value: ${keyString}</div>`);
   } catch (err) {
     // failed
