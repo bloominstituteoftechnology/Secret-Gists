@@ -8,6 +8,7 @@ nacl.util = require('tweetnacl-util');
 
 const nonceLength = 24;
 
+
 // Hard Coded my Keys to ENV for Later use in Decrypting
 const keypair = {
   publicKey: JSON.parse(process.env.PUBLIC_KEY),
@@ -150,6 +151,46 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  // Address pattern: http://localhost:3000/fetchmessagefromself:?id=12
+  const { id } = req.query;
+  let responseFiles;
+  let responseContent;
+  console.log('The id provided is:', id);
+  // TODO: Figure how to get a gist by ID
+  github.gists.get({ id })
+    .then(response => {
+      responseFiles = response.data.files;
+      for (file in responseFiles) {
+        responseContent = responseFiles[file].content;
+      }
+      // console.log('UTF8 content', responseContent)
+
+      let nonce = responseContent.slice(0, 32); // Extract Nonce from Message
+      nonce = nacl.util.decodeBase64(nonce); // Decode nonce into Unit8Array
+
+      // console.log('nonce: ', nonce)
+
+      let message = responseContent.slice(32, responseContent.length); // Extract Message
+      message = nacl.util.decodeBase64(message); // Decode message into Unit8Array
+
+      // console.log('message', message)
+
+      const secretKey = nacl.util.encodeBase64(keypair.secretKey); // Encode Key from ENV
+      const encodedKey = nacl.util.decodeBase64(secretKey); // Decode Key for Usage
+
+      // Unlock the content: Return will be in Unit8Array
+      const decypheredBox = nacl.secretbox.open(message, nonce, encodedKey)
+
+      // encode Unit 8 Array Content into UTF8 Readable Text
+      const utf8DecypheredBox = nacl.util.encodeUTF8(decypheredBox)
+
+      // console.log(utf8DecypheredBox)
+
+      res.json(utf8DecypheredBox)
+    })
+    .catch(err => {
+      res.json(err);
+    })
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -170,25 +211,38 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   const { name, content } = req.body;
+  /*  
+    Secret key is stored as array
+    had to encode it into base64
+    and then decode it into Unit8Array
+  */
   const secretKey = nacl.util.encodeBase64(keypair.secretKey);
   const encodedKey = nacl.util.decodeBase64(secretKey);
 
-  const encodedContent = nacl.util.decodeUTF8(content); // Tranforming content into Unit8Array
-  console.log('encoded content before encrypting', encodedContent, typeof encodedContent);
-
+  /* 
+    Transforming content into Unit8Array from string
+    Creating a nonce every single time with 24 bytes
+  */
+  const encodedContent = nacl.util.decodeUTF8(content);
   const nonce = nacl.randomBytes(nonceLength);
 
-  console.log('nonce', nonce);
-  console.log('secret key', encodedKey)
+  // console.log('nonce and type', nonce, typeof nonce);
+  // console.log('secret key and type', encodedKey, typeof encodedKey)
+  // console.log('encoded content before encrypting and type', encodedContent, typeof encodedContent);
 
+  /*
+    Using encoded content, nonce and key to encrypt message
+    Formatting encryptedMessage as UTF8 for easy saving into Gists
+  */
   const ecryptedContent = nacl.secretbox(encodedContent, nonce, encodedKey);
+
+  // Encode nonce and encrypted content to be saved on Gists as UTF8 Joined
   const utf8EncryptedContent = nacl.util.encodeBase64(ecryptedContent);
+  const utf8EncryptedNonce = nacl.util.encodeBase64(nonce);
 
-  console.log('encrypted msg', utf8EncryptedContent);
+  console.log('encrypted msg formatted UTF8 Nonce Included', `${utf8EncryptedNonce}${utf8EncryptedContent}`);
 
-  // TODO: Decrypt the message later if possible. Using nacl.secretbox.open()
-  let encryptedContent = 'THIS IS A PERMANENT THING' // ENCRYPT THIS SOMEHOW?
-  const files = { [name]: { content: utf8EncryptedContent } }
+  const files = { [name]: { content: `${utf8EncryptedNonce}${utf8EncryptedContent}` } }
   github.gists.create({ files, public: false })
     .then((response) => {
       res.json(response.data);
