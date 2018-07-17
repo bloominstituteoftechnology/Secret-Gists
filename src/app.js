@@ -146,7 +146,15 @@ server.get('/fetchmessagefromself:id', (req, res) => {
 server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
   const { name, content } = req.body;
-  const files = { [name]: { content } };
+
+  const nonce = nacl.randomBytes(24);
+  
+  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+
+  const blob = nacl.util.encodeBase64(nonce) + ' ' +
+  	nacl.util.encodeBase64(ciphertext);
+
+  const files = { [name]: { content: blob } };
   github.gists.create({ files, public: false })
     .then((response) => {
       res.json(response.data);
