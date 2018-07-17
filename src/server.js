@@ -1,17 +1,18 @@
 require('dotenv').config();
 const fs = require('fs');
-
 const server = require('express')();
-const urlencodedParser = require('body-parser').urlencoded({ extended: false });  // Create application/x-www-form-urlencoded parser
-
+const urlencodedParser = require('body-parser').urlencoded({ extended: false });
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
-
 const github = require('@octokit/rest')({ debug: true, timeout: 0, headers: 'application/vnd.github.v3+json', baseUrl: 'https://api.github.com', agent: undefined });
 github.authenticate({ type: 'oauth', token: process.env.GITHUB_TOKEN });
-
 const username = process.env.GITHUB_USERNAME;
-const keypair = {}
+
+const keypair = {}; // nacl.box.keyPair();
+const data = fs.readFileSync('./config.json');
+let secretKey;
+try { const keyObject = JSON.parse(data); }
+catch { secretKey = nacl.randomBytes(32); const keyObject = { secretKey: nacl.util.encodeBase64(secretKey); } }
 
 server.get('/', (req, res) => { res.send(require('./index_1.js')()); });
 server.get('/keyPairGen', (req, res) => { res.send(require('./index_2.js')(nacl, keypair)); });
