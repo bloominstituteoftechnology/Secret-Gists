@@ -161,19 +161,15 @@ server.get('/fetchmessagefromself:id', (req, res) => {
     .then(response => {
       responseFiles = response.data.files;
       for (file in responseFiles) {
+        // extracting content data from the first property of the responseFiles object.
         responseContent = responseFiles[file].content;
       }
-      // console.log('UTF8 content', responseContent)
 
       let nonce = responseContent.slice(0, 32); // Extract Nonce from Message
       nonce = nacl.util.decodeBase64(nonce); // Decode nonce into Unit8Array
 
-      // console.log('nonce: ', nonce)
-
       let message = responseContent.slice(32, responseContent.length); // Extract Message
       message = nacl.util.decodeBase64(message); // Decode message into Unit8Array
-
-      // console.log('message', message)
 
       const secretKey = nacl.util.encodeBase64(keypair.secretKey); // Encode Key from ENV
       const encodedKey = nacl.util.decodeBase64(secretKey); // Decode Key for Usage
@@ -183,8 +179,6 @@ server.get('/fetchmessagefromself:id', (req, res) => {
 
       // encode Unit 8 Array Content into UTF8 Readable Text
       const utf8DecypheredBox = nacl.util.encodeUTF8(decypheredBox)
-
-      // console.log(utf8DecypheredBox)
 
       res.json(utf8DecypheredBox)
     })
@@ -225,10 +219,6 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   */
   const encodedContent = nacl.util.decodeUTF8(content);
   const nonce = nacl.randomBytes(nonceLength);
-
-  // console.log('nonce and type', nonce, typeof nonce);
-  // console.log('secret key and type', encodedKey, typeof encodedKey)
-  // console.log('encoded content before encrypting and type', encodedContent, typeof encodedContent);
 
   /*
     Using encoded content, nonce and key to encrypt message
