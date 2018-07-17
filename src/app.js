@@ -278,8 +278,8 @@ server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res)
   const messageString = req.query.messageString;
 
   github.gists.publicKey({ messageString })
-    .then((resposne) => {
-      const gist = response.data
+    .then((response) => {
+      const gist = response.data;
       console.log(gist);
       const filename = Object.keys(gist.files)[0];
 
