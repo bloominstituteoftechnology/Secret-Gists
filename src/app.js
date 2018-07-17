@@ -9,7 +9,7 @@ nacl.util = require('tweetnacl-util');
 const username = 'hillal20'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
-
+const myKeyString = "barcelona";
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
@@ -23,10 +23,25 @@ github.authenticate({
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
 
 
-let keypair = {
-  secretKey: `${process.env.GITHUB_TOKEN}privatekey`,
-  publicKey: `${process.env.GITHUB_TOKEN}publickey`,
+let decodedSecretKey; /// has to be  decoded,  and 32 bytes long 
+try {
+
+  const data = fs.readFileSync('./config.json') /// reading the key from the file 
+  const keyObject = JSON.parse(data);
+
+  decodedSecretKey = nacl.util.decodeBase64(keyObject.secretKey);  /// decoding the secretKey 
+
+
+} catch (error) { // we create new key 
+
+  const secretKey = nacl.randomBytes(32); // we create random secret key 
+  const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+
+  fs.writeFile('./config.json', JSON.stringify(keyObject), (error) => {
+    console.log("error saving config.json", error)
+  })
 }
+
 
 
 server.get('/', (req, res) => {
@@ -85,6 +100,8 @@ server.get('/', (req, res) => {
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
   // Display both keys as strings
+  let keypair = nacl.box.keyPair(decodedSecretKey);
+
   res.send(`
   <html>
     <header><title>Keypair</title></header>
@@ -100,7 +117,7 @@ server.get('/keyPairGen', (req, res) => {
 });
 
 server.get('/gists', (req, res) => {
-  // Retrieve a list of all gists for the currently Oauth user
+  // Retrieve a list of all gists for the currently Oauthed5 user
   github.gists.getForUser({ username })
     .then((response) => {
       res.json(response.data);
@@ -113,13 +130,18 @@ server.get('/gists', (req, res) => {
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
   res.send(nacl.util.encodeBase64(keypair.secretKey))
+
 });
 
 server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
-  const keyString = req.query.keyString;
+  let keyString = req.query.keyString;
+
   try {
     // TODO:
+
+    res.send(nacl.util.encodeBase64(keyString))
+
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
@@ -128,10 +150,38 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  let id = req.query.id;
+  // console.log(id);
+  github.gists.get({ id })
+    .then((response) => {
+
+
+
+      // console.log(response.data);
+      const p = Object.values(response.data.files)[0]
+      //console.log('===>p:', p.content)
+      let [nonce, cipherText] = p.content.split(' ');
+
+      cipherText = nacl.util.decodeBase64(cipherText);
+      console.log('====>cipherText', cipherText);
+
+      nonce = nacl.util.decodeBase64(nonce);
+      console.log('====>nonce ', nonce);
+
+      const content = nacl.secretbox.open(cipherText, nonce, decodedSecretKey);//// always take arrays of numbers 
+
+
+      res.send(nacl.util.encodeUTF8(content));
+    })
+    .catch((err) => {
+      res.json(err);
+    });
+
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
+
   const { name, content } = req.body;
   const files = { [name]: { content } };
   github.gists.create({ files, public: false })
@@ -146,17 +196,78 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  // for symmetric encryption we need a nonce , secret key and blob 
+
+
+  const { name, content } = req.body;
+
+
+  const nonce = nacl.randomBytes(24); /// we need 24 bytes as required in the assignment 
+  const encryptedToArrayOfBytes = nacl.util.decodeUTF8(content); /// we turn content in  array of bytes
+  console.log('encry', encryptedToArrayOfBytes)
+  const cipherText = nacl.secretbox(encryptedToArrayOfBytes, nonce, decodedSecretKey); // secure the text to a cipherText  via nonce and decoded key and takes arrays of integers 
+  console.log('ciphertext', cipherText)
+  const blob = nacl.util.encodeBase64(nonce) + ' ' + nacl.util.encodeBase64(cipherText); /// encrypting the nonce and the secure text 
+  console.log('===>emcod64', nacl.util.encodeBase64(cipherText));
+
+  const files = { [name]: { content: blob } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
+
+
+
+
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
+
   // TODO:  Create a private and encrypted gist with given name/content
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
+
+
+  const { name, content } = req.body;
+  const encrypted = nacl.util.encodeUTF8(response)
+  const files = { [name]: { content } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
+
+
+
+
+
+
 });
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+
+  let id = req.params.id;
+  console.log(id);
+  github.gists.get({ id })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
+
+
+
+
 });
 
 /* OPTIONAL - if you want to extend functionality */
