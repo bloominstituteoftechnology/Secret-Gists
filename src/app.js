@@ -6,7 +6,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'rhogan29'; // TODO: Replace with your username
+const username = 'rhogan29'; // DONE: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -20,15 +20,15 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
-// TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+// DONE:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
 
-let privateKey;
-let CONFIG;
+let privateKey; // set private key variable
+let CONFIG; // set config variable
 try {
-  CONFIG = JSON.parse(fs.readFileSync('config.json', 'utf8'));
-  privateKey = nacl.util.decodeUTF8(CONFIG.privateKey);
+  CONFIG = JSON.parse(fs.readFileSync('config.json', 'utf8')); // set config to the parsing of the config.json file.
+  privateKey = nacl.util.decodeUTF8(CONFIG.privateKey); // set privateKey to the nacl.
 } catch (err) {
-  privateKey = nacl.randomBytes(32);
+  privateKey = nacl.randomBytes(32); // generate a random 32 bit string if none is found.
 }
 
 server.get('/', (req, res) => {
@@ -85,7 +85,7 @@ server.get('/', (req, res) => {
 });
 
 server.get('/keyPairGen', (req, res) => {
-  // TODO:  Generate a keypair from the secretKey and display both
+  // DONE:  Generate a keypair from the secretKey and display both
   const keypair = nacl.box.keyPair();
   // Display both keys as strings
   res.send(`
@@ -99,6 +99,7 @@ server.get('/keyPairGen', (req, res) => {
       <div>Public Key: ${nacl.util.encodeBase64(keypair.publicKey)}</div>
       <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
     </body>
+  </html>
   `);
 });
 
@@ -114,14 +115,26 @@ server.get('/gists', (req, res) => {
 });
 
 server.get('/key', (req, res) => {
-  // TODO: Display the secret key used for encryption of secret gists
+  // DONE: Display the secret key used for encryption of secret gists
+  privateKey = nacl.util.decodeUTF8(CONFIG.privateKey); // set privateKey to the nacl.
+  res.send(`
+  <html>
+    <body>
+      <h1>Heres a secret...</h1>
+      <div>This is your secret key, dont share it!</div>
+      <br/>
+      <div>Secret Key: ${privateKey}</div>
+    </body>
+  `);
 });
 
 server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
-  const keyString = req.query.keyString;
+  const keyString = req.query.keyString; // const of keystring.
   try {
     // TODO:
+    privateKey = nacl.util.decodeBase64(keyString);
+    res.send(`<div>Key successfully changed to: ${keyString}</div>`);
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
