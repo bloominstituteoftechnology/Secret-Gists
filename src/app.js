@@ -138,7 +138,8 @@ server.get('/setkey:keyString', (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO:
-
+    secretKey = nacl.util.decodeBase64(keyString);
+    res.send(secretKey);
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
@@ -195,10 +196,22 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
+
 });
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.query.id;
+  github.gists.get({ id }).then((response) => {
+    const gist = response.data;
+    const filename = Object.keys(gist.files)[0];
+    const blob = gist.files[filename].content;
+    let [nonce, ciphertext] = blob.split(' ');
+    nonce = nacl.util.decodeBase64(nonce);
+    ciphertext = nacl.util.decodeBase64(ciphertext);
+    const plaintext = nacl.secretbox.open(ciphertext, nonce, secretKey);
+    res.send(nacl.util.encodeUTF8(plaintext));
+  });
 });
 
 /* OPTIONAL - if you want to extend functionality */
