@@ -152,6 +152,7 @@ server.post("/create", urlencodedParser, (req, res) => {
 server.post("/createsecret", urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+
   const { name, content } = req.body;
   const nonce = nacl.randomBytes(nonceLength);
 });
