@@ -26,20 +26,24 @@ github.authenticate({
 let secretKey;
 
 const data = fs.readFileSync("./config.json"); // read config.json for the secret key
-let secretKeyObject = JSON.parse(data); // holds the secret key
 
 if (data) {
+  const secretKeyObject = JSON.parse(data); // holds the secret key
   secretKey = nacl.util.decodeBase64(secretKeyObject.secretKey); // encode to base 64 to save offline
 } else {
   // secret key was not found
   secretKey = nacl.randomBytes(32);
-  secretKeyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+  const secretKeyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
   // save key to config.json file
-  fs.writeFile("./config.json", JSON.stringify(secretKeyObject), err => {
-    if (err) {
-      console.error(err);
+  fs.writeFile(
+    "./config.json",
+    JSON.stringify(secretKeyObject, null, 4),
+    err => {
+      if (err) {
+        console.error(`Error saving config.json " + ${err.message}`);
+      }
     }
-  });
+  );
 }
 
 server.get("/", (req, res) => {
@@ -146,6 +150,30 @@ server.get("/setkey:keyString", (req, res) => {
 
 server.get("/fetchmessagefromself:id", (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.query.id;
+
+  github.gists
+    .get({ id })
+    .then(response => {
+      const gist = response.data;
+      const filename = Object.keys(gist.files)[0];
+      const blob = gist.files[filename].content; // encoded gist content
+
+      let [nonce, cipherText] = blob.split(" ");
+      nonce = nacl.util.decodeBase64(nonce);
+
+      cipherText = nacl.util.decodeBase64(cipherText);
+
+      // decode blob - uint8
+      const plainText = nacl.secretbox.open(cipherText, nonce, secretKey);
+
+      // convert to human friendly format
+      res.send(nacl.util.encodeUTF8(plainText));
+    })
+    .catch(err => {
+      console.error(err);
+      res.send(err);
+    });
 });
 
 server.post("/create", urlencodedParser, (req, res) => {
@@ -176,7 +204,9 @@ server.post("/createsecret", urlencodedParser, (req, res) => {
   );
 
   // output
-  const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(cipher);
+  const blob = `${nacl.util.encodeBase64(nonce)} ${nacl.util.encodeBase64(
+    cipher
+  )}`;
 
   const files = { [name]: { content: blob } };
   github.gists
