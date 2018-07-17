@@ -24,6 +24,14 @@ github.authenticate({
 const naclSecret = nacl.util.decodeBase64(process.env.NACL_SECRET);
 let keypair = nacl.box.keyPair.fromSecretKey(naclSecret);
 
+const unpackGist = (data) => {
+  const gist = Object.values(data.files)[0];
+  return gist.content
+    .split(' ')
+    .map(base64 => nacl.util.decodeBase64(base64))
+    .concat(gist.filename);
+};
+
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
   res.send(`
@@ -68,8 +76,9 @@ server.get('/', (req, res) => {
           <input type="submit" value="Submit">
         </form>
         <h3>Retrieve an *encrypted* gist a friend has posted</h3>
-        <form action="/fetchmessagefromfriend:messageString" method="get">
-          String From Friend: <input type="text" name="messageString"><br>
+        <form action="/fetchmessagefromfriend" method="get">
+          Gist ID From Friend: <input type="text" name="id"><br>
+          Friend's Public Key: <input type="text" name="publicKeyString"><br>
           <input type="submit" value="Submit">
         </form>
       </body>
@@ -139,25 +148,50 @@ server.get('/fetchmessagefromself:id', (req, res) => {
 
   github.gists.get({ gist_id: req.query.id })
     .then(({ data }) => {
-      const gist = Object.values(data.files)[0];
-      const [nonce, encryptedBytes] = gist.content
-        .split(' ')
-        .map(base64 => nacl.util.decodeBase64(base64));
-
+      const [nonce, encryptedBytes, filename] = unpackGist(data);
       const decrypted = nacl.secretbox.open(encryptedBytes, nonce, keypair.secretKey);
       const encoded = nacl.util.encodeUTF8(decrypted);
 
       res.send(`
         <html>
-          <header><title>Keypair</title></header>
+          <header><title>Decrypted Gist id: ${req.query.id}</title></header>
           <body>
-            <h1>${gist.filename}</h1>
+            <h1>${filename}</h1>
             <div>${encoded}</div>
           </body>
         </html>
       `);
     })
-    .catch(err => res.json(err));
+    .catch((err) => {
+      console.log('fooked');
+      res.json(err);
+    });
+});
+
+server.get('/fetchmessagefromfriend', urlencodedParser, (req, res) => {
+  // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const { id, publicKeyString } = req.query;
+  const naclPublicKey = nacl.util.decodeBase64(publicKeyString);
+  github.gists.get({ gist_id: id })
+    .then(({ data }) => {
+      const [nonce, encryptedBytes, filename] = unpackGist(data);
+      const decrypted = nacl.box.open(encryptedBytes, nonce, naclPublicKey, keypair.secretKey);
+      const encoded = nacl.util.encodeUTF8(decrypted);
+
+      res.send(`
+        <html>
+          <header><title>Decrypted Gist id: ${req.query.id}</title></header>
+          <body>
+            <h1>${filename}</h1>
+            <div>${encoded}</div>
+          </body>
+        </html>
+      `);
+    })
+    .catch((err) => {
+      console.log('borked: ', err);
+      res.json(err);
+    });
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -165,12 +199,12 @@ server.post('/create', urlencodedParser, (req, res) => {
   const { name, content } = req.body;
   const files = { [name]: { content } };
   github.gists.create({ files, public: false })
-    .then((response) => {
-      res.json(response.data);
-    })
-    .catch((err) => {
-      res.json(err);
-    });
+  .then((response) => {
+    res.json(response.data);
+  })
+  .catch((err) => {
+    res.json(err);
+  });
 });
 
 server.post('/createsecret', urlencodedParser, (req, res) => {
@@ -181,14 +215,14 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   const nonce = nacl.randomBytes(24);
   const encryptedBytes = nacl.secretbox(naclContent, nonce, keypair.secretKey);
   const encodedContent = [nonce, encryptedBytes]
-    .map(bytes => nacl.util.encodeBase64(bytes))
-    .join(' ');
+  .map(bytes => nacl.util.encodeBase64(bytes))
+  .join(' ');
 
   const files = { [name]: { content: encodedContent } };
 
   github.gists.create({ files, public: false })
-    .then(({ data }) => res.json(data))
-    .catch(err => res.json(err));
+  .then(({ data }) => res.json(data))
+  .catch(err => res.json(err));
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
@@ -196,10 +230,20 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
-});
+  const { name, publicKeyString, content } = req.body;
+  const naclPublicKey = nacl.util.decodeBase64(publicKeyString);
+  const naclContent = nacl.util.decodeUTF8(content);
+  const nonce = nacl.randomBytes(24);
+  const encryptedBytes = nacl.box(naclContent, nonce, naclPublicKey, keypair.secretKey);
+  const encodedContent = [nonce, encryptedBytes]
+    .map(bytes => nacl.util.encodeBase64(bytes))
+    .join(' ');
 
-server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
-  // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const files = { [name]: { content: encodedContent } };
+
+  github.gists.create({ files, public: true })
+    .then(({ data }) => res.json(data))
+    .catch(err => res.json(err));
 });
 
 /* OPTIONAL - if you want to extend functionality */
