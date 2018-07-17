@@ -15,11 +15,6 @@ const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
 // Generate an access token: https://github.com/settings/tokens
 
-// github.users.getForUser({ username: username }).then(response => {
-//   console.log(response.data);
-//   res.send({ reply: response.data });
-// });
-
 // Set it to be able to create gists
 github.authenticate({
   type: 'oauth',
@@ -160,15 +155,6 @@ server.get('/setkey:keyString', (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO:
-    // if (keyString) {
-    //   secretKey = keyString;
-    //   fs.open('./.env', 'a', (error, fd) => {
-    //     if (error) throw (error);
-    //     fs.write(fd, `secretKey="${nacl.util.encodeUTF8(secretKey)}"\n`);
-    //     fs.closeSync(fd);
-    //   });
-    // }
-
     if (nacl.util.decodeUTF8(keyString).length === 32) {
       secretKey = nacl.util.decodeUTF8(keyString);
       const keyObj = { secretKey: nacl.util.encodeBase64(secretKey) };
