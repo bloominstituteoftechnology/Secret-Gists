@@ -6,7 +6,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'david-pok'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -20,8 +20,44 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
+const keypair = {};
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+const data = fs.readFileSync('./config.json');
 
+let secretKey;
+
+try {
+// reads the key from the file
+  const keyObject = JSON.parse(data);
+  secretKey = nacl.util.decodeBase64(keyObject.secretKey);
+} catch (err) {
+// if key not found in file, writes it to the file
+  secretKey = nacl.randomBytes(32);
+  const keyObject = { secretkey: nacl.util.encodeBase64(secretKey) };
+  fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+    if (ferr) {
+      console.log('Error saving config.json');
+      console.log(ferr.message);
+    }
+  });
+}
+
+// const data = fs.readFileSync('./config.json');
+// let secretKey;
+// try {
+//   const keyObject = JSON.parse(data);
+//   secretKey = nacl.util.decodeBase64(keyObject.secretKey);
+// } catch (err) {
+//   secretKey = nacl.randomBytes(32);
+//   const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+//   fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+//     if (ferr) {
+//       console.log('There has been an error saving the key data.');
+//       console.log(err.message);
+//       return;
+//     }
+//   });
+// }
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -78,6 +114,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
+  // const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
 
   // Display both keys as strings
   res.send(`
@@ -89,7 +126,7 @@ server.get('/keyPairGen', (req, res) => {
       <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
       <br/>
       <div>Public Key: ${nacl.util.encodeBase64(keypair.publicKey)}</div>
-      <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
+      <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div> 
     </body>
   `);
 });
