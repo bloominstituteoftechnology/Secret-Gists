@@ -13,7 +13,7 @@ const server = express();
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
-let mySecretKeyString;
+let mySecretKeyString = process.env.SECRET_KEY;
 
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
@@ -156,9 +156,9 @@ server.get('/fetchmessagefromself:id', asyncHandler(async (req, res) => {
 
   let decodedContentArray = nacl.util.decodeBase64(content);
   let decodedNonceArray = nacl.util.decodeBase64(nonce);
+  const decodedSecretKey = nacl.util.decodeBase64(mySecretKeyString)
 
-
-  content = nacl.secretbox.open(decodedContentArray, decodedNonceArray, mySecretKeyString)
+  content = nacl.secretbox.open(decodedContentArray, decodedNonceArray, decodedSecretKey)
   res.status(200).send(nacl.util.encodeUTF8(content));
 }));
 
@@ -182,13 +182,14 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // NOTE - we're only encrypting the content, not the filename
   const { name, content } = req.body;
 
-  let key = nacl.randomBytes(nacl.secretbox.keyLength);
-  mySecretKeyString = key;
+  // let key = nacl.randomBytes(nacl.secretbox.keyLength);
+  // mySecretKeyString = key;
 
   let nonce = nacl.randomBytes(nacl.secretbox.nonceLength);
   let msg = nacl.util.decodeUTF8(content);
 
-  let encryptedNonceAndMessageArray = nacl.secretbox(msg, nonce, key);
+  const decodedSecretKey = nacl.util.decodeBase64(mySecretKeyString)
+  let encryptedNonceAndMessageArray = nacl.secretbox(msg, nonce, decodedSecretKey);
 
   const encryptedGist = nacl.util.encodeBase64(encryptedNonceAndMessageArray);
   const encodedNonce = nacl.util.encodeBase64(nonce);
