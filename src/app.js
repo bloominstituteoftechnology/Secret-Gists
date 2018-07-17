@@ -204,11 +204,28 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content, publicKeyString } = req.body;
+  // Create random number of 24 bits
+  const nonce = nacl.randomBytes(24);
+  // Code content into utf8 for encryption and create human readable 'blob' usinf base 64
+  const sharedKey = nacl.box.before(keypair.publicKey, keypair.secretKey);
+  const ciphertext = nacl.box.after(nacl.util.decodeUTF8(content), nonce, sharedKey);
+  const blob = nacl.util.encodeBase64(nonce) + ' ' + nacl.util.encodeBase64(ciphertext) + ' '
+    + nacl.util.encodeBase64(sharedKey);
+  const files = { [name]: { content: blob } };
 
+  github.gists.create({ files, public: true })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  
 });
 
 /* OPTIONAL - if you want to extend functionality */
