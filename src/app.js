@@ -131,9 +131,13 @@ server.get('/setkey:keyString', (req, res) => {
   }
 });
 
-server.get('/fetchmessagefromself:id', (req, res) => {
+server.get('/fetchmessagefromself:id', asyncHandler(async (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
-});
+  const gist_id = req.query.id;
+  const gist = await github.gists.get({id: gist_id });
+
+  res.status(200).send(Object.values(gist.data.files)[0].content);
+}));
 
 server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
@@ -151,6 +155,17 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content } = req.body;
+  // const secretContent = nacl.util.encodeUTF8(content.split());
+
+  const files = { [name]: { content } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
