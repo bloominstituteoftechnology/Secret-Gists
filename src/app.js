@@ -27,6 +27,7 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+let keyPair;
 let secretKey;
 try {
   const data = fs.readFileSync('./config.json');
@@ -34,9 +35,13 @@ try {
   // Read key from the file
   const keyObj = JSON.parse(data);
   secretKey = nacl.util.decodeBase64(keyObj.secretKey);
+  keyPair = nacl.box.keyPair.fromSecretKey(secretKey);
 } catch (err) {
   // Key was not in file
-  secretKey = nacl.randomBytes(32);
+  // secretKey = nacl.randomBytes(32);
+  keyPair = nacl.box.keyPair();
+  secretKey = keyPair.secretKey;
+
   const keyObj = { secretKey: nacl.util.encodeBase64(secretKey) };
 
   // Writes to config.json, if it doesnt exist will make it
@@ -44,7 +49,6 @@ try {
     if (ferr) console.error(`Error saving to config.json: ${ferr.message}`);
   });
 }
-
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -101,10 +105,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  const keypair = {
-    publicKey: 'random',
-    secretKey: 'bs',
-  };
+  const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
   res.send(`
   <html>
     <header><title>Keypair</title></header>
@@ -149,34 +150,14 @@ server.get('/key', (req, res) => {
       <header></header>
       <body>
         <h1>No Key Yet</h1>
-        <p>The Secret Key has not been generated, please <a href="/keyPairGen">generate</a> a key first.</p>
       </body>
     `);
   }
-  // if (this.secretKey) {
-  //   res.send(`
-  //   <html>
-  //     <header><title>Your Secret Key</title></header>
-  //     <body>
-  //       <h1>Secret Key</h1>
-  //       <p>The Secret Key Is: ${this.secretKey}</p>
-  //     </body>
-  //   `);
-  // } else {
-  //   res.send(`
-  //   <html>
-  //     <header></header>
-  //     <body>
-  //       <h1>No Key Yet</h1>
-  //       <p>The Secret Key has not been generated, please <a href="/keyPairGen">generate</a> a key first.</p>
-  //     </body>
-  //   `);
-  // }
 });
 
 server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
-  // const keyString = req.query.keyString;
+  const keyString = req.query.keyString;
   try {
     // TODO:
     // if (keyString) {
@@ -186,18 +167,37 @@ server.get('/setkey:keyString', (req, res) => {
     //     fs.write(fd, `secretKey="${nacl.util.encodeUTF8(secretKey)}"\n`);
     //     fs.closeSync(fd);
     //   });
-
     // }
-    res.send(`
-    <html>
-      <header><title>New Key Set</title></header>
-      <body>
-        <h1>Secret Key</h1>
-        <p>The new Secret Key Is: ${secretKey}</p>
-        <br/>
-        <div>You can now <a href="/key">view</a> your Secret Key</div>
-      </body>
-    `);
+
+    if (nacl.util.decodeUTF8(keyString).length === 32) {
+      secretKey = nacl.util.decodeUTF8(keyString);
+      const keyObj = { secretKey: nacl.util.encodeBase64(secretKey) };
+
+      // Writes to config.json, if it doesnt exist will make it
+      fs.writeFile('./config.json', JSON.stringify(keyObj, null, 4), (ferr) => {
+        if (ferr) console.error(`Error saving to config.json: ${ferr.message}`);
+      });
+      res.send(`
+      <html>
+        <header><title>New Key Set</title></header>
+        <body>
+          <h1>Secret Key</h1>
+          <p>The new Secret Key Is: ${secretKey}</p>
+          <br/>
+          <div>You can now <a href="/key">view</a> your Secret Key</div>
+        </body>
+      `);
+    } else {
+      res.send(`
+      <html>
+        <header><title>Invalid Key Size</title></header>
+        <body>
+          <h1>Invalid Secret Key Size</h1>
+          <p>The Secret Key is still: ${secretKey}</p>
+          <br/>
+        </body>
+      `);
+    }
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
