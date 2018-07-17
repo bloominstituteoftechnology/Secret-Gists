@@ -1,4 +1,4 @@
-const keypair = { publicKey: 'something', secretKey: 'somethingelse' };
+let keypair = {};
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -79,7 +79,8 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-
+  // let keypair = nacl.secretbox();
+  keypair = nacl.box.keyPair();
   // Display both keys as strings
   res.send(`
   <html>
@@ -108,6 +109,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.send(nacl.box.keyPair.fromSecretKey(secretKey));
 });
 
 server.get('/setkey:keyString', (req, res) => {
