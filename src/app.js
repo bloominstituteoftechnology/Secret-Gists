@@ -6,7 +6,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const keypair = nacl.box.keyPair(); // creates keypair
+//const keypair = nacl.box.keyPair(); Old code that creates keypair
 const username = 'jtla3'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
@@ -21,10 +21,31 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
-// TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-const key = process.env.SECRET_KEY
-  ? nacl.util.decodeBase64(process.env.SECRET_KEY)
-  : nacl.randomBytes(32);
+const keypair {} // added in from solution lecture
+
+// TODO:  Attempt to load the key from config.json.  
+//If it is not found, create a new 32 byte key.
+
+let secretKey; // created a global file called secrectKey
+
+
+try {
+  const data = fs.readFileSync('./config.json');
+  // Read the key from the file
+  const keyObject = JSON.parse(data);
+  secretKey = nacl.util.decodeBase64(keyObject.secretKey);
+catch (err) {
+  // Key not found in file, so write it to the file
+  secretKey = nacl.randomBytes(32); // returns UTF8 array
+  const keyObject = { secrectKey: nacl.util.encodeBase64(secretKey) };
+
+  fs.writeFile('./config.json', JSON.stringify(keyObject, null 4), (ferr) => {
+    if (ferr) {
+      console.log('Error saving config.json: ' + ferr.message);
+    }
+  });
+}
+
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -80,10 +101,13 @@ server.get('/', (req, res) => {
 });
 
 server.get('/keyPairGen', (req, res) => {
-  // TODO:  Generate a keypair from the secretKey and display both
+  //TODO:  Generate a keypair from the secretKey and display both
+  
+  // const randomKeys = nacl.box.keyPair(); // old code
+  // keypair.publicKey = randomKeys.publicKey;
+  // keypair.secretKey = randomKeys.secretKey;
 
-
-  // Display both keys as strings
+  //Display both keys as strings
   res.send(`
   <html>
     <header><title>Keypair</title></header>
@@ -125,10 +149,26 @@ server.get('/setkey:keyString', (req, res) => {
   }
 });
 
-server.get('/fetchmessagefromself:id', (req, res) => {
-  // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
-  const id = req.params.id;
-});
+  server.get('/fetchmessagefromself:id', (req, res) => {
+    // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+    const id = req.query.id;
+
+    github.gists
+      .get({ id })
+      .then((response) => {
+        const gist = response.data;
+        const filename = Object.keys(gist.files)[0];
+        const blob = gist.files[filename].content;
+        let nonce = [nonce, ciphertext] = blob.split(' ');
+      
+        nonce = nacl.util.decodeBase64(nonce);
+        ciphertext = nacl.util.decodeBase64(ciphertext);
+
+        const plaintext = nacl.secretbox.open(ciphertext, nonce, secretKey);
+
+        res.send(nacl.util.encodeUTF8(plaintext));
+      });
+  });
 
 server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
@@ -147,6 +187,23 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // need to do tomorrow -- figure out nonce and other functions
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content } = req.body;
+
+  const nonce = nacl.randomBytes(24);
+
+  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+  // Saving requires both encrypt and nonce
+  const blob = nacl.util.encodeBase64(nonce) + ' ' + nacl.util.encodeBase64(encrypt);
+
+  const files = { [name]: { content: blob } };
+  github.gists
+    .create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+    res.json(err);
+  });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
