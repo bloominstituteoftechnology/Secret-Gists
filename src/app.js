@@ -111,9 +111,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
-  const secret = nacl.box.keyPair.fromSecretKey();
-  const secretkey = nacl.util.decodeBase64(secret);
-  res.send(secretkey);
+  res.send(nacl.util.encodeBase64(key));
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -179,4 +177,4 @@ Still want to write code? Some possibilities:
 -Let the user pass in their private key via POST
 */
 
-server.listen(3000);
+server.listen(3001);
