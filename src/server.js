@@ -5,16 +5,25 @@ const express = require('express');
 const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
+
 // Just use ENV // const username = 'your_name_here'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 github.authenticate({ type: 'oauth', token: process.env.GITHUB_TOKEN });
+
+
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key. // Return a response that documents the other routes/operations available
-server.get('/', (req, res) => { res.send(/**/); });
+server.get('/', (req, res) => {
+	const main_html = require('./index_1.js')()
+	res.send(main_html);
+});
 // TODO:  Generate a keypair from the secretKey and display both // Display both keys as strings
-server.get('/keyPairGen', (req, res) => { res.send(/**/); });
+server.get('/keyPairGen', (req, res) => {
+	const other_html = require('./index_2.js')(nacl, keypair)
+	res.send(other_html);
+});
 // Retrieve a list of all gists for the currently authed user
 server.get('/gists', (req, res) => {
   github.gists.getForUser({ username })
@@ -24,11 +33,11 @@ server.get('/gists', (req, res) => {
 // TODO: Display the secret key used for encryption of secret gists
 server.get('/key', (req, res) => {});
 // TODO: Set the key to one specified by the user or display an error if invalid
-server.get('/setkey:keyString', (req, res) => {
-  const keyString = req.query.keyString;
-  try {};
-  catch (err) { res.send('Failed to set key.  Key string appears invalid.'); } // failed 
-});
+//server.get('/setkey:keyString', (req, res) => {
+  //const keyString = req.query.keyString;
+  // try {};
+  // catch (err) { res.send('Failed to set key.  Key string appears invalid.'); } // failed 
+//});
 // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
 server.get('/fetchmessagefromself:id', (req, res) => {});
 // Create a private gist with name and content given in post request
