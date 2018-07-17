@@ -86,6 +86,7 @@ is just as sensitive as your password - you don't want to share it in plaintext
 or check it in to your git repository.
 
 
+
 ## Building an application using a REST API
 
 REST APIs accept HTTP requests and return (usually) JSON - in principle you can
@@ -96,7 +97,7 @@ expose objects and methods so you can interact with them naturally in your code.
 
 We will build our application using Express. The first step will be to register
 a new OAuth token. [Do so from the GitHub webpage](https://github.com/settings/tokens) -
-you should set it to have permission to create gists.
+you should set it to have permission to create gists. [Done]
 
 You will then see a page with a personal access token that will only ever
 display once - copy it somewhere safe, and treat it as a password! That it,
@@ -107,7 +108,7 @@ To use it, set the token in a `.env` file in the repository. The starter file ha
 help with this task.  Open the file called `dotenv`, paste in your token as described in
 the file, and resave the file with a new name of `.env`.  Be sure to not check in the 
 `.env` file! It's already in `.gitignore` but could still end up explicitly added if you 
-really try to push it.
+really try to push it. [done]
 
 Environment variables can also be declared in the terminal, such as the example below:
 

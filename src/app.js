@@ -6,7 +6,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'Anthony-Calderaro'; 
 const github = octokit({ debug: true });
 const server = express();
 
@@ -20,8 +20,27 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
-// TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+// TODO:  Attempt to load the key from config.json.  
+// If it is not found, create a new 32 byte key.
+const data = fs.readFileSync('./config.json');
 
+let secretKey;
+
+try {
+    const keyObject = JSON.parse(data);
+    // TODO get secret key from key object
+} catch (err) {
+  // key not found, so write it to file
+  secretKey = nacl.randomBytes(32); 
+  const keyObject = { 
+    secretKey: nacl.util.encodeBase64(secretKey) };
+
+    fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+      if (ferr) {
+        console.log('Error Saving' + err.message); 
+      }
+    })
+}
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -78,7 +97,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-
+  const keypair = nacl.box.keyPair();
   // Display both keys as strings
   res.send(`
   <html>
