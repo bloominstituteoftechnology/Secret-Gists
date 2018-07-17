@@ -7,8 +7,7 @@ const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 const github = octokit({ debug: true });
 const server = express();
-// Create application/x-www-form-urlencoded parser
-const urlencodedParser = bodyParser.urlencoded({ extended: false });
+const urlencodedParser = bodyParser.urlencoded({ extended: false }); // Create application/x-www-form-urlencoded parser
 const username = process.env.GITHUB_USERNAME;
 github.authenticate({ type: 'oauth', token: process.env.GITHUB_TOKEN });
 const keypair = {}
@@ -27,10 +26,8 @@ server.post('/createsecret', urlencodedParser, (req, res) => { // Publicly poste
     .then((response) => { res.json(response.data); })
     .catch((err) => { res.json(err); })
 });
-
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {}); // TODO:  Create a private and encrypted gist with given name/content // using someone else's public key that can be accessed and // viewed only by the person with the matching private key // NOTE - we're only encrypting the content, not the filename
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {}); // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
 server.post('/login', (req, res) => { res.json({ success: false }); }); /* OPTIONAL - if you want to extend functionality */ // TODO log in to GitHub, return success/failure response // This will replace hardcoded username from above // const { username, oauth_token } = req.body;
-server.get('/key', (req, res) => {}); // TODO: Display the secret key used for encryption of secret gists
-// TODO: Set the key to one specified by the user or display an error if invalid //server.get('/setkey:keyString', (req, res) => { //const keyString = req.query.keyString; // try {}; // catch (err) { res.send('Failed to set key.  Key string appears invalid.'); } // failed  //}); // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+server.get('/key', (req, res) => {}); // TODO: Display the secret key used for encryption of secret gists // TODO: Set the key to one specified by the user or display an error if invalid //server.get('/setkey:keyString', (req, res) => { //const keyString = req.query.keyString; // try {}; // catch (err) { res.send('Failed to set key.  Key string appears invalid.'); } // failed  //}); // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
 server.listen(3000);
