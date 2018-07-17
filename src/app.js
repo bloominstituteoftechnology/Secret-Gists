@@ -6,12 +6,18 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'phantomflynn';
 const github = octokit({ debug: true });
 const server = express();
 
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
+
+// HELPERS
+const encode64 = x => nacl.util.encodeBase64(x);
+const decode64 = x => nacl.util.decodeBase64(x);
+const encodeUTF8 = x => nacl.util.encodeUTF8(x);
+const decodeUTF8 = x => nacl.util.decodeUTF8(x);
 
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
@@ -21,7 +27,18 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+let secretKey, temp;
 
+try {
+  const data = fs.readFileSync('./config.json');
+  temp = JSON.parse(data);
+  secretKey = decode64(temp.SECRET_KEY);
+} 
+catch (err) {
+  secretKey = nacl.randomBytes(32);
+  temp = { SECRET_KEY: encode64(secretKey) };
+  fs.writeFileSync('./config.json', JSON.stringify(temp));
+}
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -78,6 +95,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
+  const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
 
   // Display both keys as strings
   res.send(`
@@ -88,8 +106,8 @@ server.get('/keyPairGen', (req, res) => {
       <div>Share your public key with anyone you want to be able to leave you secret messages.</div>
       <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
       <br/>
-      <div>Public Key: ${nacl.util.encodeBase64(keypair.publicKey)}</div>
-      <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
+      <div>Public Key: ${encode64(keypair.publicKey)}</div>
+      <div>Secret Key: ${encode64(keypair.secretKey)}</div>
     </body>
   `);
 });
@@ -97,31 +115,38 @@ server.get('/keyPairGen', (req, res) => {
 server.get('/gists', (req, res) => {
   // Retrieve a list of all gists for the currently authed user
   github.gists.getForUser({ username })
-    .then((response) => {
-      res.json(response.data);
-    })
-    .catch((err) => {
-      res.json(err);
-    });
+    .then(response => res.json(response.data))
+    .catch(err => res.json(err));
 });
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.send(encode64(secretKey));
 });
 
 server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
   const keyString = req.query.keyString;
   try {
-    // TODO:
+    secretKey = { secretKey: decode64(keyString) };
+    res.send(keyString);
   } catch (err) {
-    // failed
-    res.send('Failed to set key.  Key string appears invalid.');
+    res.send('Failed to set key. Key string appears invalid.');
   }
 });
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const { id } = req.query;
+  github.gists.get(id).then(response => {
+    const gist = response.data;
+    const filename = Object.keys(gist.files)[0];
+    const blob = gist.files[filename].content;
+    const nonce = decode64(blob.slice(0, 32));
+    const ciphertext = decode64(blob.slice(32, blob.length));
+    const plaintext = nacl.secretbox.open(ciphertext, nonce, secretKey);
+    res.send(encodeUTF8(plaintext));
+  });
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -129,17 +154,22 @@ server.post('/create', urlencodedParser, (req, res) => {
   const { name, content } = req.body;
   const files = { [name]: { content } };
   github.gists.create({ files, public: false })
-    .then((response) => {
-      res.json(response.data);
-    })
-    .catch((err) => {
-      res.json(err);
-    });
+    .then(response => res.json(response.data))
+    .catch(err => res.json(err));
 });
 
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const ciphertext = nacl.secretbox(decodeUTF8(content), nonce, secretKey);
+  const blob = encode64(nonce) + encode64(ciphertext);
+  const files = { [name]: { content: blob } };
+
+  github.gists.create({ files, public: false })
+    .then(response => res.json(response.data))
+    .catch(err => res.json(err));
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
@@ -147,6 +177,29 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
+  const { name, publicKeyString, content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const ciphertext = nacl.box(decodeUTF8(content), nonce, decode64(publicKeyString), secretKey);
+  const blob = encode64(nonce) + encode64(ciphertext);
+  const files = { [name]: { content: blob } };
+
+  github.gists.create({ files, public: true })
+    .then(response => {
+      const { id } = response.data;
+      const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
+      const message = encode64(keypair.publicKey) + id;
+      res.send(`
+        <html>
+          <header>
+            <title>Message Saved</title>
+          </header>
+          <body>
+            <h1>Message Saved</h1>
+            <h5>Decode: ${message}</h5>
+          </body>
+        </html>
+      `);
+    }).catch(err => res.json(err));
 });
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
