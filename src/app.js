@@ -129,7 +129,11 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
-  res.send(nacl.box.keyPair.fromSecretKey(keypair));
+  const data = fs.readFileSync('./config.json');
+  // try reading the key from file
+  const keyObject = JSON.parse(data);
+
+  res.send(keyObject.secretKey);
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -199,6 +203,23 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
+  const { name, content } = req.body;
+
+  const nonce = nacl.randomBytes(24);
+
+  const cypherText = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+
+  const encrypted = `${nacl.util.encodeBase64(nonce)} ${nacl.util.encodeBase64(cypherText)}`;
+
+  const files = { [name]: { content: encrypted } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
+
   // TODO:  Create a private and encrypted gist with given name/content
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key

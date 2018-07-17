@@ -24,7 +24,7 @@ Return a JSON object containing all of the current, hardcoded user's gists.
 
 AFTER username is hardcoded in app.js AND a valid Github token is properly saved in .env - Functions as expected.  Upon success, a large json object is returned from github and displayed to the user.  This can be investigated for clues, such as how to find the ids of gists.
 
-# GET/Key 3
+# GET/Key 3 // done
 
 **Expected Functionality**
 
@@ -54,7 +54,7 @@ Create a public gist in the hardcoded user's github account.
 
 AFTER username is hardcoded in app.js AND a valid Github token is properly saved in .env - Functions as expected.  Upon success, a large json object is returned from github and displayed to the user.  This can be investigated for clues, such as how to find the ids of gists.
 
-# Create an encrypted gist for yourself 6
+# Create an encrypted gist for yourself 6 // done
 
 **Expected Functionality**
 
@@ -66,7 +66,7 @@ The nonce + encrypted string should be saved.
 
 Incomplete
 
-# Retrieve an encrypted gist for yourself 7
+# Retrieve an encrypted gist for yourself 7 // done
 
 **Expected Functionality**
 
