@@ -21,31 +21,30 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
-const keypair {} // added in from solution lecture
+const keypair = {} // added in from solution lecture
 
 // TODO:  Attempt to load the key from config.json.  
 //If it is not found, create a new 32 byte key.
 
 let secretKey; // created a global file called secrectKey
 
-
 try {
   const data = fs.readFileSync('./config.json');
+
   // Read the key from the file
   const keyObject = JSON.parse(data);
   secretKey = nacl.util.decodeBase64(keyObject.secretKey);
-catch (err) {
+} catch (err) {
   // Key not found in file, so write it to the file
-  secretKey = nacl.randomBytes(32); // returns UTF8 array
-  const keyObject = { secrectKey: nacl.util.encodeBase64(secretKey) };
+  secretKey = nacl.randomBytes(32);
+  const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
 
-  fs.writeFile('./config.json', JSON.stringify(keyObject, null 4), (ferr) => {
+  fs.writeFile('./config.json', JSON.stringify(keyObject, null, 4), (ferr) => {
     if (ferr) {
       console.log('Error saving config.json: ' + ferr.message);
     }
   });
 }
-
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
