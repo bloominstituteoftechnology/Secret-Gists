@@ -1,3 +1,5 @@
+### Lecture Exercise
+
 For each user, identify the threat model and potential mitigation techniques that will reduce the threat.  
 
 Bob is a 58 year old independent CPA.  He primarily services medium-income individuals and local businesses in his town of 10,000.  Bob shares office space with two others, both also independent CPAs.  He describes his relationship with them as cordial, but not quite friendly.  They are in competition with one another after all.  
