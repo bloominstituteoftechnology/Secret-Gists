@@ -1,4 +1,4 @@
-
+/* eslint-disable */
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -7,7 +7,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'ajf412'; // TODO: Replace with your username
+const username = 'your_name_here'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -21,65 +21,93 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
-// TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+const keypair = {};
+
+// TODO:  Attempt to load the key from config.json.  If it is not found,
+// create a new 32 byte key.
+let secretKey;
+
+try {
+	const data = fs.readFileSync('./config.json');
+
+	// Read the key from the file
+	const keyObject = JSON.parse(data);
+	secretKey = nacl.util.decodeBase64(keyObject.secretKey);
+} catch (err) {
+	// Key not found in file, so write it to the file
+	secretKey = nacl.randomBytes(32);
+	const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+
+	fs.writeFile('./config.json', JSON.stringify(keyObject, null, 4), (ferr) => {
+		if (ferr) {
+			console.log('Error saving config.json: ' + ferr.message);
+		}
+	});
+}
 
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
   res.send(`
-    <html>
-      <header><title>Secret Gists!</title></header>
-      <body>
-        <h1>Secret Gists!</h1>
-        <div>This is an educational implementation.  Do not use for truly valuable information</div>
-        <h2>Supported operations:</h2>
-        <ul>
-          <li><i><a href="/keyPairGen">Show Keypair</a></i>: generate a keypair from your secret key.  Share your public key for other users of this app to leave encrypted gists that only you can decode with your secret key.</li>
-          <li><i><a href="/gists">GET /gists</a></i>: retrieve a list of gists for the authorized user (including private gists)</li>
-          <li><i><a href="/key">GET /key</a></i>: return the secret key used for encryption of secret gists</li>
-        </ul>
-        <h3>Set your secret key to a specific key</h3>
-        <form action="/setkey:keyString" method="get">
-          Key String: <input type="text" name="keyString"><br>
-          <input type="submit" value="Submit">
-        </form>
-        <h3>Create an *unencrypted* gist</h3>
-        <form action="/create" method="post">
-          Name: <input type="text" name="name"><br>
-          Content:<br><textarea name="content" cols="80" rows="10"></textarea><br>
-          <input type="submit" value="Submit">
-        </form>
-        <h3>Create an *encrypted* gist for yourself</h3>
-        <form action="/createsecret" method="post">
-          Name: <input type="text" name="name"><br>
-          Content:<br><textarea name="content" cols="80" rows="10"></textarea><br>
-          <input type="submit" value="Submit">
-        </form>
-        <h3>Retrieve an *encrypted* gist you posted for yourself</h3>
-        <form action="/fetchmessagefromself:id" method="get">
-          Gist ID: <input type="text" name="id"><br>
-          <input type="submit" value="Submit">
-        </form>
-        <h3>Create an *encrypted* gist for a friend to decode</h3>
-        <form action="/postmessageforfriend" method="post">
-          Name: <input type="text" name="name"><br>
-          Friend's Public Key String: <input type="text" name="publicKeyString"><br>
-          Content:<br><textarea name="content" cols="80" rows="10"></textarea><br>
-          <input type="submit" value="Submit">
-        </form>
-        <h3>Retrieve an *encrypted* gist a friend has posted</h3>
-        <form action="/fetchmessagefromfriend:messageString" method="get">
-          String From Friend: <input type="text" name="messageString"><br>
-          <input type="submit" value="Submit">
-        </form>
-      </body>
-    </html>
+  <html>
+  <header><title>Secret Gists!</title></header>
+  <body>
+    <h1>Secret Gists!</h1>
+    <div>This is an educational implementation.  Do not use for truly valuable information</div>
+    <h2>Supported operations:</h2>
+    <ul>
+      <li><i><a href="/keyPairGen">Show Keypair</a></i>: generate a keypair from your secret key.  Share your public key for other users of this app to leave encrypted gists that only you can decode with your secret key.</li>
+      <li><i><a href="/gists">GET /gists</a></i>: retrieve a list of gists for the authorized user (including private gists)</li>
+      <li><i><a href="/key">GET /key</a></i>: return the secret key used for encryption of secret gists</li>
+    </ul><br>
+
+    <h3>Set your secret key to a specific key</h3>
+    <form action="/setkey:keyString" method="get">
+      Key String: <input type="text" name="keyString"><br>
+      <input type="submit" value="Submit">
+    </form><br>
+
+    <h3>Create an *unencrypted* gist</h3>
+    <form action="/create" method="post">
+      Name: <input type="text" name="name"><br>
+      Content:<br><textarea name="content" cols="80" rows="10"></textarea><br>
+      <input type="submit" value="Submit">
+    </form><br>
+
+    <h3>Create an *encrypted* gist for yourself</h3>
+    <form action="/createsecret" method="post">
+      Name: <input type="text" name="name"><br>
+      Content:<br><textarea name="content" cols="80" rows="10"></textarea><br>
+      <input type="submit" value="Submit">
+    </form><br>
+
+    <h3>Retrieve an *encrypted* gist you posted for yourself</h3>
+    <form action="/fetchmessagefromself:id" method="get">
+      Gist ID: <input type="text" name="id"><br>
+      <input type="submit" value="Submit">
+    </form><br>
+
+    <h3>Create an *encrypted* gist for a friend to decode</h3>
+    <form action="/postmessageforfriend" method="post">
+      Name: <input type="text" name="name"><br>
+      Friend's Public Key String: <input type="text" name="publicKeyString"><br>
+      Content:<br><textarea name="content" cols="80" rows="10"></textarea><br>
+      <input type="submit" value="Submit">
+    </form><br>
+
+    <h3>Retrieve an *encrypted* gist a friend has posted</h3>
+    <form action="/fetchmessagefromfriend:messageString" method="get">
+      String From Friend: <input type="text" name="messageString"><br>
+      <input type="submit" value="Submit">
+    </form>
+  </body>
+</html>
   `);
 });
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  const keypair = nacl.box.keyPair();
+
   // Display both keys as strings
   res.send(`
   <html>
@@ -108,16 +136,6 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
-  const keypair = nacl.box.keyPair();
-  
-  res.send(`
-  <html>
-    <header<title>Secret Key</title></header>
-    <body>
-      <h1>Secret Key</h1>
-      <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
-    </body>
-  `)
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -133,6 +151,26 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.query.id;
+
+  github.gists.get({id}).then((response) => {
+	  const gist = response.data;
+	  const filename = Object.keys(gist.files)[0];
+
+	  const blob = gist.files[filename].content;
+
+	  let [nonce, ciphertext] = blob.split(' ');
+
+	  nonce = nacl.util.decodeBase64(nonce);
+	  ciphertext = nacl.util.decodeBase64(ciphertext);
+
+	  const plaintext = nacl.secretbox.open(ciphertext, nonce, secretKey);
+
+	  res.send(nacl.util.encodeUTF8(plaintext));
+  })
+  .catch((err) => {
+    res.json(err);
+  })
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -151,6 +189,23 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content } = req.body;
+
+  const nonce = nacl.randomBytes(24);
+  
+  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+
+  const blob = nacl.util.encodeBase64(nonce) + ' ' +
+  	nacl.util.encodeBase64(ciphertext);
+
+  const files = { [name]: { content: blob } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
@@ -158,6 +213,25 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
+
+  // THIS CODE NOT YET READY
+  const { name, publicKeyString, content } = req.body;
+
+  const nonce = nacl.randomBytes(24);
+  
+  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, publicKeyString);
+
+  const blob = nacl.util.encodeBase64(nonce) + ' ' +
+  	nacl.util.encodeBase64(ciphertext);
+
+  const files = { [name]: { content: blob } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
