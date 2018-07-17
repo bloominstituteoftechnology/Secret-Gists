@@ -22,9 +22,31 @@ github.authenticate({
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
 // Adding clientside encryption
-const secretKey = process.env.SECRET_KEY
-  ? nacl.util.decodeBase64(process.env.SECRET_KEY)
-  : nacl.randomBytes(32); // symmetric clientside encription
+// const secretKey = process.env.SECRET_KEY
+//   ? nacl.util.decodeBase64(process.env.SECRET_KEY)
+//   : nacl.randomBytes(32); // symmetric clientside encription
+const keypair = {}; 
+
+let secretKey;
+
+try {
+
+  const data = fs.readFileSync('./config.json');  
+  const keyObject = JSON.parse(data);
+  secretKey = nacl.util.decodeBase64(keyObject.secretKey);
+  // TODO get secret key from key object
+}
+catch (err) {
+  //key not found in file, so write it to the file
+  secretKey = nacl.randomBytes(32);
+  const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+
+  fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+    if (ferr) {
+      console.log('Error saving congfig.json:' + err.message);
+    }
+  });
+}
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -81,7 +103,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  const keypair = nacl.box.keyPair.fromSecretKey(secretKey); //asymetric encryption
+  const keypair = nacl.box.keyPair();  // fromSecretKey(secretKey); //asymetric encryption
   // Display both keys as strings
   res.send(`
   <html>
@@ -126,16 +148,11 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
-  const { id } = req.params;
   github.gists
-    .get({ id })
-    .then((response) => {
-      const name = Object.keys(response.data.files)[0];
-      const data = response.data.files[name].content;
-      const nonce = nacl.util.decodeBase64(data.substring(0, 32));
-      const box = nacl.util.decodeBase64(data.substring(32));
-      const encodedMessage = nacl.secretbox.open(box, nonce, secretKey);
-      res.json({ Message: nacl.util(encodedMessage) });
+    .get({ id: req.query.id })
+    .then((result) => {
+      const filename = Object.keys(result.data.files)[0];
+      res.send(result.data.files[filename]);
     })
     .catch((err) => {
       res.json(err);
@@ -161,8 +178,8 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   const { name, content } = req.body;
   const nonce = nacl.randomBytes(24);
   const message = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
-  const final = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(message);
-  const files = { [name]: { const: final } };
+  const final = nacl.util.encodeBase64(nonce) + ' ' + nacl.util.encodeBase64(message);
+  const files = { [name]: { content: final } };
   github.gists.create({ files, public: false })
     .then((response) => {
       res.json(response.data);
