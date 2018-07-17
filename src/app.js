@@ -211,6 +211,7 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
+  
   const { name, publicKeyString, content } = req.body;
   const nonce = nacl.randomBytes(24);
   const cipherText = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, publicKeyString)
