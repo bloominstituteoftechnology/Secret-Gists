@@ -1,3 +1,4 @@
+/* eslint-disable */ 
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -142,6 +143,22 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.query.id;
+
+  github.gists.get({ id })
+  .then((response) => {
+    const gist = response.data;
+    const filename = Object.keys(gist.files)[0];
+    const encodedMessage = gist.files[filename].content;
+    let [nonce, cipherText] = encodedMessage.split(' ');
+    nonce = nacl.util.decodeBase64(nonce);
+    cipherText = nacl.util.decodeBase64(cipherText);
+    const plainText = nacl.secretbox.open(cipherText, nonce, secretKey);
+    res.send(nacl.util.encodeUTF8(plainText));
+  })
+  .catch((err) => {
+    console.log(err);
+  });
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -163,8 +180,8 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   const { name, content } = req.body;
   const nonce = nacl.randomBytes(24);
   const cipherText = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
-  const save = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(cipherText);
-  const files = { [name]: { content: save } };
+  const encodedMessage = nacl.util.encodeBase64(nonce) + ' ' + nacl.util.encodeBase64(cipherText);
+  const files = { [name]: { content: encodedMessage } };
   github.gists.create({ files, public: false })
     .then((response) => {
       res.json(response.data);
