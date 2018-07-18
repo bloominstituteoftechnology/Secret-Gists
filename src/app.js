@@ -206,6 +206,7 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
+  keypair = nacl.box.keyPair.fromSecretKey(secretKey);
   const { name, publicKeyString, content } = req.body;
   const nonce = nacl.randomBytes(24);
   const cypherText = nacl.box(nacl.util.decodeUTF8(content), nonce, nacl.util.decodeBase64(publicKeyString), secretKey);
@@ -215,20 +216,21 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   const files = { [name]: { content: encrypted } };
   github.gists.create({ files, public: true }) // public is true to make it available to outsiders
     .then((response) => {
-      const messageKey = nacl.util.encodeBase64(keypair.publicKey);
+      const messageString = nacl.util.encodeBase64(keypair.publicKey);
       const dataId = response.data.id;
-      res.json(`
+      res.send(`
       <h2>Gist Saved</h2>
       <hr>
       <div>
       Gist ID: ${dataId}
-      Decrytion key: ${messageKey}
+      </div>
+      <div>
+      Encrypted String (Send to your friend): <div>${messageString}${dataId}</div>
+
       </div>
       `);
     });
-    // .catch((err) => {
-    //   res.json(response.data.id);
-    // });
+
 
   // TODO:  Create a private and encrypted gist with given name/content
   // using someone else's public key that can be accessed and
@@ -238,7 +240,28 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  keypair = nacl.box.keyPair.fromSecretKey(secretKey);
+  const messageString = req.query.messageString;
+  const friendPublicString = messageString.slice(0, 44);
+  const id = messageString.slice(44, messageString.length);
+  // const id = messageString.slice(43, messageString.length);
+
+  github.gists.get({ id }).then((response) => {
+    const gist = response.data;
+    // Assuming gist has only 1 file and/or we only care about that file
+    const filename = Object.keys(gist.files)[0];
+    const blob = gist.files[filename].content;
+    let [nonce, cypherText] = blob.split(' ');
+    nonce = nacl.util.decodeBase64(nonce);
+    cypherText = nacl.util.decodeBase64(cypherText);
+    // res.send(nacl.util.encodeUTF8(cypherText));
+    const plainText = nacl.box.open(cypherText, nonce, nacl.util.decodeBase64(friendPublicString), secretKey);
+    res.send(`<h2><div>Decrypted message</div><hr> Gist id : ${id}</h2> <div>${nacl.util.encodeUTF8(plainText)}</div>`);
+  }).catch((err) => {
+    res.send(err);
+  });
 });
+
 
 /* OPTIONAL - if you want to extend functionality */
 server.post('/login', (req, res) => {
