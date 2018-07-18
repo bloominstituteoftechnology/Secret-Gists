@@ -1,3 +1,4 @@
+/* eslint-disable */
 require("dotenv").config();
 const fs = require("fs");
 const bodyParser = require("body-parser");
@@ -101,6 +102,11 @@ server.get("/", (req, res) => {
 
 server.get("/keyPairGen", (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
+  // take secret key to make keypair
+  const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
+  // console.log(`public ${nacl.util.encodeUTF8(secretKey.publicKey)}`);
+  // console.log(`private ${nacl.util.encodeUTF8(secretKey.privateKey)}`);
+
   // Display both keys as strings
   res.send(`
   <html>
@@ -224,6 +230,35 @@ server.post("/postmessageforfriend", urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
+
+  const { name, content, publicKeyString } = req.body;
+
+  const nonce = nacl.randomBytes(24);
+
+  const cipherText = nacl.box(
+    nacl.util.decodeUTF8(content),
+    nonce,
+    nacl.util.decodeBase64(publicKeyString),
+    secretKey
+  );
+
+  const blob = `${nacl.util.encodeBase64(nonce)} ${nacl.util.encodeBase64(
+    cipherText
+  )}`;
+
+  const files = { [name]: { content: blob } };
+  github.gists
+    .create({ files, public: true })
+    .then(response => {
+      // res.json(response.data);
+      // res.send(response.data.id + nacl.util.encodeBase64(keypair.publicKey));
+      res.send(
+        `${nacl.util.encodeBase64(keypair.publicKey)} ${response.data.id}`
+      );
+    })
+    .catch(err => {
+      res.json(err);
+    });
 });
 
 server.get(
@@ -231,6 +266,51 @@ server.get(
   urlencodedParser,
   (req, res) => {
     // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+    // obtain sender's public key and my secret key
+    const messageString = req.query.messageString;
+    let [friendPublicKey, gistID] = messageString.split(" ");
+    console.log(`gistID ${gistID}`);
+    github.gists
+      .get({ gistID })
+      .then(response => {
+        const gist = response.data;
+        const filename = Object.keys(gist.files)[0];
+        const blob = gist.files[filename].content; // encoded gist content
+
+        let [nonce, cipherText] = blob.split(" ");
+        nonce = nacl.util.decodeBase64(nonce);
+
+        cipherText = nacl.util.decodeBase64(cipherText);
+
+        // decode blob - uint8
+        const plainText = nacl.secretbox.open(cipherText, nonce, secretKey);
+
+        // convert to human friendly format
+        res.send(nacl.util.encodeUTF8(plainText));
+
+        const gist = response.data;
+        const filename = Object.keys(gist.files)[0];
+        const blob = gist.files[filename].content; // encoded gist content
+
+        let [nonce, cipherText] = blob.split(" ");
+        nonce = nacl.util.decodeBase64(nonce);
+
+        cipherText = nacl.util.decodeBase64(cipherText);
+
+        // decode blob - uint8
+        const plainText = nacl.box.open(
+          cipherText,
+          nonce,
+          nacl.util.decodeBase64(friendPublicKey),
+          secretKey
+        );
+
+        // convert to human friendly format
+        res.send(nacl.util.encodeUTF8(plainText));
+      })
+      .catch(err => {
+        console.error(err);
+      });
   }
 );
 
