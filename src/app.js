@@ -1,3 +1,4 @@
+// solution https://github.com/LambdaSchool/Secret-Gists/blob/async/src/app.js
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -141,12 +142,11 @@ server.get('/setkey:keyString', (req, res) => {
 server.get('/fetchmessagefromself:id', asyncHandler(async (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
   const gist_id = req.query.id;
-  const gist = await github.gists.get({id: gist_id });
-  let content = Object.values(gist.data.files)[0].content;
+  const response = await github.gists.get({id: gist_id });
+  let content = Object.values(response.data.files)[0].content;
 
   let contentArray = content.split('');
   let nonceArray = contentArray.splice(0, 32);
-
 
   content = contentArray.join('');
   nonce = nonceArray.join('');
@@ -212,10 +212,89 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
+
+  const { name, content, publicKeyString } = req.body;
+  const keypair = nacl.box.keyPair.fromSecretKey(nacl.util.decodeBase64(mySecretKeyString));
+
+  // let key = nacl.randomBytes(nacl.secretbox.keyLength);
+  // mySecretKeyString = key;
+
+  let nonce = nacl.randomBytes(nacl.secretbox.nonceLength);
+  let msg = nacl.util.decodeUTF8(content);
+
+  const decodedSecretKey = nacl.util.decodeBase64(mySecretKeyString);
+  const decodedPublicKey = nacl.util.decodeBase64(publicKeyString);
+  let cipherText = nacl.box(msg, nonce, decodedPublicKey, decodedSecretKey);
+
+  cipherText = nacl.util.encodeBase64(cipherText);
+  const encodedNonce = nacl.util.encodeBase64(nonce);
+
+  // console.log('encryptegist is ', encryptedGist);
+  // console.log('encondedNonce is ', encodedNonce);
+console.log('cipherText is ', encodedNonce + cipherText)
+  const files = { [name]: { content: encodedNonce + cipherText } };
+  console.log('got here');
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      const messageString = nacl.util.encodeBase64(keypair.publicKey) + response.data.id;
+      console.log('message string', messageString);
+      res.send(`
+      <html>
+        <header><title>Message Saved</title></header>
+        <body>
+          <h1>Message Saved</h1>
+          <div>Give this string to your friend for decoding.</div>
+          <div>${messageString}</div>
+          <div>
+        </body>
+      `);
+    })
+    .catch((err) => {
+  console.log('error! ', err);
+      res.json(err);
+    });
 });
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const messageString = req.query.messageString;
+  const friendPublicStringArray = nacl.util.decodeBase64(messageString.slice(0, 44));
+  const id = messageString.slice(44, messageString.length);
+  console.log('gist id ', id);
+
+  github.gists.get({ id }).then((response) => {
+    const gist = response.data;
+    let content = Object.values(gist.files)[0].content;
+    res.send(gist);
+
+    console.log("content is ", content);
+    // const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
+    // console.log('nounce is ', nonce.length);
+    // const content = blob.slice(32, blob.length);
+    // console.log('content is ', content);
+    // const ciphertext = nacl.util.decodeBase64(content);
+    // console.log('ciphertext ', ciphertext.length);
+    // console.log('friendPublicStringArray ', friendPublicStringArray.length);
+
+    let contentArray = content.split('');
+    let nonceArray = contentArray.splice(0, 32);
+
+    content = contentArray.join('');
+    nonce = nonceArray.join('');
+
+    let decodedContentArray = nacl.util.decodeBase64(content);
+    let decodedNonceArray = nacl.util.decodeBase64(nonce);
+    const decodedSecretKey = nacl.util.decodeBase64(mySecretKeyString)
+
+    content = nacl.secretbox.open(decodedContentArray, decodedNonceArray, decodedSecretKey)
+
+    res.send(nacl.util.encodeUTF8(content));
+  })
+  .catch((err) => {
+    console.log(err);
+    res.json(err);
+  });
+
 });
 
 /* OPTIONAL - if you want to extend functionality */
