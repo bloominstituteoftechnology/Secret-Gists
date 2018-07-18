@@ -1,3 +1,6 @@
+/* eslint-disable */
+
+const keypair = {};
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -6,7 +9,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'Julian-Alexander'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -22,6 +25,25 @@ github.authenticate({
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
 
+let secretKey;
+
+try {
+  const data = fs.readFileSync('./config.json');
+  // Read the key from the file
+  const keyObject = JSON.parse(data);
+  secretKey = nacl.util.decodeBase64(keyObject.secretKey);
+  // TODO get secret key from key object
+} catch (err) {
+  // key not found in file, so write it to the file
+  secretKey = nacl.randomBytes(32);
+  const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+
+  fs.writeFile('./config.json', JSON.stringify(keyObject, null, 4), (ferr) => {
+    if (ferr) {
+      console.log(`Error saving config.json: ${ferr.message}`);
+    }
+  });
+}
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -122,6 +144,18 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.query.id;
+
+  github.gists.get({ id }).then((response) => {
+    const gist = response.data;
+    const filename = Object.keys(gist.files)[0];
+    const blob = gist.files[filename].content;
+    let [nonce, ciphertext] = blob.split(' ');
+    nonce = nacl.util.decodeBase64(nonce);
+    ciphertext = nacl.util.decodeBase64(ciphertext);
+    const plaintext = nacl.secretbox.open(ciphertext, nonce, secretKey);
+    res.send(nacl.util.encodeUTF8(plaintext));
+  });
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -140,6 +174,20 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+  const blob = nacl.util.encodeBase64(nonce) + ' ' 
+  + nacl.util.encodeBase64(ciphertext);
+
+  const files = { [name]: { content: blob } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
