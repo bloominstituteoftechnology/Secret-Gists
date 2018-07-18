@@ -100,9 +100,9 @@ server.get('/', (req, res) => {
           <input type="submit" value="Submit">
         </form>
         <h3>Retrieve an *encrypted* gist a friend has posted</h3>
-        <form action="/fetchmessagefromfriend:messageString" method="get">
-          String From Friend: <input type="text" name="messageString">
-
+        <form action="/fetchmessagefromfriend" method="get">
+          Gist ID From Friend: <input type="text" name="id"><br>
+          Friend's Public Key: <input type="text" name="publicKeyString"><br>
           <input type="submit" value="Submit">
         </form>
       </body>
@@ -220,17 +220,18 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
-  const { name, content } = req.body;
+  const { name, publicKeyString: publicKey, content } = req.body;
 
   const nonce = nacl.randomBytes(24);
 
-  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+  const ciphertext = nacl.box(nacl.util.decodeUTF8(content), nonce, nacl.util.decodeBase64(publicKey), secretKey);
+
 
   const blob = nacl.util.encodeBase64(nonce) + ' ' +
     nacl.util.encodeBase64(ciphertext);
 
   const files = { [name]: { content: blob } };
-  github.gists.create({ files, public: false })
+  github.gists.create({ files, public: true })
     .then((response) => {
       res.json(response.data);
     })
@@ -239,9 +240,9 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
     });
 });
 
-server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
+server.get('/fetchmessagefromfriend', urlencodedParser, (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
-  const id = req.query.messageString;
+  const { id, publicKeyString: publicKey } = req.query;
 
   github.gists.get({ id }).then((response) => {
     const gist = response.data;
@@ -254,11 +255,11 @@ server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res)
     nonce = nacl.util.decodeBase64(nonce);
     ciphertext = nacl.util.decodeBase64(ciphertext);
 
-    const plaintext = nacl.secretbox.open(ciphertext, nonce, secretKey);
+    const plaintext = nacl.box.open(ciphertext, nonce, nacl.util.decodeBase64(publicKey), secretKey);
 
     res.send(nacl.util.encodeUTF8(plaintext));
   }).catch(err => {
-    res.send("Couldn't get ID");
+    res.json("Couldn't get ID", err);
   });
 });
 
