@@ -16,5 +16,6 @@
   },
   "scripts": {
     "start": "eslint src/*.js && node src/app.js"
-  }
+  },
+  "devDependencies": {}
 }
