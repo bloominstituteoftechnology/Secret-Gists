@@ -131,9 +131,10 @@ server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
   const data = fs.readFileSync('./config.json');
   // try reading the key from file
-  const keyObject = JSON.parse(data);
+  // const keyObject = JSON.parse(data);
+  // res.send(keyObject.secretKey);
 
-  res.send(keyObject.secretKey);
+  res.send(nacl.util.encodeBase64(secretKey));
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -141,19 +142,12 @@ server.get('/setkey:keyString', (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO:
-    secretKey = keyString;
+    secretKey = nacl.util.decodeBase64(keyString);
+    res.send(`<div> Key set to new value: ${keyString} </div>`);
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
   }
-
-  secretKey = nacl.randomBytes(32);
-  const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
-
-  fs.writeFile('./config.json', JSON.stringify(keyObject, null, 4), (ferr) => {
-    if (ferr) {
-      console.log(`Error saving config.json: ${ferr.message}`);
-    }
 });
 
 server.get('/fetchmessagefromself:id', (req, res) => {
@@ -212,22 +206,29 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
-  const { name, content } = req.body;
-
+  const { name, publicKeyString, content } = req.body;
   const nonce = nacl.randomBytes(24);
-
-  const cypherText = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+  const cypherText = nacl.box(nacl.util.decodeUTF8(content), nonce, nacl.util.decodeBase64(publicKeyString), secretKey);
 
   const encrypted = `${nacl.util.encodeBase64(nonce)} ${nacl.util.encodeBase64(cypherText)}`;
 
   const files = { [name]: { content: encrypted } };
-  github.gists.create({ files, public: false })
+  github.gists.create({ files, public: true }) // public is true to make it available to outsiders
     .then((response) => {
-      res.json(response.data);
-    })
-    .catch((err) => {
-      res.json(err);
+      const messageKey = nacl.util.encodeBase64(keypair.publicKey);
+      const dataId = response.data.id;
+      res.json(`
+      <h2>Gist Saved</h2>
+      <hr>
+      <div>
+      Gist ID: ${dataId}
+      Decrytion key: ${messageKey}
+      </div>
+      `);
     });
+    // .catch((err) => {
+    //   res.json(response.data.id);
+    // });
 
   // TODO:  Create a private and encrypted gist with given name/content
   // using someone else's public key that can be accessed and
