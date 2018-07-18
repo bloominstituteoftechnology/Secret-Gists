@@ -194,23 +194,24 @@ server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
   const id = req.query.id;
 
-  github.gists.get({ id }).then((response) => {
-    const gist = response.data;
-    const filename = Object.keys(gist.files)[0];
+  github.gists.get({ id })
+    .then((response) => {
+      const gist = response.data;
+      const filename = Object.keys(gist.files)[0];
 
-    const blob = gist.files[filename].content;
+      const blob = gist.files[filename].content;
 
-    if (blob) {
-      let [nonce, cipher] = blob.split(' ');
+      if (blob) {
+        let [nonce, cipher] = blob.split(' ');
 
-      nonce = nacl.util.decodeBase64(nonce);
-      cipher = nacl.util.decodeBase64(cipher);
+        nonce = nacl.util.decodeBase64(nonce);
+        cipher = nacl.util.decodeBase64(cipher);
 
-      const plaintext = nacl.secretbox.open(cipher, nonce, secretKey);
+        const plaintext = nacl.secretbox.open(cipher, nonce, secretKey);
 
-      res.send(nacl.util.encodeUTF8(plaintext));
-    } else res.json({ gist: response.data });
-  })
+        res.send(nacl.util.encodeUTF8(plaintext));
+      } else res.json({ gist: response.data });
+    })
     .catch((err) => {
       res.json({ err });
     });
@@ -259,7 +260,7 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
 
   const nonce = nacl.randomBytes(24);
 
-  const cipher = nacl.box(nacl.util.decodeUTF8(content), nonce, publicKeyString, secretKey);
+  const cipher = nacl.box(nacl.util.decodeUTF8(content), nonce, nacl.util.decodeBase64(publicKeyString), secretKey);
 
   const blob = `${nacl.util.encodeBase64(nonce)} ${nacl.util.encodeBase64(cipher)}`;
 
@@ -276,8 +277,10 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
   const messageString = req.query.messageString;
+  console.log(messageString);
+  const [pk, id] = messageString.split(' ');
 
-  github.gists.publicKey({ messageString })
+  github.gists.get({ id })
     .then((response) => {
       const gist = response.data;
       console.log(gist);
@@ -290,7 +293,7 @@ server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res)
         nonce = nacl.util.decodeBase64(nonce);
         cipher = nacl.util.decodeBase64(cipher);
 
-        const plaintext = nacl.box.open(cipher, nonce, messageString, secretKey);
+        const plaintext = nacl.box.open(cipher, nonce, nacl.util.decodeBase64(pk), secretKey);
 
         res.send(nacl.util.encodeUTF8(plaintext));
       } else res.json({ gist: response.data });
