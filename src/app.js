@@ -1,3 +1,4 @@
+/*eslint-disable*/
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -6,9 +7,16 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
+const morgan = require('morgan');
+const cors = require('cors');
+
 const username = 'dresean'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
+
+const port = process.env.PORT || 3000;
+
+server.use(morgan('dev'));
 
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
@@ -20,8 +28,33 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
+
+
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-const key = process.env.GITHUB_TOKEN ? nacl.util.decodeBase64(process.env.GITHUB_TOKEN) : nacl.randomBytes(32);
+
+// TODO:  Attempt to load the key from config.json.  If it is not found,
+// create a new 32 byte key.
+
+try {
+	const data = fs.readFileSync('./config.json');
+
+	// Read the key from the file
+	const keyObject = JSON.parse(data);
+	secretKey = nacl.util.decodeBase64(keyObject.secretKey);
+} catch (err) {
+	// Key not found in file, so write it to the file
+	secretKey = nacl.randomBytes(32);
+	const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+
+	fs.writeFile('./config.json', JSON.stringify(keyObject, null, 4), (ferr) => {
+		if (ferr) {
+			console.log('Error saving config.json: ' + ferr.message);
+		}
+	});
+}
+
+
+
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -82,7 +115,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  const keypair = nacl.box.keyPair();
+  keypair = nacl.box.keyPair();
   // Display both keys as strings
   res.send(`
   <html>
@@ -111,7 +144,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
-  res.send(nacl.util.encodeBase64(key));
+  res.send(nacl.util.encodeBase64(secretKey));
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -120,6 +153,8 @@ server.get('/setkey:keyString', (req, res) => {
 
   try {
     // TODO:
+    secretKey = nacl.util.decodeBase64(keyString);
+    res.send(`the key is ${nacl.util.encodeBase64(secretKey)}`);
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
@@ -128,13 +163,32 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
-});
+  const id = req.params.id;
+  const gist = req.body;
+
+  // get the gist id
+  // take the filename and select the first key from that object
+  github.gist.get({id})
+  .then(response => {
+    console.log(response)
+   // response = decodedResponse 
+   cipherText.split(' ')[0] 
+   console.log (response.ciphertext);
+   console.log(response.blob);
+   console.log(respone.blob.split(' ')[0]);
+   const message = nacl.util.decodeBase64(response.blob);
+   const nonce = nacl.util.decodeBase64(response.nonce);
+   const decoded = nacl.secretbox.open( message, nonce, secretKey)
+    res.json(response)
+  })
+  .catch(err => err.message)
+}); 
 
 server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
   const { name, content } = req.body;
   const files = { [name]: { content } };
-  github.gists.create({ files, public: false })
+  github.gists.create({files, public: false})
     .then((response) => {
       res.json(response.data);
     })
@@ -146,6 +200,15 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+
+const { name, content } = req.body;
+const nonce = nacl.randomBytes(24);
+const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+const blob = nacl.util.encodeBase64(ciphertext) + ' ' + nacl.util.encodeBase64(nonce);
+const files = { [name]: { content: blob } }
+github.gists.create({files, public: false})
+.then(response => res.json(response.data))
+.catch(err => res.json(err.message))
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
@@ -153,6 +216,13 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content, publicKeyString } = req.body;
+  const messageKey = nacl.sign.keyPair();
+  const secretMessageKey = messageKey.secretKey;
+  const publicMessageKey = messageKey.publicKey;
+  const secretMessage = nacl.sign(nacl.util.decodeUTF8(content), secretMessageKey);
+  const files = { [name]: { content: secretMessage }}
+  github.gists.create({files, public: false }).then(response => res.send(response.data)).catch(err => res.send("you have entered the wrong public key", err));
 });
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
@@ -177,4 +247,4 @@ Still want to write code? Some possibilities:
 -Let the user pass in their private key via POST
 */
 
-server.listen(3001);
+server.listen(port, () => console.log(`server listening to ${port}`));
