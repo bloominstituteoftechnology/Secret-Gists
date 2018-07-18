@@ -32,9 +32,9 @@ Return a base64 string of the user's secretKey
 
 **Status**
 
-Incomplete
+Completed
 
-# Set Key 4
+# Set Key 4 // done
 
 **Expected Functionality**
 
@@ -42,7 +42,7 @@ Set the user's secret key to the string they enter.
 
 **Status**
 
-Incomplete
+Completed
 
 # Create an unencrypted gist 5 // done
 
@@ -64,7 +64,7 @@ The nonce + encrypted string should be saved.
 
 **Status**
 
-Incomplete
+Completed
 
 # Retrieve an encrypted gist for yourself 7 // done
 
@@ -74,9 +74,9 @@ Retrieve the secret gist with the given ID, decrypt, and display.
 
 **Status**
 
-Incomplete
+Completed
 
-# Create an encrypted gist for a friend to decode 8
+# Create an encrypted gist for a friend to decode 8 // done
 
 **Expected Functionality**
 
@@ -88,9 +88,9 @@ Your public key + the gist ID should be displayed.
 
 **Status**
 
-Incomplete
+Completed
 
-# Retrieve an encrypted gist a friend has posted 9
+# Retrieve an encrypted gist a friend has posted 9 // done
 
 **Expected Functionality**
 
@@ -101,4 +101,4 @@ Use the message receiver's secret key with the message sender's public key to de
 
 **Status**
 
-Incomplete
+Completed
