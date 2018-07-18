@@ -1,8 +1,8 @@
-This document outlines the current state of the project.  This is currently a very rough program intended to test a number of features.  As a stretch goal, take what steps you see fit to improve the usability.  
+This document outlines the current state of the project. This is currently a very rough program intended to test a number of features. As a stretch goal, take what steps you see fit to improve the usability.
 
-For example, after success, send a message to the user instead of simply dumping the json returned by github.  After failure, display a message to the user indicating the fault.
+For example, after success, send a message to the user instead of simply dumping the json returned by github. After failure, display a message to the user indicating the fault.
 
-All remaining tasks should be completed as described in the `Expected Functionality` sections.  Most of these tasks require the generation or loading of a 32-byte secret key.
+All remaining tasks should be completed as described in the `Expected Functionality` sections. Most of these tasks require the generation or loading of a 32-byte secret key.
 
 # Generate/Load Keypair
 
@@ -12,7 +12,7 @@ Generate the public key from the secret key, and display both.
 
 **Status**
 
-Incomplete
+Complete
 
 # GET/Gists
 
@@ -22,7 +22,9 @@ Return a JSON object containing all of the current, hardcoded user's gists.
 
 **Status**
 
-AFTER username is hardcoded in app.js AND a valid Github token is properly saved in .env - Functions as expected.  Upon success, a large json object is returned from github and displayed to the user.  This can be investigated for clues, such as how to find the ids of gists.
+Complete
+
+AFTER username is hardcoded in app.js AND a valid Github token is properly saved in .env - Functions as expected. Upon success, a large json object is returned from github and displayed to the user. This can be investigated for clues, such as how to find the ids of gists.
 
 # GET/Key
 
@@ -52,7 +54,7 @@ Create a public gist in the hardcoded user's github account.
 
 **Status**
 
-AFTER username is hardcoded in app.js AND a valid Github token is properly saved in .env - Functions as expected.  Upon success, a large json object is returned from github and displayed to the user.  This can be investigated for clues, such as how to find the ids of gists.
+AFTER username is hardcoded in app.js AND a valid Github token is properly saved in .env - Functions as expected. Upon success, a large json object is returned from github and displayed to the user. This can be investigated for clues, such as how to find the ids of gists.
 
 # Create an encrypted gist for yourself
 
