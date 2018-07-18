@@ -100,7 +100,7 @@ server.get('/', (req, res) => {
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
   // let keypair = nacl.secretbox();
-  keypair = nacl.box.keyPair();
+  keypair = nacl.box.keyPair.fromSecretKey(secretKey);
   // Display both keys as strings
   res.send(`
   <html>
@@ -141,10 +141,19 @@ server.get('/setkey:keyString', (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO:
+    secretKey = keyString;
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
   }
+
+  secretKey = nacl.randomBytes(32);
+  const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+
+  fs.writeFile('./config.json', JSON.stringify(keyObject, null, 4), (ferr) => {
+    if (ferr) {
+      console.log(`Error saving config.json: ${ferr.message}`);
+    }
 });
 
 server.get('/fetchmessagefromself:id', (req, res) => {
