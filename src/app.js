@@ -80,16 +80,17 @@ server.get('/keyPairGen', (req, res) => {
 
   // Display both keys as strings
   res.send(`
-  <html>
-    <header><title>Keypair</title></header>
-    <body>
-      <h1>Keypair</h1>
-      <div>Share your public key with anyone you want to be able to leave you secret messages.</div>
-      <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
-      <br/>
-      <div>Public Key: ${nacl.util.encodeBase64(keypair.publicKey)}</div>
-      <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
-    </body>
+    <html>
+      <header><title>Keypair</title></header>
+      <body>
+        <h1>Keypair</h1>
+        <div>Share your public key with anyone you want to be able to leave you secret messages.</div>
+        <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
+        <br/>
+        <div>Public Key: ${nacl.util.encodeBase64(keypair.publicKey)}</div>
+        <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
+      </body>
+    </html>
   `);
 });
 
@@ -161,13 +162,13 @@ server.post('/login', (req, res) => {
 });
 
 /*
-Still want to write code? Some possibilities:
--Pretty templates! More forms!
--Better management of gist IDs, use/display other gist fields
--Support editing/deleting existing gists
--Switch from symmetric to asymmetric crypto
--Exchange keys, encrypt messages for each other, share them
--Let the user pass in their private key via POST
+  Still want to write code? Some possibilities:
+  - Pretty templates! More forms!
+  - Better management of gist IDs, use/display other gist fields
+  - Support editing/deleting existing gists
+  - Switch from symmetric to asymmetric crypto
+  - Exchange keys, encrypt messages for each other, share them
+  - Let the user pass in their private key via POST
 */
 
 server.listen(3000);
