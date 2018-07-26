@@ -14,18 +14,17 @@ Audience: Node.js developers, CS students, security enthusiasts
 
 Create a token with Github to access your gists and save it in the .env file (see below)
 
-Run the provided code (yarn start then navigate to localhost:3000/ in your browser)
+Run the provided code (yarn start then navigate to `localhost:3000/` in your browser)
 
 Review the functionality implemented in this temporary test page. 
 
 Use the existing functionality as a guide to implement new features making use of encryption.
 
-Stretch:  Redo the test page so the user can access the same functionality in a sleek react app with a nice UI/UX.
+Stretch: Redo the test page so the user can access the same functionality in a sleek react app with a nice UI/UX.
 
 ## Getting started
 
-Authentication (logging a user in and ensuring they and only they have access to their information) is one of the most important security aspects of a modern Web application. A common practice is to use [OAuth](https://en.wikipedia.org/wiki/OAuth), which allows your application to depend on a trusted provider that manages user logins and the associated issues (multifactor authentication, password recovery, etc.). [Many major tech companies provide this](https://en.wikipedia.org/wiki/List_of_OAuth_providers) -
-for our purposes we're building an app to store and read secret gists (snippets of text stored on GitHub), so we'll be using GitHub as a provider.
+Authentication (logging a user in and ensuring they and only they have access to their information) is one of the most important security aspects of a modern Web application. A common practice is to use [OAuth](https://en.wikipedia.org/wiki/OAuth), which allows your application to depend on a trusted provider that manages user logins and the associated issues (multifactor authentication, password recovery, etc.). [Many major tech companies provide this](https://en.wikipedia.org/wiki/List_of_OAuth_providers) - for our purposes we're building an app to store and read secret gists (snippets of text stored on GitHub), so we'll be using GitHub as a provider.
 
 Start by [reading the GitHub REST v3 API authentication info](https://developer.github.com/v3/guides/basics-of-authentication/) -
 it's okay if some of it doesn't make sense yet, but the general idea is you'll need to use tokens that certify your identity, and send the appropriate HTTP requests with them. The documentation uses Ruby/Rails in some examples, but [there is a Node.js example](https://github.com/github/platform-samples/tree/master/api/javascript/es2015-nodejs) that you should definitely look at as well.
@@ -58,7 +57,6 @@ curl -u username:token https://api.github.com/user
 ```
 
 Replace `username` and `token` as appropriate, and the rest should be the same as the request where you logged in with a password. Note that this token really is just as sensitive as your password - you don't want to share it in plaintext or check it in to your git repository.
-
 
 ## Building an application using a REST API
 

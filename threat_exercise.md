@@ -1,4 +1,6 @@
-For each user, identify the threat model and potential mitigation techniques that will reduce the threat.  
+For each user, identify the threat model and potential mitigation techniques that will reduce the threat.
+
+---
 
 Bob is a 58 year old independent CPA.  He primarily services medium-income individuals and local businesses in his town of 10,000.  Bob shares office space with two others, both also independent CPAs.  He describes his relationship with them as cordial, but not quite friendly.  They are in competition with one another after all.  
 
@@ -21,6 +23,7 @@ Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/
 
 Mitigation -
 
+---
 
 Yolanda, 17, is the most popular girl in her school.  Her Insta is perfectly curated, her Snaps are da bomb, and her Facebook account exists so she can talk to her grandma every other Sunday.  
 
@@ -45,6 +48,7 @@ Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/
 
 Mitigation -
 
+---
 
 Zaida, 37, is a senior IT Security manager for the Washington, DC Embassy of a country whose relationship with the United States is, at best, complicated.  She oversees accounts, permissions, and access for the embassy’s personnel, including locally employed staff.  
 
@@ -67,8 +71,7 @@ Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/
 
 Mitigation -
 
-
-
+---
 
 Rashad is a web developer for a small UI/UX firm.  He just had one of his projects hit the front pages of all the trendy design subreddits and blogs.  He’s very excited, but a little concerned that his twitter, instagram, and github handles are now being shared all over the internet.  
 
