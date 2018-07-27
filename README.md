@@ -100,15 +100,15 @@ The general pattern is `github.noun.verb()` - essentially every entity and actio
 
 ## Adding client-side encryption
 
-We will be using [TweetNaCL](https://github.com/dchest/tweetnacl-js#usage). nacl is a fairly simple cryptosystem - it makes good default decisions using modern but well-tested algorithms. The included package.json also installs
-tweetnacl-util, which provides utilities for encoding between strings and bytes. You can load both in your code as follows:
+We will be using [TweetNaCL](https://github.com/dchest/tweetnacl-js#usage). nacl is a fairly simple cryptosystem - it makes good default decisions using modern but well-tested algorithms. The included `package.json` also installs
+`tweetnacl-util`, which provides utilities for encoding between strings and bytes. You can load both in your code as follows:
 
 ```
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 ```
 
-Note that nacl prefers handling things as `Uint8Array` - that is, a bunch of numbers. You'll want to take a look at the nacl.util functions to translate between these and more user-friendly strings.
+Note that nacl prefers handling things as `Uint8Array` - that is, a bunch of numbers. You'll want to take a look at the `nacl.util` functions to translate between these and more user-friendly strings.
 
 ```
 > nacl.util = require('tweetnacl-util');
