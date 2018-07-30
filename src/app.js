@@ -6,7 +6,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'jesuarva'; // TODO: Replace with your username
 // The object you'll be interfacing with to communicate with github
 const github = octokit({ debug: true });
 const server = express();
@@ -18,7 +18,7 @@ const urlencodedParser = bodyParser.urlencoded({ extended: false });
 // Set it to be able to create gists
 github.authenticate({
   type: 'oauth',
-  token: process.env.GITHUB_TOKEN
+  token: process.env.GITHUB_TOKEN,
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
@@ -97,11 +97,12 @@ server.get('/keyPairGen', (req, res) => {
 
 server.get('/gists', (req, res) => {
   // Retrieve a list of all gists for the currently authed user
-  github.gists.getForUser({ username })
-    .then((response) => {
+  github.gists
+    .getForUser({ username })
+    .then(response => {
       res.json(response.data);
     })
-    .catch((err) => {
+    .catch(err => {
       res.json(err);
     });
 });
@@ -129,11 +130,12 @@ server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
   const { name, content } = req.body;
   const files = { [name]: { content } };
-  github.gists.create({ files, public: false })
-    .then((response) => {
+  github.gists
+    .create({ files, public: false })
+    .then(response => {
       res.json(response.data);
     })
-    .catch((err) => {
+    .catch(err => {
       res.json(err);
     });
 });
