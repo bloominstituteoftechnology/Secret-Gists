@@ -20,6 +20,7 @@ const urlencodedParser = bodyParser.urlencoded({ extended: false });
 github.authenticate({
   type: 'oauth',
   token: process.env.GITHUB_TOKEN
+  token: process.env.GITHUB_TOKEN
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
