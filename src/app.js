@@ -121,7 +121,7 @@ server.get('/setkey:keyString', (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO:
-    console.log(keyString.length > 32);
+    // console.log(keyString.length > 32);
     if (keyString.length > 32) {
       throw new Error();
     } else {
@@ -146,13 +146,7 @@ server.get('/fetchmessagefromself:id', (req, res) => {
 
 server.post('/create', urlencodedParser, createdPrivateGist);
 
-server.post('/createsecret', urlencodedParser, (req, res) => {
-  // TODO:  Create a private and encrypted gist with given name/content
-  // NOTE - we're only encrypting the content, not the filename
-  console.log(Object.keys(req));
-  console.log(req.body);
-  res.status(200).json({ encoded: true });
-});
+server.post('/createsecret', urlencodedParser, encodeBody, createdPrivateGist);
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
@@ -186,13 +180,25 @@ server.post('/login', (req, res) => {
 /**
  * UTILS: helper functions
  */
-function setSecretKey(key) {
+function saltSecretKey(key) {
   // TODO: Salt a passed 'key' so its length will be 32 bytes.
+  if (key.length < 32) {
+    const salt = 32 - key.length;
+    const saltBytes = nacl.randomBytes(salt);
+    console.log('SALT TO 32', key, saltBytes);
+    const saltString = nacl.util.encodeUTF8(saltBytes); // this line has a bug
+    console.log('SALT TO 32', key, salt);
+    // key = key.split(' ').join('0');
+  } else if (key.length > 32) {
+    throw new TypeError('Key is too large. Max size is 32 characters');
+  }
+  return nacl.util.decodeBase64(key);
 }
 
 function createdPrivateGist(req, res) {
   // Create a private gist with name and content given in post request
   const { name, content } = req.body;
+  console.log(name, content);
   const files = { [name]: { content } };
   github.gists
     .create({ files, public: false })
@@ -202,6 +208,20 @@ function createdPrivateGist(req, res) {
     .catch(err => {
       res.json(err);
     });
+}
+function encodeBody(req, res, next) {
+  // TODO:  Create a private and encrypted gist with given name/content
+  // NOTE - we're only encrypting the content, not the filename
+  console.log(Object.keys(req));
+  console.log(req.body);
+  const { name, content } = req.body;
+  const contentInBytes = nacl.util.decodeUTF8(content);
+
+  const nonce = nacl.randomBytes(24);
+  const ciphertext = nacl.secretbox(contentInBytes, nonce, privateKey);
+  const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(ciphertext);
+  req.body.content = blob;
+  next();
 }
 
 server.listen(3000);
