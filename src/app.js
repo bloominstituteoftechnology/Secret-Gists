@@ -6,7 +6,6 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'iqra-javed'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
