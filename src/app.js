@@ -7,6 +7,8 @@ const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
 const username = 'iqra-javed'; // TODO: Replace with your username
+
+// The object you'll be interfacing with to communicate with github
 const github = octokit({ debug: true });
 const server = express();
 
