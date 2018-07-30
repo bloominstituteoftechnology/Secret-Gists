@@ -13,6 +13,8 @@ const username = 'xangthao24'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
+const keypair = {};
+
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
