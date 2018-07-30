@@ -6,7 +6,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'wvandolah'; // TODO: Replace with your username
 // The object you'll be interfacing with to communicate with github
 const github = octokit({ debug: true });
 const server = express();
@@ -22,6 +22,10 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+let secretKey = nacl.randomBytes(32);
+console.log('secretKey', secretKey)
+console.log('decodedKey', nacl.util.encodeBase64(secretKey))
+
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -78,7 +82,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-
+  const keypair = nacl.box.keyPair.fromSecretKey(secretKey)
   // Display both keys as strings
   res.send(`
     <html>
@@ -141,6 +145,23 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content } = req.body;
+  const nonce = nacl.randomBytes(nacl.box.nonceLength)
+  const contentUTF8 = nacl.util.decodeUTF8(content)
+  const encrpyedGist = nacl.secretbox(contentUTF8, nonce, secretKey)
+  const files = { name: {content: encrpyedGist}}
+  console.log('nonce',name)
+  console.log('contentUTF8',contentUTF8)
+  console.log('encrpyedGist',encrpyedGist)
+  console.log(files)
+
+//   github.gists.create({ files, public: false })
+//     .then(response => {
+//       res.json(response.data);
+//     })
+//     .catch(err => {
+//       res.json(err);
+//     })
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
