@@ -172,4 +172,5 @@ server.post('/login', (req, res) => {
   - Let the user pass in their private key via POST
 */
 
-server.listen(3000);
+
+server.listen(3000, () => console.log('listening on port 3000'));
