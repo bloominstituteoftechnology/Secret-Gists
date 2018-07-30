@@ -20,9 +20,18 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN,
 });
 
-const keypair = {};
-// try{}
-// catch{}
+const keypair = require('./config.json')
+  ?   (secretKey = nacl.randomBytes(32))
+  :   (const mySecretKey = process.env.secretKey)
+// const keypair = {};
+// try {
+//   const keypair = require('./config.json');
+// } catch (err) {
+//   const mySecretKey = process.env.secretKey;
+//   const secretKey = nacl.randomBytes(32);
+//   const keypair = { mySecretKey: secretKey };
+//   fs.writeFile('config.json', keypair);
+// }
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
 
