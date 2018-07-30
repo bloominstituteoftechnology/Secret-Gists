@@ -7,17 +7,18 @@ Bob is a 58 year old independent CPA.  He primarily services medium-income indiv
 These days, Bob does most of his work by computer.  He regularly uses email, an online file sharing website, and desktop tax software in his work.  Although he has had to learn many new things as his work has changed, Bob has gained a reasonable understanding of the technology he uses.  The records for each of his clients are encrypted using a different password.  He also used different passwords for each online service.  These passwords are kept in a notebook, which Bob diligently keeps locked in his file cabinet when not in use.
 
 Adversaries - 
-
+All the web and his two people in his office
 
 Attack surface - 
-
-
+file cabinet and find a way into his 
+accounts
 Attack vectors -
+ 
 
 
 Risks (Confidentiality, Integrity, Availability, etc) -
 
-
+confidentiality
 Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
 
 
@@ -32,13 +33,13 @@ She is on her phone constantly.  Typing in pin numbers or doing those silly patt
 Yolanda gets along well with most of classmates, except Jennifer, but there are always haters who want to take people down.
 
 Adversaries - 
-
+jennifer, other students
 
 Attack surface - 
-
+phone
 
 Attack vectors -
-
+steal her phone
 
 Risks (Confidentiality, Integrity, Availability, etc) -
 
@@ -95,7 +96,3 @@ Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/
 
 
 Mitigation -
-
-
-
-
