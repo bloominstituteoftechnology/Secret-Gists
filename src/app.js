@@ -6,7 +6,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'ckopecky'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
@@ -21,6 +21,26 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+if (process.env.MY_SECRET){
+  let secretkey = nacl.util.encodeBase64(process.env.MY_SECRET)
+} else{
+    secretkey = nacl.randomBytes(32); 
+  fs.open('./.env', 'a', (err, fd) => { //load
+    if (err){
+      throw(err);
+    fs.write(fd, `secret_key=${nacl.util.encodeBase64(secretkey)}`, (err, written, str) => { //create
+      if (err){
+        throw(err);
+      fs.close(fd, (err) => { //close
+        if (err){
+          throw (err);
+        };
+      });
+    }
+    process.env.MY_SECRET = nacl.util.decodeBase64(secretkey)
+  })
+}
+
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -75,11 +95,9 @@ server.get('/', (req, res) => {
   `);
 });
 
-server.get('/keyPairGen', (req, res) => {
-  // TODO:  Generate a keypair from the secretKey and display both
-
-  // Display both keys as strings
-  res.send(`
+server.get('/keyPairGen',  (req, res) => {
+  const keypair = nacl.box.keyPair.fromSecretKey(secretkey);
+  const htmlbody = `
     <html>
       <header><title>Keypair</title></header>
       <body>
@@ -91,8 +109,19 @@ server.get('/keyPairGen', (req, res) => {
         <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
       </body>
     </html>
-  `);
-});
+  `
+  const func = (nacl.box.keyPair());
+  func
+    then((keypair) => {
+      res.status(200).json(htmlbody);
+    })
+    .catch((err) => {
+      res.status(500).json(err);
+    });
+  
+  
+
+ 
 
 server.get('/gists', (req, res) => {
   // Retrieve a list of all gists for the currently authed user
@@ -107,6 +136,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.send(nacl.util.encodeBase64(secretkey));
 });
 
 server.get('/setkey:keyString', (req, res) => {
