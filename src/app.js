@@ -98,18 +98,6 @@ server.get('/keyPairGen', (req, res) => {
     </html>
   `);
 });
-server.get('/gists', (req, res) => {
-  // Retrieve a list of all gists for the currently authed user
-  github.gists.getForUser({
-    username
-  })
-    .then((response) => {
-      res.json(response.data);
-    })
-    .catch((err) => {
-      res.json(err);
-    });
-});
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
@@ -128,18 +116,17 @@ server.get('/setkey:keyString', (req, res) => {
   }
 });
 
-server.get('/fetchmessagefromself:id', (req, res) => {
-  // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
-  const { id } = req.query.id;
-  let gist;
-  github.gists.get(id)
-  .then((response) => {
-    gist = response.data;
-    res.send(response.data);
+server.get('/gists', (req, res) => {
+  // Retrieve a list of all gists for the currently authed user
+  github.gists.getForUser({
+    username
   })
-  .catch(err => res.send('me stoopid'));
-  // const encryptedContent = nacl.secretbox.open(gist, nonce, secretKey);
-  // res.send(encryptedContent);
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -201,9 +188,27 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // NOTE - we're only encrypting the content, not the filename
 });
 
+server.get('/fetchmessagefromself:id', (req, res) => {
+  // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const { id } = req.query;
+  let gist;
+  github.gists.get({
+    gist_id: id
+  })
+  .then((response) => {
+    gist = response.data.files;
+    gist = gist[Object.keys(gist)[0]].content.split(' ');
+  })
+  .catch(err => res.send(err));
+  const encryptedContent = nacl.secretbox.open(gist[0], nonce, secretKey);
+  res.send(encryptedContent);
+});
+
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
 });
+
+// Stretch goals
 
 /* OPTIONAL - if you want to extend functionality */
 server.post('/login', (req, res) => {
