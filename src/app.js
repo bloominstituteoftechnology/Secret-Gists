@@ -24,7 +24,8 @@ github.authenticate({
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
 const config = require('../config.json');
 
-let privateKey = config.key ? nacl.util.decodeBase64(config.key) : nacl.randomBytes(32);
+// let privateKey = config.key ? nacl.util.decodeBase64(config.key) : nacl.randomBytes(32);
+let privateKey = config.key ? saltSecretKey(config.key) : nacl.randomBytes(32);
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -186,8 +187,8 @@ function saltSecretKey(key) {
     const salt = 32 - key.length;
     const saltBytes = nacl.randomBytes(salt);
     console.log('SALT TO 32', key, saltBytes);
-    const saltString = nacl.util.encodeUTF8(saltBytes); // this line has a bug
-    console.log('SALT TO 32', key, salt);
+    const saltString = nacl.util.encodeBase64(saltBytes); // Do not 'encode' with encodeUTF8 -> will fail and throw an Error.
+    console.log('SALT TO 32', key, saltString);
     // key = key.split(' ').join('0');
   } else if (key.length > 32) {
     throw new TypeError('Key is too large. Max size is 32 characters');
