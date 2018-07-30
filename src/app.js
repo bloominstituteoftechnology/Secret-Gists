@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -6,7 +8,9 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
+
 const username = 'ckopecky'; // TODO: Replace with your username
+
 const github = octokit({ debug: true });
 const server = express();
 
@@ -201,4 +205,5 @@ server.post('/login', (req, res) => {
   - Let the user pass in their private key via POST
 */
 
-server.listen(3000);
+
+server.listen(3000, () => console.log('listening on port 3000'));
