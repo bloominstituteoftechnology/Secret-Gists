@@ -6,19 +6,22 @@ Bob is a 58 year old independent CPA.  He primarily services medium-income indiv
 
 These days, Bob does most of his work by computer.  He regularly uses email, an online file sharing website, and desktop tax software in his work.  Although he has had to learn many new things as his work has changed, Bob has gained a reasonable understanding of the technology he uses.  The records for each of his clients are encrypted using a different password.  He also used different passwords for each online service.  These passwords are kept in a notebook, which Bob diligently keeps locked in his file cabinet when not in use.
 
-Adversaries - 
+Adversaries -
 
 
-Attack surface - 
+Attack surface - all avenue we can take to attack
 
 
-Attack vectors -
+Attack vectors - pick actual vector and what I will do to access what I want.
 
 
-Risks (Confidentiality, Integrity, Availability, etc) -
+Risks (Confidentiality, Integrity, Availability, etc) - bobs part
 
 
-Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
+Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) -
+man in the middle stealing info thorugh a network and sniffing it
+denial of service juming the system so that no one can access your system
+backdoors
 
 
 Mitigation -
