@@ -24,7 +24,7 @@ github.authenticate({
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
 const config = require('../config.json');
 
-let privateKey = config.key ? nacl.util.decodeBase64(config.key) : console.log('testing');
+let privateKey = config.key ? nacl.util.decodeBase64(config.key) : nacl.randomBytes(32);
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
