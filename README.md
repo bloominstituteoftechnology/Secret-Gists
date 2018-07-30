@@ -145,3 +145,5 @@ At first box/unbox with the whole keypair, but you can add methods/routes to sup
 ### Going further
 
 There is a stubbed `/login` route and some suggestive comments at bottom of `app.js` - if you are interested, it's highly encouraged to take this app even further. In general, this could grow into a secure pastebin, where users can share notes and secrets with each other and not have to trust the host. This exploration is beyond the scope of your initial work, but is good to think about and absolutely worth exploring if you are so inclined.
+
+Max Washington
