@@ -18,6 +18,7 @@ const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
+console.log(process.env.GITHUB_TOKEN)
 github.authenticate({
   type: 'oauth',
   token: process.env.GITHUB_TOKEN
