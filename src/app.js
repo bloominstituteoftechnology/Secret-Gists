@@ -151,10 +151,23 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
-  const { name, content } = req.body
+  const { name, content } = req.body;
 
-  let nonce = nacl.randomBytes(nacl.secretbox.nonceLength);
-
+  const nonce = nacl.randomBytes(24);
+  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+// in documentation this is nacl.secretbox(message,nonce,secretKey, so I used nacl.util.decodeUTF8(content) for the message
+// see Readme - client side encryption
+  const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(ciphertext);
+// encode nonce + ciphertext as the blob of content
+  const files = { [name]: { content: blob } };
+  github.gists
+    .create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
