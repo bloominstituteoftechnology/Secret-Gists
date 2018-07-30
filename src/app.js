@@ -173,3 +173,6 @@ server.post('/login', (req, res) => {
 */
 
 server.listen(3000);
+
+
+// initial commit going over docs and implementation
