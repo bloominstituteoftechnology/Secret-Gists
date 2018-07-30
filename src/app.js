@@ -22,6 +22,8 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+const config = require('../config.json');
+let secretKey = config.key ? nacl.util.decodeBase64(config.key) : console.log('testing');
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -116,9 +118,22 @@ server.get('/setkey:keyString', (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO:
+    console.log(keyString.length > 32);
+    if (keyString.length > 32) {
+      throw new Error();
+    } else {
+      console.log('1');
+      secretKey = nacl.util.decodeBase64(keyString);
+      console.log('2');
+      res.status(200).json('New secret key created');
+      console.log('3');
+    }
   } catch (err) {
     // failed
-    res.send('Failed to set key.  Key string appears invalid.');
+    console.log(err);
+    res.send(
+      'Failed to set key.  Key string appears invalid. allowed alfanumeric characters: A-Z, a-z and 0-9.\n Minimun 4 characters'
+    );
   }
 });
 
@@ -143,6 +158,9 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  console.log(Object.keys(req));
+  console.log(req.body);
+  res.status(200).json({ encoded: true });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
