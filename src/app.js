@@ -149,19 +149,19 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   const nonce = nacl.randomBytes(nacl.box.nonceLength)
   const contentUTF8 = nacl.util.decodeUTF8(content)
   const encrpyedGist = nacl.secretbox(contentUTF8, nonce, secretKey)
-  const files = { name: {content: encrpyedGist}}
+  const files = { [name]: {content: `${encrpyedGist}`}}
   console.log('nonce',name)
   console.log('contentUTF8',contentUTF8)
   console.log('encrpyedGist',encrpyedGist)
   console.log(files)
 
-//   github.gists.create({ files, public: false })
-//     .then(response => {
-//       res.json(response.data);
-//     })
-//     .catch(err => {
-//       res.json(err);
-//     })
+  github.gists.create({ files, public: false })
+    .then(response => {
+      res.json(response.data);
+    })
+    .catch(err => {
+      res.json(err);
+    })
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
