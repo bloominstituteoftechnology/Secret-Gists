@@ -109,6 +109,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  console.log('test');
   res.json({ test_secretKey: nacl.util.encodeBase64(secretKey) });
 });
 
