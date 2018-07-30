@@ -6,12 +6,16 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
-const github = octokit({ debug: true });
+const username = 'NandoTheessen'; // TODO: Replace with your username
+const github = octokit({
+  debug: true
+});
 const server = express();
 
 // Create application/x-www-form-urlencoded parser
-const urlencodedParser = bodyParser.urlencoded({ extended: false });
+const urlencodedParser = bodyParser.urlencoded({
+  extended: false
+});
 
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
@@ -19,7 +23,8 @@ github.authenticate({
   type: 'oauth',
   token: process.env.GITHUB_TOKEN
 });
-
+let secretKey;
+let nonce;
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
 
 server.get('/', (req, res) => {
@@ -77,7 +82,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-
+  const keypair = nacl.keypair();
   // Display both keys as strings
   res.send(`
     <html>
@@ -93,10 +98,11 @@ server.get('/keyPairGen', (req, res) => {
     </html>
   `);
 });
-
 server.get('/gists', (req, res) => {
   // Retrieve a list of all gists for the currently authed user
-  github.gists.getForUser({ username })
+  github.gists.getForUser({
+    username
+  })
     .then((response) => {
       res.json(response.data);
     })
@@ -113,6 +119,8 @@ server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
   const keyString = req.query.keyString;
   try {
+    nacl.secretbox(keyString, nacl.randomBytes(24));
+    res.send('Sucess!');
     // TODO:
   } catch (err) {
     // failed
@@ -122,13 +130,33 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const { id } = req.query.id;
+  let gist;
+  github.gists.get(id)
+  .then((response) => {
+    gist = response.data;
+    res.send(response.data);
+  })
+  .catch(err => res.send('me stoopid'));
+  // const encryptedContent = nacl.secretbox.open(gist, nonce, secretKey);
+  // res.send(encryptedContent);
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
-  const { name, content } = req.body;
-  const files = { [name]: { content } };
-  github.gists.create({ files, public: false })
+  const {
+    name,
+    content
+  } = req.body;
+  const files = {
+    [name]: {
+      content
+    }
+  };
+  github.gists.create({
+    files,
+    public: false
+  })
     .then((response) => {
       res.json(response.data);
     })
@@ -139,6 +167,30 @@ server.post('/create', urlencodedParser, (req, res) => {
 
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
+  const {
+    name,
+    content
+  } = req.body;
+  nonce = nacl.randomBytes(24);
+  secretKey = nacl.randomBytes(32);
+  const encryptedContent = nacl.util.decodeUTF8(content);
+  const cyphertext = nacl.secretbox(encryptedContent, nonce, secretKey);
+  const files = {
+    [name]: {
+      content: `${cyphertext}, nonce: ${nonce}`
+    }
+  };
+
+  github.gists.create({
+    files,
+    public: false
+  })
+    .then((response) => {
+      res.send(`You can find your posted gist under the ID ${response.data.url} and your secret Key is: ${secretKey}`);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
   // NOTE - we're only encrypting the content, not the filename
 });
 
@@ -158,7 +210,9 @@ server.post('/login', (req, res) => {
   // TODO log in to GitHub, return success/failure response
   // This will replace hardcoded username from above
   // const { username, oauth_token } = req.body;
-  res.json({ success: false });
+  res.json({
+    success: false
+  });
 });
 
 /*
