@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -176,3 +178,5 @@ server.listen(3000);
 
 
 // initial commit going over docs and implementation
+
+server.listen(3000, () => console.log('listening on port 3000'))
