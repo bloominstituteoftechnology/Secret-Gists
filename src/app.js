@@ -113,7 +113,6 @@ server.get('/key', (req, res) => {
 
 server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
-  res.json({})
   const keyString = req.query.keyString;
   try {
     // TODO:
@@ -143,6 +142,19 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const encryptedContent = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey); // Returns an encrypted and authenticated message
+  const encryptedNonceAndContent = nacl.util.encodeBase64(encryptedContent) + nacl.util.encodeBase64(nonce);
+  // content = encryptedNonceAndContent;
+  const files = { [name]: { encryptedNonceAndContent } };
+  github.gists.create({ files, public: false })
+   .then((response) => {
+     res.json(response.data);
+   })
+   .catch((err) => {
+     res.json(err);
+   });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
