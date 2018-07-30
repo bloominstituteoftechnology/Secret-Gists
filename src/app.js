@@ -1,4 +1,3 @@
-//making comment to make pull request
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -19,7 +18,6 @@ const urlencodedParser = bodyParser.urlencoded({ extended: false });
 // Set it to be able to create gists
 github.authenticate({
   type: 'oauth',
-  token: process.env.GITHUB_TOKEN
   token: process.env.GITHUB_TOKEN
 });
 
