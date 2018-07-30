@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const fs = require('fs');
+const path = require('path');
 const bodyParser = require('body-parser');
 const express = require('express');
 const octokit = require('@octokit/rest');
@@ -21,11 +22,32 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
-// TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-const keypair = {
-  publicKey: '',
-  secretKey: ''
-};
+const configPath = path.join(__dirname, './config.json');
+let keypair = {};
+fs.readFile(configPath, 'utf8', (readErr, contents) => {
+  if (readErr) {
+    // TODO: Break out into a function
+    const generatedKeys = nacl.box.keyPair();
+    keypair = {
+      publicKey: generatedKeys.publicKey,
+      secretKey: generatedKeys.secretKey
+    };
+    fs.writeFile(
+      configPath,
+      JSON.stringify({ secretKey: nacl.util.encodeBase64(keypair.secretKey) }),
+      'utf8',
+      (writeErr) => {
+        if (writeErr) throw writeErr;
+        console.log('A new config.json file has been generated');
+      }
+    );
+  } else {
+    // TODO: If a secret key is not found, generate one and save
+    const encodedSecretKey = JSON.parse(contents);
+    const decodedSecretKey = nacl.util.decodeBase64(encodedSecretKey.secretKey);
+    keypair = nacl.box.keyPair.fromSecretKey(decodedSecretKey);
+  }
+});
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -101,7 +123,8 @@ server.get('/keyPairGen', (req, res) => {
 
 server.get('/gists', (req, res) => {
   // Retrieve a list of all gists for the currently authed user
-  github.gists.getForUser({ username })
+  github.gists
+    .getForUser({ username })
     .then((response) => {
       res.json(response.data);
     })
@@ -133,7 +156,8 @@ server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
   const { name, content } = req.body;
   const files = { [name]: { content } };
-  github.gists.create({ files, public: false })
+  github.gists
+    .create({ files, public: false })
     .then((response) => {
       res.json(response.data);
     })
@@ -154,9 +178,13 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // NOTE - we're only encrypting the content, not the filename
 });
 
-server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
-  // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
-});
+server.get(
+  '/fetchmessagefromfriend:messageString',
+  urlencodedParser,
+  (req, res) => {
+    // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  }
+);
 
 /* OPTIONAL - if you want to extend functionality */
 server.post('/login', (req, res) => {
