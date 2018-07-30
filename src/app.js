@@ -23,7 +23,7 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-const keypair = {};
+const keypair = nacl.box.keyPair();
 
 
 server.get('/', (req, res) => {
