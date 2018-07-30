@@ -125,11 +125,11 @@ server.get('/setkey:keyString', (req, res) => {
     if (keyString.length > 32) {
       throw new Error();
     } else {
-      console.log('1');
+      // console.log('1');
       privateKey = nacl.util.decodeBase64(keyString);
-      console.log('2');
+      // console.log('2');
       res.status(200).json('New secret key created');
-      console.log('3');
+      // console.log('3');
     }
   } catch (err) {
     // failed
@@ -144,19 +144,7 @@ server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
 });
 
-server.post('/create', urlencodedParser, (req, res) => {
-  // Create a private gist with name and content given in post request
-  const { name, content } = req.body;
-  const files = { [name]: { content } };
-  github.gists
-    .create({ files, public: false })
-    .then(response => {
-      res.json(response.data);
-    })
-    .catch(err => {
-      res.json(err);
-    });
-});
+server.post('/create', urlencodedParser, createdPrivateGist);
 
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
@@ -194,5 +182,26 @@ server.post('/login', (req, res) => {
   - Exchange keys, encrypt messages for each other, share them
   - Let the user pass in their private key via POST
 */
+
+/**
+ * UTILS: helper functions
+ */
+function setSecretKey(key) {
+  // TODO: Salt a passed 'key' so its length will be 32 bytes.
+}
+
+function createdPrivateGist(req, res) {
+  // Create a private gist with name and content given in post request
+  const { name, content } = req.body;
+  const files = { [name]: { content } };
+  github.gists
+    .create({ files, public: false })
+    .then(response => {
+      res.json(response.data);
+    })
+    .catch(err => {
+      res.json(err);
+    });
+}
 
 server.listen(3000);
