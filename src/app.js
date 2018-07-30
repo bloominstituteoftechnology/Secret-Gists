@@ -24,13 +24,16 @@ github.authenticate({
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
 let secretKey;
 let keyObject;
-fs.readFile('./config.json', (err, data) => {
+fs.readFile('./config.json', (noConfig, data) => {
   // try to load key from config.json
   // if error, create a 32 byte key with nacl
   // create key object with secretKey as a key and the output of Base64 encoding of the key as value
-  if (err) {
+  if (noConfig) {
     secretKey = nacl.randomBytes(32);
     keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+    fs.appendFile('./.env', `\nSECRET_KEY=${keyObject.secretKey}`, (error) => {
+      if (error) throw error
+    })
     // else if data can be loaded from config.json,
     // keyObject is parsed JSON data from ./config.json
     // secretKey is decoded Base64 of the key secretKey on the keyObject object
@@ -125,7 +128,8 @@ server.get('/gists', (req, res) => {
 });
 
 server.get('/key', (req, res) => {
-
+  const key = nacl.util.encodeBase64(process.env.SECRET_KEY)
+  res.send(key)
   // TODO: Display the secret key used for encryption of secret gists
 });
 
