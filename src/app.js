@@ -21,18 +21,23 @@ github.authenticate({
 });
 
 // Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-const data = fs.readFileSync('./config.json');
 let secretKey;
 try {
+  // Try to read the data from `config.json`
+  const data = fs.readFileSync('./config.json');
+  // Parse the data read from the config file
   const keyObject = JSON.parse(data);
+  // Decode the data from base 64 to utf8
   secretKey = nacl.util.decodeBase64(keyObject.secretKey);
 } catch (err) {
+  // Generate a secret key since we don't have on saved in the config file
   secretKey = nacl.randomBytes(32);
+  // Create the key object; don't forget to encode the key to base 64
   const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+  // Write the data to `config.json` file, stringifying the object
   fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
     if (ferr) {
-      console.log('There has been an error saving the key data.');
-      console.log(err.message);
+      console.log('Error writing secret key to config file: ', ferr.message);
       return;
     }
   });
@@ -94,19 +99,20 @@ server.get('/', (req, res) => {
 server.get('/keyPairGen', (req, res) => {
   // Generate a keypair from the secretKey and display both
   // Display both keys as strings
-
+  // Grab the keypair given the secret key
   const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
   res.send(`
-  <html>
-    <header><title>Keypair</title></header>
-    <body>
-      <h1>Keypair</h1>
-      <div>Share your public key with anyone you want to be able to leave you secret messages.</div>
-      <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
-      <br/>
-      <div>Public Key: ${nacl.util.encodeBase64(keypair.publicKey)}</div>
-      <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
-    </body>
+    <html>
+      <header><title>Keypair</title></header>
+      <body>
+        <h1>Keypair</h1>
+        <div>Share your public key with anyone you want to be able to leave you secret messages.</div>
+        <div>Keep your secret key safe. You will need it to decode messages. Protect it like a passphrase!</div>
+        <br/>
+        <div>Public Key: ${nacl.util.encodeBase64(keypair.publicKey)}</div>
+        <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
+      </body>
+    </html>
   `);
 });
 
@@ -192,7 +198,6 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
-
   const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
   const { name, publicKeyString, content } = req.body;
   const nonce = nacl.randomBytes(24);
@@ -208,14 +213,15 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
       // to share with the friend.
       const messageString = nacl.util.encodeBase64(keypair.publicKey) + response.data.id;
       res.send(`
-      <html>
-        <header><title>Message Saved</title></header>
-        <body>
-          <h1>Message Saved</h1>
-          <div>Give this string to your friend for decoding.</div>
-          <div>${messageString}</div>
-          <div>
-        </body>
+        <html>
+          <header><title>Message Saved</title></header>
+          <body>
+            <h1>Message Saved</h1>
+            <div>Give this string to your friend for decoding.</div>
+            <div>${messageString}</div>
+            <div>
+          </body>
+        </html>
       `);
     })
     .catch((err) => {
@@ -241,7 +247,7 @@ server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res)
     const plaintext = nacl.box.open(ciphertext, nonce,
       nacl.util.decodeBase64(friendPublicString),
       secretKey
-  );
+    );
     res.send(nacl.util.encodeUTF8(plaintext));
   });
 });
