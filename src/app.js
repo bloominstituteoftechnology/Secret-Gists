@@ -8,7 +8,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'FireInjun'; // TODO: Replace with your username
 // The object you'll be interfacing with to communicate with github
 const github = octokit({ debug: true });
 const server = express();
@@ -22,7 +22,7 @@ github.authenticate({
   type: 'oauth',
   token: process.env.GITHUB_TOKEN
 });
-
+const keypair = {};
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
 
 server.get('/', (req, res) => {
@@ -99,7 +99,8 @@ server.get('/keyPairGen', (req, res) => {
 
 server.get('/gists', (req, res) => {
   // Retrieve a list of all gists for the currently authed user
-  github.gists.getForUser({ username })
+  github.gists
+    .getForUser({ username })
     .then((response) => {
       res.json(response.data);
     })
@@ -131,7 +132,8 @@ server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
   const { name, content } = req.body;
   const files = { [name]: { content } };
-  github.gists.create({ files, public: false })
+  github.gists
+    .create({ files, public: false })
     .then((response) => {
       res.json(response.data);
     })
@@ -152,9 +154,13 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // NOTE - we're only encrypting the content, not the filename
 });
 
-server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
-  // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
-});
+server.get(
+  '/fetchmessagefromfriend:messageString',
+  urlencodedParser,
+  (req, res) => {
+    // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  }
+);
 
 /* OPTIONAL - if you want to extend functionality */
 server.post('/login', (req, res) => {
@@ -173,6 +179,5 @@ server.post('/login', (req, res) => {
   - Exchange keys, encrypt messages for each other, share them
   - Let the user pass in their private key via POST
 */
-
 
 server.listen(3000, () => console.log('listening on port 3000'));
