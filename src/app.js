@@ -21,7 +21,7 @@ github.authenticate({
 });
 
 const keypair = require('./config.json')
-  ?   (secretKey = nacl.randomBytes(32))
+  ?   (constsecretKey = nacl.randomBytes(32))
   :   (const mySecretKey = process.env.secretKey)
 // const keypair = {};
 // try {
