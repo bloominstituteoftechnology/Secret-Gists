@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -6,7 +8,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'danteocualesjr'; // TODO: Replace with your username
+const username = process.env.danteocualesjr; // TODO: Replace with your username
 // The object you'll be interfacing with to communicate with github
 const github = octokit({ debug: true });
 const server = express();
@@ -186,7 +188,7 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   const nonce = nacl.randomBytes(24);
   // Decode the UTF8 content and then encrypt it
   const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
-  // Somehow the nonce needs to be persisted until we're looking to decrypt this 
+  // Somehow the nonce needs to be persisted until we're looking to decrypt this
   // Append (or prepend) the nonce to our encrypted content
   const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(ciphertext);
   // Format the blob and name in the format that the GitHub API expects
@@ -230,4 +232,4 @@ server.post('/login', (req, res) => {
   - Let the user pass in their private key via POST
 */
 
-server.listen(3000);
+server.listen(3000, () => console.log('Listening on Port 3000'));
