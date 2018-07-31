@@ -194,6 +194,19 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
+  const { name, publicKeyString, content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const decodedFriendKey = nacl.util.decodeBase64(publicKeyString);
+  let encryptedContent = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, decodedFriendKey);
+  encryptedContent = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encryptedContent);
+  const files = { [name]: { content: encryptedContent } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
