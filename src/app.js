@@ -10,9 +10,20 @@ const username = 'mister-corn'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
+const updateConfigJson = (newConfig) => {
+  try {
+    fs.writeFileSync('./src/config.json', JSON.stringify(newConfig));
+  } catch (err) {
+    console.log('updateConfigJson error state:', err);
+    return 1;
+  }
+  return 0;
+};
+
 // Dirty Global State
-const state = {
-  secretKey: nacl.util.decodeBase64(process.env.SECRET_KEY) || nacl.randomBytes(32),
+let state = {
+  secretKey: null,
+  publicKey: null
 };
 
 // Create application/x-www-form-urlencoded parser
@@ -29,13 +40,30 @@ github.authenticate({
 try {
   // https://stackoverflow.com/a/13060087 for below tip
   // const appRoot = process.cwd();
-  // Use this to double check where exactly the root folder of node's process
-  jsonStr = fs.readFileSync('./src/config.json', 'utf8');
-  const { SECRET_KEY } = JSON.parse(jsonStr);
-  console.log('SECRET_KEY:', SECRET_KEY);
+  // Use this to double check where exactly is the root folder of node's process
+  const jsonStr = fs.readFileSync('./src/config.json');
+  state = JSON.parse(jsonStr);
+  state = {
+    ...state,
+    secretKey: nacl.util.decodeBase64(state.secretKey),
+    publicKey: nacl.util.decodeBase64(state.publicKey)
+  };
 } catch (err) {
   console.log('readFileSync error:', err);
+  const { secretKey, publicKey } = nacl.box.keyPair.fromSecretKey(nacl.randomBytes(32));
+  state = {
+    ...state,
+    secretKey,
+    publicKey
+  };
+  const configObj = {
+    ...state,
+    secretKey: nacl.util.encodeBase64(state.secretKey),
+    publicKey: nacl.util.encodeBase64(state.publicKey)
+  };
+  updateConfigJson(configObj);
 }
+
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
   res.send(`
@@ -91,7 +119,6 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  const keypair = nacl.box.keyPair.fromSecretKey(state.secretKey);
   // Display both keys as strings
   res.send(`
     <html>
@@ -101,8 +128,8 @@ server.get('/keyPairGen', (req, res) => {
         <div>Share your public key with anyone you want to be able to leave you secret messages.</div>
         <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
         <br/>
-        <div>Public Key: ${nacl.util.encodeBase64(keypair.publicKey)}</div>
-        <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
+        <div>Public Key: ${nacl.util.encodeBase64(state.publicKey)}</div>
+        <div>Secret Key: ${nacl.util.encodeBase64(state.secretKey)}</div>
         <br/>
         <a href="/">Go back.</a>
       </body>
@@ -142,28 +169,45 @@ server.get('/key', (req, res) => {
 server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
   const keyString = req.query.keyString;
-  try {
-    // TODO:
-    state.secretKey = nacl.util.decodeBase64(keyString);
+  // TODO:
+  const { secretKey, publicKey } = nacl.box.keyPair.fromSecretKey(nacl.util.decodeBase64(keyString));
+  state = {
+    ...state,
+    secretKey,
+    publicKey
+  };
+
+  const saveResult = updateConfigJson({
+    ...state,
+    secretKey: nacl.util.encodeBase64(state.secretKey),
+    publicKey: nacl.util.encodeBase64(state.publicKey)
+  });
+
+  if (saveResult === 1) {
+    res.send(`
+    <html>
+      <header><title>Set keyString</title></header>
+      <body>
+        <h1>ERROR: set keyString</h1>
+        <div>Key is updated in memory, but could NOT be saved to config.json.</div>
+        <div>
+          This key will be lost upon server restart. Please ensure you have this key copied.
+          <br/>
+          Key: ${keyString}
+          <br/>
+          Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!
+        <br/>
+        <a href="/">Go back.</a>
+      </body>
+    </html>
+    `);
+  } else {
     res.send(`
     <html>
       <header><title>Set keyString</title></header>
       <body>
         <h1>Success!</h1>
         <div>Key set successful.</div>
-        <br/>
-        <a href="/">Go back.</a>
-      </body>
-    </html>
-    `);
-  } catch (err) {
-    // failed
-    res.send(`
-    <html>
-      <header><title>Set keyString</title></header>
-      <body>
-        <h1>ERROR: set keyString</h1>
-        <div>Failed to set key.  Key string appears invalid.!</div>
         <br/>
         <a href="/">Go back.</a>
       </body>
