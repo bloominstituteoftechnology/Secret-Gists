@@ -153,6 +153,29 @@ server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
   const keyString = req.query.keyString;
   try {
+    const SECRET = keyString;
+    const buffer = `\nMY_SECRET=${nacl.util.encodeBase64(SECRET)}\n`;
+    fs.open('./.env', 'a', (err, fd) => {
+      if (err) {
+        console.log({ err });
+      } else {
+        console.log(".env file opened successfully!");
+      }
+      fs.write(fd, buffer, (error, written = 32, str) => {
+        if (error) {
+          console.log({ error });
+        } else {
+          console.log("file written to successfully!");
+        }
+        fs.close(fd, (errors) => {
+          if (errors) {
+            console.log({ errors });
+          } else {
+            console.log("File closed successfully!");
+          }
+        });
+      });
+    });
     res.send(`Key is: ${keyString}`);
   } catch (err) {
     // failed
