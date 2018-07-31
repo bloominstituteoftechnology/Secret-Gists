@@ -146,7 +146,7 @@ server.get('/fetchmessagefromself:id', (req, res) => {
     .then((response) => {
       // console.log(response.data)
       const { content } = Object.values(response.data.files)[0]
-      console.log('CONTENT: ' + content)
+      console.log('BLOB: ' + content)
       const encryptedContent = nacl.util.decodeBase64(content.slice(0, -32))
       // console.log(nacl.util.encodeBase64(encryptedContent))
       const nonce = nacl.util.decodeBase64(content.slice(-32))
