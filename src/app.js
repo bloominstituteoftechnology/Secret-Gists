@@ -14,7 +14,7 @@ nacl.util = require('tweetnacl-util');
 const username = 'ckopecky'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
-const secretKey = process.env.MY_SECRET || process.env.secretkey;
+const MY_SECRET = process.env.MY_SECRET;
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
@@ -29,17 +29,17 @@ github.authenticate({
 
 const secretKeyGetter = () => {
   if (process.env.MY_SECRET) {
-    const MY_SECRET = nacl.util.encodeBase64(process.env.MY_SECRET);
-    return MY_SECRET;
+    const SECRET = nacl.util.encodeBase64(process.env.MY_SECRET);
+    return SECRET;
   } else {
-    const secretkey = nacl.randomBytes(32);
+    let SECRET = nacl.randomBytes(32);
     fs.open('./.env', 'a', (err, fd) => {
       if (err) {
         console.log({ err });
       } else {
         console.log(".env file opened successfully!");
       }
-      fs.write(fd, `\nsecretkey=${nacl.util.encodeBase64(secretkey)}\n`, (error, written = 32, str) => {
+      fs.write(fd, `\nMY_SECRET=${nacl.util.encodeBase64(SECRET)}\n`, (error, written = 32, str) => {
         if (error) {
           console.log({ error });
         } else {
@@ -53,8 +53,8 @@ const secretKeyGetter = () => {
           }
         });
       });
-      const Secretkey = nacl.util.encodeBase64(secretkey);
-      return Secretkey;
+      SECRET = nacl.util.encodeBase64(SECRET);
+      return SECRET;
     });
   }
 };
@@ -113,7 +113,7 @@ server.get('/', (req, res) => {
 });
 
 server.get('/keyPairGen', (req, res) => {
-  const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
+  const keypair = nacl.box.keyPair.fromSecretKey(MY_SECRET);
   keypair
     .then(() => {
       res.status(200).json(
@@ -147,7 +147,7 @@ server.get('/gists', (req, res) => {
     });
 });
 
-server.get('/key', (req, res) => { // this works!!!! Hallelujah!
+server.get('/key', (req, res) => { 
   // TODO: Display the secret key used for encryption of secret gists
   console.log(nacl.util.encodeBase64(secretKeyGetter()));
   res.send(nacl.util.encodeBase64(secretKeyGetter()));
@@ -157,15 +157,7 @@ server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
   const keyString = req.query.keyString;
   try {
-    const secretkey = nacl.util.decodeBase64(keyString);
-    const keyObject = nacl.util.decodeBase64(secretkey);
-    fs.writeFile('./config.json', JSON.stringify(keyObject), (errr) => {
-      if (errr) {
-        res.status(500).json({ Error: errr });
-      } else {
-        console.log(`${keyObject} is your coded key`);
-      }
-    });
+    
     res.send(`Key is: ${keyString}`);
   } catch (err) {
     // failed
