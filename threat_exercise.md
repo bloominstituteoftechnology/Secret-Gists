@@ -6,19 +6,19 @@ Bob is a 58 year old independent CPA.  He primarily services medium-income indiv
 
 These days, Bob does most of his work by computer.  He regularly uses email, an online file sharing website, and desktop tax software in his work.  Although he has had to learn many new things as his work has changed, Bob has gained a reasonable understanding of the technology he uses.  The records for each of his clients are encrypted using a different password.  He also used different passwords for each online service.  These passwords are kept in a notebook, which Bob diligently keeps locked in his file cabinet when not in use.
 
-Adversaries - 
+Adversaries - his coworkers, enemies of his clients, The NSA, People mean for no reason, The Russians, Putin (LOL)...people who want SS numbers
 
 
-Attack surface - 
+Attack surface - Notebook to get passwords, desktop software
 
 
-Attack vectors -
+Attack vectors - breaking and entering
 
 
-Risks (Confidentiality, Integrity, Availability, etc) -
+Risks (Confidentiality, Integrity, Availability, etc) - lack of security
 
 
-Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
+Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social (engineering), etc.) - 
 
 
 Mitigation -
@@ -31,22 +31,22 @@ She is on her phone constantly.  Typing in pin numbers or doing those silly patt
 
 Yolanda gets along well with most of classmates, except Jennifer, but there are always haters who want to take people down.
 
-Adversaries - 
+Adversaries - Jennifer, other classmates
 
 
 Attack surface - 
 
 
-Attack vectors -
+Attack vectors - take phone, man in the middle with William
 
 
-Risks (Confidentiality, Integrity, Availability, etc) -
+Risks (Confidentiality, Integrity, Availability, etc) - 
 
 
 Types of Attacks (Man-in-the-middle, (Distributed) denial of service, Backdoors/malware, social, etc.) - 
 
 
-Mitigation -
+Mitigation - 
 
 ---
 
@@ -54,13 +54,13 @@ Zaida, 37, is a senior IT Security manager for the Washington, DC Embassy of a c
 
 Zaida is an expert in her field.  At work, she and her team follow the latest best practices in account and network security.  She keeps her work and home life private - using separate phones and computers for each.  He job is high stress, so she values her time off as a chance to relax and step away from the high-stakes world of her job, and enjoys not having to worry about someone hacking her devices or accounts.  
 
-Adversaries - 
+Adversaries - nationals of enemies of state, international spies, U.S.
 
 
-Attack surface - 
+Attack surface - ransomware? social engineering. 
 
 
-Attack vectors -
+Attack vectors - might require a zero day attack that no one has seen before
 
 
 Risks (Confidentiality, Integrity, Availability, etc) -
