@@ -24,7 +24,7 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-const secretKey = config.secretKey ? config.secretKey : nacl.randomBytes(32);
+const secretKey = config.secretKey ? nacl.util.decodeBase64(config.secretKey): nacl.randomBytes(32);
 // console.log(secretKey)
 // console.log(nacl.util.encodeBase64(secretKey))
 
@@ -174,9 +174,9 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
 
   // E N C R Y P T I O N
   const nonce = nacl.randomBytes(24);
-  const encryptedContent = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey); // Returns an encrypted and authenticated message
-  const encryptedNonceAndContent = nacl.util.encodeBase64(encryptedContent) + nacl.util.encodeBase64(nonce);
-  content = encryptedNonceAndContent;
+  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey); // Returns an encrypted and authenticated message
+  const blob = nacl.util.encodeBase64(ciphertext) + nacl.util.encodeBase64(nonce);
+  content = blob;
 
   const files = { [name]: { content } };
   github.gists.create({ files, public: false })
