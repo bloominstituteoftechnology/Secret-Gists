@@ -34,7 +34,14 @@ try {
   const data = fs.readFileSync('./config.json');
   // parse the data that we read from the json file
   const keyObject = JSON.parse(data);
+
+  // console.log('data: ', data);
+  // console.log('keyObject: ', keyObject);
+
   secretKey = nacl.util.decodeBase64(keyObject.secretKey);
+
+  // console.log('secretKey: ', secretKey);
+  // console.log('random: ', nacl.randomBytes(32));
 } catch (err) {
   secretKey = nacl.randomBytes(32);
   // Create the keyObject, encoding the secretKey as a string
@@ -105,9 +112,10 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
+  const keypair = nacl.box.keyPair.fromSecretKey(secretKey); // this is a object of Uint8 array
+  // console.log('keyPairGen: ', keypair);
 
-  // Display both keys as strings
+  // Display both keys as strings ***was provided to us***
   res.send(`
     <html>
       <header><title>Keypair</title></header>
@@ -125,10 +133,22 @@ server.get('/keyPairGen', (req, res) => {
 
 server.get('/gists', (req, res) => {
   // Retrieve a list of all gists for the currently authed user
+  // ** was provided, but I made modifications to the returned data so it's easier to read**
   github.gists
     .getForUser({ username })
     .then((response) => {
-      res.json(response.data);
+      const shortenedGists = response.data.map((item) => {
+        // console.log('item: ', item);
+        // console.log('item.files: ', item.files);
+        const fileName = Object.values(item.files)[0].filename;
+        const url = Object.values(item.files)[0].raw_url;
+        return {
+          fileName,
+          id: item.id,
+          raw_url: url
+        };
+      });
+      res.json(shortenedGists);
     })
     .catch((err) => {
       res.json(err);
@@ -137,13 +157,16 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
-  // ****  REVISIT *******************
+  // ****  done ****
   res.send(nacl.util.encodeBase64(secretKey));
 });
 
 server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
   const keyString = req.query.keyString;
+  if (keyString.length < 64) {
+    res.send(`<div>() => alert${keyString} not appropriate length</div>`);
+  }
   try {
     // TODO:
   } catch (err) {
