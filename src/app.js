@@ -162,7 +162,28 @@ server.get('/setkey:keyString', (req, res) => {
 });
 
 server.get('/fetchmessagefromself:id', (req, res) => {
-  // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+ // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.query.id;
+
+  github.gists.get({ id })
+    .then((response) => {
+      const gist = response.data;
+      // console.log(JSON.stringify(gist));
+      const filename = Object.keys(gist.files)[0];
+      const blob = gist.files[filename].content;
+      let nonce = blob.slice(0, 32);
+      console.log(nonce);
+      let encrypted = blob.slice(32, blob.length);
+      // console.log('encrypted', encrypted);
+      nonce = nacl.util.decodeBase64(nonce);
+      encrypted = nacl.util.decodeBase64(encrypted);
+      const plaintext = nacl.secretbox.open(encrypted, nonce, secretKey);
+      // console.log('plaintext', plaintext);
+      res.send(nacl.util.encodeUTF8(plaintext));
+    })
+    .catch((err) => {
+      res.send(304).json({ err });
+    });
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -181,6 +202,25 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  // Read the name and content off the url params
+  const { name, content } = req.body;
+  // initialize a nonce
+  const nonce = nacl.randomBytes(24);
+  // decode the UTF8 content and then encrypt it
+  const encrypted = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+  // Somehow the nonce needs to be persisted until we're looking to decrypt this content
+  // Append (or prepend) the nonce to our encrypted content
+  const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encrypted);
+  // format the blob and name in the format that the github API expects
+  const file = { [name]: { content: blob } };
+  // send the post request to the github API
+  github.gists.create({ files: file, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
