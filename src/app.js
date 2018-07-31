@@ -1,3 +1,4 @@
+const config = require('../config.json')
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -23,7 +24,9 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-const secretKey = nacl.randomBytes(32);
+const secretKey = config.secretKey ? config.secretKey : nacl.randomBytes(32);
+// console.log(secretKey)
+// console.log(nacl.util.encodeBase64(secretKey))
 
 
 server.get('/', (req, res) => {
