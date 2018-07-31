@@ -14,6 +14,10 @@ const server = express();
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
+// Require Crypto
+const crypto = require('crypto');
+let hash256 = crypto.createHash('sha256');
+
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
 github.authenticate({
@@ -22,10 +26,34 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-const config = require('../config.json');
 
-// let privateKey = config.key ? nacl.util.decodeBase64(config.key) : nacl.randomBytes(32);
-let privateKey = config.key ? saltSecretKey(config.key) : nacl.randomBytes(32);
+let privateKey;
+
+try {
+  const config = require('../config.json');
+  privateKey = config.key ? nacl.util.decodeBase64(config.key) : nacl.randomBytes(32);
+  console.log(privateKey);
+} catch (error) {
+  /* if there are not config.json file */
+  // Generates a random Unit8Array of 32 bytes
+  const randomValue = nacl.randomBytes(32);
+  // pass it to Base64 -> a mor human redable encoding.
+  const keyBase64 = nacl.util.encodeBase64(randomValue);
+  // put it in an object -> this will be the content of the config.json
+  const configFileContent = {
+    key: keyBase64,
+    keyLength: keyBase64.length,
+    keyUnit8Array: randomValue,
+    keyUnit8ArrayLenght: randomValue.length,
+  };
+  // Create the file in the root-folder with the content created before.
+  fs.writeFile('./config.json', JSON.stringify(configFileContent), err => {
+    if (err) throw new Error('Fail to write secret to file');
+  });
+
+  // Pass a reference to the Unit8Array to the 'secretKey' variable -> so we can refer to that later on the code.
+  privateKey = randomValue;
+}
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -143,6 +171,7 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  // gist ID "33da85f913935ef9ba27c00d1db55365"
 });
 
 server.post('/create', urlencodedParser, createdPrivateGist);
