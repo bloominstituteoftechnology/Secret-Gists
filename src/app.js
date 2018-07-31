@@ -22,7 +22,25 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-const secretKey = nacl.randomBytes(32);
+// const secretKey = nacl.randomBytes(32);
+
+let secretKey;
+try {
+  const data = fs.readFileSync('./config.json');
+
+  const keyObject = JSON.parse(data);
+  secretKey = nacl.util.decodeBase64(keyObject.secretKey);
+} catch (err) {
+  secretKey = nacl.randomBytes(32);
+  const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+  fs.watchFile('./config.json', JSON.stringify(keyObject), (serr) => {
+    if (serr) {
+      console.log('Error writing secret key to config file', serr.message);
+      return;
+    }
+  });
+}
+
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -142,12 +160,13 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  // let { content } = req.body;
   const { name, content } = req.body;
   const nonce = nacl.randomBytes(24);
-  const encryptedContent = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey); // Returns an encrypted and authenticated message
-  const encryptedNonceAndContent = nacl.util.encodeBase64(encryptedContent) + nacl.util.encodeBase64(nonce);
+  const encryptedContent = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+  const encryptedNonceAndContent = `${nacl.util.encodeBase64(encryptedContent)} nonce:  ${nacl.util.encodeBase64(nonce)}`;
   // content = encryptedNonceAndContent;
-  const files = { [name]: { encryptedNonceAndContent } };
+  const files = { [name]: { content: encryptedNonceAndContent } };
   github.gists.create({ files, public: false })
    .then((response) => {
      res.json(response.data);
