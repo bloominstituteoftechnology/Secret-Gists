@@ -167,8 +167,8 @@ server.get('/fetchmessagefromself:id', (req, res) => {
   const id = req.query.id;
 
   github.gists.get({ id })
-    .then(data => {
-      console.log(data);
+    .then(({ data }) => {
+      console.log(data.files.encrypted.content);
       res.send({ data });
     })
     .catch(err => {
