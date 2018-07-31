@@ -12,7 +12,8 @@ Generate the public key from the secret key, and display both.
 
 **Status**
 
-Incomplete
+<del>Incomplete</del><br/>
+14:52 PDT 30-Jul: Cursory Implementation
 
 # GET/Gists
 
@@ -42,7 +43,9 @@ Set the user's secret key to the string they enter.
 
 **Status**
 
-Incomplete
+<del>Incomplete</del><br/>
+15:09 PDT 30-Jul: Cursory Implementation
+* Merely updates `myKey` variable and sends simple confirmation message.
 
 # Create an unencrypted gist
 
