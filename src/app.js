@@ -130,13 +130,21 @@ server.get('/key', (req, res) => {
 });
 
 server.get('/setkey:keyString', (req, res) => {
-  // TODO: Set the key to one specified by the user or display an error if invalid
+  // Set the key to one specified by the user or display an error if invalid
   const keyString = req.query.keyString;
   try {
-    // TODO:
-  } catch (err) {
-    // failed
-    res.send('Failed to set key.  Key string appears invalid.');
+    secretKey = nacl.util.decodeUTF8(keyString);
+    const keyObj = { secretKey: keyString };
+    const data = JSON.stringify(keyObj);
+    fs.writeFile('./config.json', data, (err) => {
+      if (err) {
+        console.log('Error writing secretKey to config file: ', err.message);
+        return;
+      }
+    });
+    res.send(`<div>New secret key: ${keyString}</div>`);
+  } catch (error) {
+    res.send('Failed to set key. Key string appears invalid.');
   }
 });
 
