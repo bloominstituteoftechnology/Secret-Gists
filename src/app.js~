@@ -150,7 +150,10 @@ server.get('/fetchmessagefromself:id', (req, res) => {
       let ciphertext = blob.slice(32, blob.length);
       nonce = nacl.util.decodeBase64(nonce);
       ciphertext = nacl.util.decodeBase64(ciphertext);
+      console.log('nonce', nonce);
+      console.log('ciphertext', ciphertext);
       const plaintext = nacl.secretbox.open(ciphertext, nonce, secretKey);
+      console.log('plaintext', plaintext);
       res.send(nacl.util.encodeUTF8(plaintext));
     })
     .catch((err) => {
