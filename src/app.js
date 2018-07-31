@@ -148,11 +148,17 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
-  const gistID = req.query.id;
-  console.log(gistID);
-  github.gists.get({ gist_id: gistID })
+  const id = req.query.id;
+  github.gists.get({ id })
     .then((response) => {
-      res.json(response.data);
+      const content = response.data.files[Object.keys(response.data.files)[0]].content;
+      let nonce = content.slice(0, 32);
+      nonce = nacl.util.decodeBase64(nonce);
+      let message = content.slice(32);
+      message = nacl.util.decodeBase64(message);
+      let decryptedMessage = nacl.secretbox.open(message, nonce, keypair.secretKey);
+      decryptedMessage = nacl.util.encodeUTF8(decryptedMessage);
+      res.send(decryptedMessage);
     })
     .catch((err) => {
       res.json(err);
@@ -176,9 +182,10 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   const { name, content } = req.body;
-  const nonce = nacl.randomBytes(24);
+  let nonce = nacl.randomBytes(24);
   let encryptedContent = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, keypair.secretKey);
-  encryptedContent = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encryptedContent);
+  nonce = nacl.util.encodeBase64(nonce);
+  encryptedContent = nonce + nacl.util.encodeBase64(encryptedContent);
   const files = { [name]: { content: encryptedContent } };
   github.gists.create({ files, public: false })
     .then((response) => {
@@ -211,6 +218,7 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const message = req.query.messageString;
 });
 
 /* OPTIONAL - if you want to extend functionality */
