@@ -139,7 +139,7 @@ server.get('/setkey:keyString', (req, res) => {
 });
 
 server.get('/fetchmessagefromself:id', readOnlyKeypair, (req, res) => {
-  // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  // Retrieve and decrypt the secret gist corresponding to the given ID
   const keypair = req.keypair;
 
   if (keypair) {
@@ -150,8 +150,8 @@ server.get('/fetchmessagefromself:id', readOnlyKeypair, (req, res) => {
       .then((response) => {
         const { filename, content } = Object.entries(response.data.files)[0][1];
         const decodedContent = nacl.util.decodeBase64(content); // Uint8Array
-        const nonce = decodedContent.slice(0, nacl.box.nonceLength);
-        const box = decodedContent.slice(nacl.box.nonceLength);
+        const nonce = decodedContent.slice(0, nacl.box.nonceLength); // Uint8Array
+        const box = decodedContent.slice(nacl.box.nonceLength); // Uint8Array
         const decryptedGist = nacl.util.encodeUTF8(
           nacl.box.open(box, nonce, keypair.publicKey, keypair.secretKey)
         );
@@ -203,18 +203,18 @@ server.post('/createsecret', urlencodedParser, readOnlyKeypair, (req, res) => {
   if (keypair) {
     const { name, content } = req.body;
     const nonce = nacl.randomBytes(nacl.box.nonceLength); // Uint8Array
-    const gistContent = nacl.util.decodeUTF8(content); // Uint8Array
+    const message = nacl.util.decodeUTF8(content); // Uint8Array
     const encryptedGist = nacl.box(
-      gistContent,
+      message,
       nonce,
       keypair.publicKey,
       keypair.secretKey
     ); // Uint8Array
-    const encodedNonceGist = new Uint8Array(
+    const nonceGist = new Uint8Array(
       `${nonce.join(',')},${encryptedGist.join(',')}`.split(',')
     ); // Uint8Array
     const files = {
-      [name]: { content: nacl.util.encodeBase64(encodedNonceGist) }
+      [name]: { content: nacl.util.encodeBase64(nonceGist) }
     };
 
     github.gists
