@@ -154,7 +154,22 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
-  // gist ID "33da85f913935ef9ba27c00d1db55365"
+  // gist ID "26f426fc80ab154d1615b6a45126e7aa"
+  const id = req.query.id;
+  github.gists
+    .get({ id })
+    .then(response => {
+      const name = Object.keys(response.data.files)[0];
+      let { content } = response.data.files[name];
+
+      content = decryptContent(content);
+
+      res.status(200).json({ name, content });
+    })
+    .catch(e => {
+      e.statusCode = 400;
+      res.status(500).json({ Error: e });
+    });
 });
 
 server.post('/create', urlencodedParser, createdPrivateGist);
@@ -193,6 +208,22 @@ Still want to write code? Some possibilities:
 /**
  * UTILS: helper functions
  */
+function decryptContent(content) {
+  let nonce = content.substring(0, 32);
+  nonce = nacl.util.decodeBase64(nonce);
+  let messageEncrypted = content.substring(32);
+  messageEncrypted = nacl.util.decodeBase64(messageEncrypted);
+  // console.log(nonce);
+  // console.log(nonce.length);
+  // console.log(messageEncrypted);
+  // console.log('privateKey', privateKey);
+  const messageDecrypt = nacl.secretbox.open(messageEncrypted, nonce, privateKey);
+  const messageDecoded = nacl.util.encodeUTF8(messageDecrypt);
+
+  console.log({ messageDecoded });
+  return { nonce, messageDecrypt, messageDecoded };
+}
+
 function writeToConfigJson(keyBase64) {
   // put it in an object -> this will be the content of the config.json
   const configFileContent = {
@@ -204,6 +235,7 @@ function writeToConfigJson(keyBase64) {
     if (err) throw new Error('Fail to write secret to file');
   });
 }
+
 function saltSecretKey(key) {
   /**
    * DEPRECATED: This function will not be used, all the logic has changed.
@@ -225,7 +257,8 @@ function saltSecretKey(key) {
 function createdPrivateGist(req, res) {
   // Create a private gist with name and content given in post request
   const { name, content } = req.body;
-  console.log(name, content);
+  // console.log(name, content);
+  console.log({ content });
   const files = { [name]: { content } };
   github.gists
     .create({ files, public: false })
@@ -236,6 +269,7 @@ function createdPrivateGist(req, res) {
       res.json(err);
     });
 }
+
 function encodeBody(req, res, next) {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
@@ -246,7 +280,13 @@ function encodeBody(req, res, next) {
 
   const nonce = nacl.randomBytes(24);
   const ciphertext = nacl.secretbox(contentInBytes, nonce, privateKey);
+  console.log(nonce.length);
+  console.log(nacl.util.encodeBase64(nonce));
+  console.log(nacl.util.encodeBase64(nonce).length);
   const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(ciphertext);
+  console.log(blob);
+  console.log(blob.length);
+
   req.body.content = blob;
   next();
 }
