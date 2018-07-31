@@ -176,7 +176,7 @@ server.get('/setkey:keyString', (req, res) => {
         });
       });
     });
-    res.send(`Key is: ${keyString}`);
+    res.send(`Key is: ${nacl.util.encodeBase64(keyString)}`);
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
