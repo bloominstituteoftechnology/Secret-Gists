@@ -99,8 +99,33 @@ server.get('/gists', (req, res) => {
     });
 });
 
-server.get('/key', (req, res) => {
-  // TODO: Display the secret key used for encryption of secret gists
+server.get('/key', middleware.getKeypair, (req, res) => {
+  // Display the secret key used for encryption of secret gists
+  const keypair = req.keypair;
+
+  if (keypair) {
+    res.send(`
+      <html>
+      <header><title>Secret Key</title></header>
+      <body>
+        <h1>Secret Key</h1>
+        <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
+        <br/>
+        <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
+      </body>
+    </html>
+  `);
+  }
+
+  res.send(`
+    <html>
+      <header><title>Secret Key</title></header>
+      <body>
+        <h1>Secret Key</h1>
+        <div>You do not have a secret key yet. <i><a href="/keyPairGen">Generate a keypair.</a></i></div>
+      </body>
+    </html>
+  `);
 });
 
 server.get('/setkey:keyString', (req, res) => {
