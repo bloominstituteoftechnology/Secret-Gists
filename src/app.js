@@ -33,7 +33,7 @@ try {
 } catch (err) {
   secretKey = nacl.randomBytes(32);
   const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
-  fs.watchFile('./config.json', JSON.stringify(keyObject), (serr) => {
+  fs.writeFile('./config.json', JSON.stringify(keyObject), (serr) => {
     if (serr) {
       console.log('Error writing secret key to config file', serr.message);
       return;
@@ -160,7 +160,6 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
-  // let { content } = req.body;
   const { name, content } = req.body;
   const nonce = nacl.randomBytes(24);
   const encryptedContent = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
