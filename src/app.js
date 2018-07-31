@@ -16,7 +16,8 @@ const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
 // Require Crypto
 const crypto = require('crypto');
-let hash256 = crypto.createHash('sha256');
+
+const hash256 = crypto.createHash('sha256');
 
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
@@ -29,6 +30,7 @@ github.authenticate({
 
 let privateKey;
 
+// Write/Read secretKey form config.json
 try {
   const config = require('../config.json');
   privateKey = config.key ? nacl.util.decodeBase64(config.key) : nacl.randomBytes(32);
@@ -99,6 +101,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
+  const keypair = nacl.box.keyPair.fromSecretKey(privateKey);
 
   // Display both keys as strings
   res.send(`
@@ -141,12 +144,10 @@ server.get('/setkey:keyString', (req, res) => {
     // TODO:
     const keyHashed = hash256.update(keyString);
     const keyBase64 = keyHashed.digest('base64');
-    console.log(keyBase64.length);
     writeToConfigJson(keyBase64);
     res.status(200).json({ key: 'created' });
   } catch (err) {
     // failed
-    console.log(err);
     res.send({ status: 'Failed to set key. Try again', error: err });
   }
 });
