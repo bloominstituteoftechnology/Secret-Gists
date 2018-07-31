@@ -183,6 +183,39 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.query.id;
+
+  github.gists.get({ id })
+    .then((response) => {
+      // Grab data from response
+      const key = Object.keys(response.data.files)[0];
+      const { content, filename } = response.data.files[key];
+      // Define inputs
+      const box = nacl.util.decodeBase64(content.slice(32));
+      const nonce = nacl.util.decodeBase64(content.slice(0, 32));
+      const secretKey = nacl.util.decodeBase64(keypair.esecretKey);
+      // Decrypt message then encode in UTF8
+      const result = nacl.secretbox.open(box, nonce, secretKey);
+      const message = result ? nacl.util.encodeUTF8(result) : null;
+      // Render response
+      res.send(`
+      <html>
+        <header><title>${filename} | Gist</title></header>
+        <body>
+          <h1>${filename}</h1>
+          <h2>Gist ID: ${id}</h2>
+          <div>
+            ${message || '<em>No message. Decryption may have failed.</em>'}
+          </div>
+          <br/>
+          <a href="/">Go home.</a>
+        </body>
+      </html>
+      `);
+    })
+    .catch((err) => {
+      res.json({ err });
+    });
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -209,7 +242,8 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   let encrypted = nacl.secretbox(message,nonce,key)
   console.log("enc", encrypted)
   let encrypted2 = nacl.util.encodeBase64(encrypted)
-  const files = { [name]: { content: encrypted2 } };
+  let allTheThings = nacl.util.encodeBase64(nonce) + encrypted2;
+  const files = { [name]: { content:  allTheThings} };
   github.gists.create({ files, public: false })
     .then((response) => {
       res.json(response.data);
