@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 
 // require('dotenv').config(); This didn't work for me, so I just used bash
-
+const fs = require('fs');
 const bodyParser = require('body-parser');
 const express = require('express');
 const octokit = require('@octokit/rest');
@@ -31,7 +31,8 @@ try {
   config = require('./config.json');
 }
 catch (err) {
-  config = { "My spoon is too big": "I am a banana" }
+  config = { "secret_key": nacl.randomBytes(32) }
+  fs.writeFile('config.json', JSON.stringify(config), 'utf8', () => { });
 }
 console.log(config)
 
