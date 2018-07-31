@@ -34,7 +34,6 @@ catch (err) {
   config = { "secret_key": nacl.randomBytes(32) }
   fs.writeFile('config.json', JSON.stringify(config), 'utf8', () => { });
 }
-console.log(config.secret_key)
 
 
 server.get('/', (req, res) => {
@@ -92,6 +91,9 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
+  keypair = nacl.box.keyPair.fromSecretKey(config.secret_key)
+
+
 
   // Display both keys as strings
   res.send(`
@@ -121,7 +123,8 @@ server.get('/gists', (req, res) => {
 });
 
 server.get('/key', (req, res) => {
-  // TODO: Display the secret key used for encryption of secret gists
+  const key = nacl.util.encodeBase64(config.secret_key)
+  res.json({ key })
 });
 
 server.get('/setkey:keyString', (req, res) => {
