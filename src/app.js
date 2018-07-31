@@ -14,7 +14,7 @@ const server = express();
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
-const secretKey = process.env.SECRET_KEY
+const secretKey = process.env.SECRET_KEY;
 
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
@@ -23,23 +23,21 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
+// TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
 // const data = fs.readFileSync('./config.json');
-// let secretKey;
 
 // if (data) {
-//   const keyobj = {}; // JSON.parse(data);
-//   secretKey = nacl.util.decodeBase64(keyobj.secretKey);
+//   const keyobj = JSON.parse(data);
+//   // let tempKey = nacl.util.decodeBase64(keyobj.secretKey);
 // } else {
-//   secretKey = nacl.randomBytes(32);
-//   const keyobj = { secretKey: nacl.util.encodeUTF8(secretKey) };
+//   const tempKey = nacl.randomBytes(32);
+//   const keyobj = { secretKey: nacl.util.encodeUTF8(tempKey) };
 //   fs.writeFile('./config.json', JSON.stringify(keyobj), (err) => {
 //     if (err) {
 //       return err;
 //     }
 //   });
 // }
-// TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-const keypair = {};
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -96,7 +94,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  // nacl.box.keypair();
+  const keypair = nacl.box.keyPair();
 
   // Display both keys as strings
   res.send(`
@@ -127,6 +125,11 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  // try {
+  //   return nacl.util.encodeBase64(secretKey);
+  // } catch (err) {
+  //   res.send('ERROR');
+  // }
 });
 
 server.get('/setkey:keyString', (req, res) => {
