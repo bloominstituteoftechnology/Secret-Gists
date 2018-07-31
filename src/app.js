@@ -158,7 +158,7 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   const { name, content } = req.body;
   const uncoded = nacl.util.decodeUTF8(content);
   const nonce = nacl.randomBytes(24);
-  const coded = nacl.secretbox(uncoded, nonce, config.secret_key);
+  const coded = nonce + nacl.secretbox(uncoded, nonce, config.secret_key);
   const files = { [name]: { "content": nacl.util.encodeBase64(coded) } };
 
 
