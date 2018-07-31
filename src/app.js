@@ -9,6 +9,7 @@ nacl.util = require('tweetnacl-util');
 const username = 'tramanedhall'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
+const MY_SECRET = process.env.MY_SECRET || process.env.MY_OTHER_SECRET;
 
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
@@ -21,23 +22,34 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-let secretKey;
-let keyPair;
-
-try {
-  const data = fs.readFileSync('./config.json');
-  
-  const keyObj = JSON.parse(data);
-    secretKey = nacl.util.decodeBade64(keyObj.secretKey);
-    keypair = nacl.box.keypair.fromSecretKey(secretKey);
-  }
-  catch(err) {
-    keypair = nacl.box.keyPair();
-    secretKey = keypair.secretKey;
-  
-  const keyObj = { secretKey: nacl.util.encodeBase64(secretKey) }
+const getTheKey = () => {
+  if (MY_SECRET) {
+    const SECRET = nacl.util.encodeBase64(MY_SECRET);
+    return SECRET;
+  } else {
+    const SECRET = nacl.box.keyPair().secretKey;
+    const data = fs.readFileSync('./.env');
+    const fd = fs.openSync('./.env', 'a');
+    const insert = (`MY_OTHER_SECRET=${nacl.util.encodeBase64(SECRET)}\n`);
+    fs.writeSync(fd, insert, data.length, ((error, written = 32, str) => {
+      if (error) {
+        console.log({ error });
+      } else {
+        console.log("File was updated successfully");
+      }
+      fs.close(fd, (errors) => {
+        if (errors) {
+          console.log({ errors });
+        } else {
+          console.log("File was closed successfully");
+        }
+      });
+    })
+  );
+}
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
+  getTheKey();
   res.send(`
     <html>
       <header><title>Secret Gists!</title></header>
@@ -91,7 +103,10 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-
+  const keypair = (nacl.box.keyPair());
+  console.log(
+    "keypair", { public: nacl.util.encodeBase64(keypair.publicKey), private: nacl.util.encodeBase64(keypair.secretKey )
+    });
   // Display both keys as strings
   res.send(`
     <html>
