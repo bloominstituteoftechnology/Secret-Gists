@@ -22,15 +22,23 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-const data = fs.readFileSync('./config.json');
 let secretKey;
 try {
+  const data = fs.readFileSync('./config.json');
   const keyObject = JSON.parse(data);
   secretKey = nacl.util.decodeBase64(keyObject.secretKey);
 } catch (err) {
   secretKey = nacl.randomBytes(32);
   const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
-  fs.writeFile('./config.json', JSON.stringify(keyObject));
+  fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+    if (ferr) {
+      process.stdout.write(
+        'Error writing secret key to config file: ',
+        ferr.message
+      );
+      return;
+    }
+  });
 }
 
 server.get('/', (req, res) => {
@@ -127,6 +135,18 @@ server.get('/setkey:keyString', (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO:
+    secretKey = nacl.util.decodeUTF8(keyString);
+    const keyObject = { secretKey: keyString };
+    fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+      if (ferr) {
+        process.stdout.write(
+          'Error writing secret key to config file: ',
+          ferr.message
+        );
+        return;
+      }
+    });
+    res.send(`<div>Key set to new value: ${keyString}</div>`);
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
@@ -154,6 +174,30 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content } = req.body;
+  // initialize a nonce
+  const nonce = nacl.randomBytes(24);
+  // decode the UTF8 content and then encrypt it
+  const ciphertext = nacl.secretbox(
+    nacl.util.decodeUTF8(content),
+    nonce,
+    secretKey
+  );
+  // Somehow the nonce needs to be persisted until we're looking to decrypt this content
+  // Append (or prepend) the nonce to our encrypted content
+  const blob =
+    nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(ciphertext);
+  // format the blob and name in the format that the github API expects
+  const file = { [name]: { content: blob } };
+  // send the post request to the github API
+  github.gists
+    .create({ files: file, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
