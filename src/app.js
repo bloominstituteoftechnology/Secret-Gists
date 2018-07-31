@@ -116,12 +116,12 @@ server.get('/key', readOnlyKeypair, (req, res) => {
     </html>
   `);
   } else {
-    res.send(`
+    res.status(404).send(`
       <html>
-        <header><title>Secret Key</title></header>
+        <header><title>404: Not Found</title></header>
         <body>
-          <h1>Secret Key</h1>
-          <div>You do not have a secret key yet. <i><a href="/keyPairGen">Generate a keypair.</a></i></div>
+          <h1>404: Not Found</h1>
+          <div>A secret key does not exist. <i><a href="/keyPairGen">Generate a keypair.</a></i></div>
         </body>
       </html>
     `);
@@ -157,7 +157,7 @@ server.post('/create', urlencodedParser, (req, res) => {
 });
 
 server.post('/createsecret', urlencodedParser, readOnlyKeypair, (req, res) => {
-  // Create a private and encrypted gist with given name/content
+  // Creates a private and encrypted gist with given name/content
   const keypair = req.keypair;
 
   if (keypair) {
@@ -182,12 +182,12 @@ server.post('/createsecret', urlencodedParser, readOnlyKeypair, (req, res) => {
         res.json(err);
       });
   } else {
-    res.send(`
+    res.status(401).send(`
       <html>
-        <header><title>Secret Key Does Not Exist</title></header>
+        <header><title>401: Unauthorized</title></header>
         <body>
-          <h1>Secret Key Does Not Exist</h1>
-          <div>You do not have a secret key yet. <i><a href="/keyPairGen">Generate a keypair.</a></i></div>
+          <h1>401: Unauthorized</h1>
+          <div>This action requires user authentication. <i><a href="/keyPairGen">Generate a keypair.</a></i></div>
         </body>
       </html>
     `);
