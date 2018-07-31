@@ -134,8 +134,20 @@ server.get('/fetchmessagefromself:id', (req, res) => {
   const { id } = req.query;
   github.gists.get({ id })
     .then((response) => {
-      res.send(response.data);
+      // console.log(response.data)
+      const { content } = Object.values(response.data.files)[0]
+      // console.log(response.data)
+      console.log(content)
+      const encryptedContent = nacl.util.decodeBase64(content.slice(0, -24))
+      // console.log(encryptedContent)
+      const nonce = nacl.util.decodeBase64(content.slice(-24))
+      console.log(nonce)
+      console.log(secretKey)
+      const originalMessage = nacl.secretbox.open(encryptedContent, nonce, secretKey)
+      // console.log(originalMessage)
+      res.send(originalMessage);
     })
+
     .catch((err) => {
       res.json(err);
     });
