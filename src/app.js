@@ -31,7 +31,7 @@ server.get('/', (req, res) => {
       <header><title>Secret Gists!</title></header>
       <body>
         <h1>Secret Gists!</h1>
-        <div>This is an educational implementation.  Do not use for truly valuable information</div>
+        <div>Hi, there! This is an educational implementation.  Do not use for truly valuable information</div>
         <h2>Supported operations:</h2>
         <ul>
           <li><i><a href="/keyPairGen">Show Keypair</a></i>: generate a keypair from your secret key.  Share your public key for other users of this app to leave encrypted gists that only you can decode with your secret key.</li>
@@ -79,6 +79,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
+  const newkeypair = nacl.sign.keyPair();
 
   // Display both keys as strings
   res.send(`
