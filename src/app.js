@@ -21,29 +21,36 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
-// TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+
+
 let secretKey;
-let keypair;
+let keyPair;
 
-try {
-const data = fs.readFileSync('./config.json');
-
-const keyObj = JSON.parse(data);
-  secretKey = nacl.util.decodeBade64(keyObj.secretKey);
-  keypair = nacl.box.keypair.fromSecretKey(secretKey);
-}
-catch(err) {
-  keypair = nacl.box.keyPair();
-  secretKey = keypair.secretKey;
-
-const keyObj = { secretKey: nacl.util.encodeBase64(secretKey) };
-
-fs.writeFile('/.config.json', JSON.stringify(keyObj, null, 4), (ferr) => {
-  if(ferr) {
-    console.log(`Error saving to config.json: ${ferr.message}`);
+fs.readFile('./config.json', (noConfig, data) => {
+  // try to load key from config.json
+  // if error, create a 32 byte key with nacl
+  // create key object with secretKey as a key and the output of Base64 encoding of the key as value
+  if (noConfig) {
+    if (!process.env.SECRET_KEY) {
+      secretKey = nacl.randomBytes(32);
+      keyPair = { secretKey: nacl.util.encodeBase64(secretKey) };
+      fs.appendFile('./.env', `\nSECRET_KEY=${keyPair.secretKey}`, (error) => {
+        if (error) throw error;
+      });
+    }
+    // else if data can be loaded from config.json,
+    // keyObject is parsed JSON data from ./config.json
+    // secretKey is decoded Base64 of the key secretKey on the keyObject object
+  } else {
+    keyPair = JSON.parse(data);
+    secretKey = nacl.util.decodeBase64(keyPair.secretKey);
+    if (!process.env.SECRET_KEY) {
+      secretKey = nacl.util.encodeBase64(secretKey);
+      fs.appendFile('./.env', `\nSECRET_KEY=${keyPair.secretKey}`);
+    }
   }
 });
-}
+
 
 
 
