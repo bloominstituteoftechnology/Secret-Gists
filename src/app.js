@@ -177,17 +177,18 @@ server.get('/fetchmessagefromself:id', (req, res) => {
   const id = req.query.id;
 
   github.gists.get({ id }).then((response) => {
-    const fetchedGist = response.data.files;
+    const fetchedGist = response.data;
 
     const file = Object.keys(fetchedGist.files)[0];
     const blob = fetchedGist.files[file].content;
 
     let [nonce, cipherText] = blob.split(' ');
 
-    cipherText = nacl.util.decodeBase64(cipherText);
     nonce = nacl.util.decodeBase64(nonce);
+    cipherText = nacl.util.decodeBase64(cipherText);
 
     const decodedText = nacl.secretbox.open(cipherText, nonce, secretKey);
+    console.log(decodedText);
     res.send(nacl.util.encodeUTF8(decodedText));
   })
   .catch((err) => {
@@ -221,9 +222,9 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // add nonce to encrypted content
   const blob = `${nacl.util.encodeBase64(nonce)} + ' ' + ${nacl.util.encodeBase64(cipherText)}`;
   // format the blob and name in github api format
-  const file = { [name]: { content: blob } };
+  const files = { [name]: { content: blob } };
   // send post req to github api
-  github.gists.create({ files: file, public: false })
+  github.gists.create({ files, public: false })
     .then((response) => {
       res.json(response.data);
     })
