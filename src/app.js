@@ -99,7 +99,7 @@ server.get('/gists', (req, res) => {
     });
 });
 
-server.get('/key', middleware.getKeypair, (req, res) => {
+server.get('/key', middleware.readOnlyKeypair, (req, res) => {
   // Display the secret key used for encryption of secret gists
   const keypair = req.keypair;
 

@@ -43,6 +43,24 @@ const getKeypair = (req, res, next) => {
   });
 };
 
+const readOnlyKeypair = (req, res, next) => {
+  const configPath = path.join(__dirname, './config.json');
+  fs.readFile(configPath, 'utf8', (err, contents) => {
+    if (!err) {
+      const encodedSecretKey = JSON.parse(contents);
+
+      if (encodedSecretKey.secretKey) {
+        const decodedSecretKey = nacl.util.decodeBase64(
+          encodedSecretKey.secretKey
+        );
+        req.keypair = nacl.box.keyPair.fromSecretKey(decodedSecretKey);
+      }
+    }
+    next();
+  });
+};
+
 module.exports = {
-  getKeypair
+  getKeypair,
+  readOnlyKeypair
 };
