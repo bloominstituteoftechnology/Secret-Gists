@@ -31,8 +31,8 @@ try {
   keypair = {
     publicKey: dd.publicKey,
     secretKey: dd.secretKey,
-    epublicKey: nacl.util.decodeBase64(dd.epublicKey),
-    esecretKey: nacl.util.decodeBase64(dd.esecretKey),
+    epublicKey: dd.epublicKey,
+    esecretKey: dd.esecretKey,
   }
   console.log("read")
   //console.log(keypair)
@@ -149,14 +149,17 @@ server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
   const keyString = req.query.keyString;
   console.log(keyString)
+  const kp2 = nacl.box.keyPair.fromSecretKey(nacl.util.decodeBase64(keyString))
+  console.log(kp2)
   try {
     // TODO:
     keypair = {
-      publicKey: kp.publicKey,
-      secretKey: keyString,
-      epublicKey: nacl.util.encodeBase64(kp.publicKey),
-      esecretKey: nacl.util.encodeBase64(kp.secretKey),
+      publicKey: kp2.publicKey,
+      secretKey: kp2.secretKey,
+      epublicKey: nacl.util.encodeBase64(kp2.publicKey),
+      esecretKey: nacl.util.encodeBase64(kp2.secretKey),
     }
+    console.log(keypair)
     fs.writeFile('config.json', JSON.stringify(keypair), (ferr) => {
       if(ferr){
         console.log(ferr);
@@ -165,12 +168,8 @@ server.get('/setkey:keyString', (req, res) => {
     })
     res.send(`
     <html>
-      <header><title>Keypair</title></header>
+      <header><title>new keypair</title></header>
       <body>
-        <h1>Keypair</h1>
-        <div>Share your public key with anyone you want to be able to leave you secret messages.</div>
-        <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
-        <br/>
         <div>Public Key: ${keypair.epublicKey}</div>
         <div>Secret Key: ${keypair.esecretKey}</div>
       </body>
@@ -202,6 +201,22 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content } = req.body;
+  const message = nacl.util.decodeUTF8(content);
+  const nonce = nacl.randomBytes(24);
+  const key = nacl.util.decodeBase64(keypair.esecretKey);
+  console.log("enc", message, '2', nonce, '3', key)
+  let encrypted = nacl.secretbox(message,nonce,key)
+  console.log("enc", encrypted)
+  let encrypted2 = nacl.util.encodeBase64(encrypted)
+  const files = { [name]: { content: encrypted2 } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
