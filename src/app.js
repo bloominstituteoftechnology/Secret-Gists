@@ -1,3 +1,4 @@
+/* eslint-disable */
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -6,7 +7,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'samarv'; // TODO: Replace with your username
 // The object you'll be interfacing with to communicate with github
 const github = octokit({ debug: true });
 const server = express();
@@ -20,6 +21,40 @@ github.authenticate({
   type: 'oauth',
   token: process.env.GITHUB_TOKEN
 });
+
+let keypair;
+let kp;
+
+try {
+  const data = fs.readFileSync('./config.json');
+  let dd = JSON.parse(data)
+  keypair = {
+    publicKey: dd.publicKey,
+    secretKey: dd.secretKey,
+    epublicKey: nacl.util.decodeBase64(dd.epublicKey),
+    esecretKey: nacl.util.decodeBase64(dd.esecretKey),
+  }
+  console.log("read")
+  //console.log(keypair)
+}
+catch(error){
+  kp = nacl.box.keyPair();
+  keypair = {
+    publicKey: kp.publicKey,
+    secretKey: kp.secretKey,
+    epublicKey: nacl.util.encodeBase64(kp.publicKey),
+    esecretKey: nacl.util.encodeBase64(kp.secretKey),
+  }
+  //console.log("kp", keypair)
+  fs.writeFile('config.json', JSON.stringify(keypair), (ferr) => {
+    if(ferr){
+      console.log(ferr);
+      return;
+    }
+  })
+
+  console.log("write")
+}
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
 
@@ -78,7 +113,6 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-
   // Display both keys as strings
   res.send(`
     <html>
@@ -88,8 +122,8 @@ server.get('/keyPairGen', (req, res) => {
         <div>Share your public key with anyone you want to be able to leave you secret messages.</div>
         <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
         <br/>
-        <div>Public Key: ${nacl.util.encodeBase64(keypair.publicKey)}</div>
-        <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
+        <div>Public Key: ${keypair.epublicKey}</div>
+        <div>Secret Key: ${keypair.esecretKey}</div>
       </body>
     </html>
   `);
@@ -108,13 +142,40 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.send(`<div>Secret Key: ${keypair.esecretKey}</div>`)
 });
 
 server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
   const keyString = req.query.keyString;
+  console.log(keyString)
   try {
     // TODO:
+    keypair = {
+      publicKey: kp.publicKey,
+      secretKey: keyString,
+      epublicKey: nacl.util.encodeBase64(kp.publicKey),
+      esecretKey: nacl.util.encodeBase64(kp.secretKey),
+    }
+    fs.writeFile('config.json', JSON.stringify(keypair), (ferr) => {
+      if(ferr){
+        console.log(ferr);
+        return;
+      }
+    })
+    res.send(`
+    <html>
+      <header><title>Keypair</title></header>
+      <body>
+        <h1>Keypair</h1>
+        <div>Share your public key with anyone you want to be able to leave you secret messages.</div>
+        <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
+        <br/>
+        <div>Public Key: ${keypair.epublicKey}</div>
+        <div>Secret Key: ${keypair.esecretKey}</div>
+      </body>
+    </html>
+  `);
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
