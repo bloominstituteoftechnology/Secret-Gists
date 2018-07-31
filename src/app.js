@@ -6,7 +6,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'bbenefield89'; // TODO: Replace with your username
 // The object you'll be interfacing with to communicate with github
 const github = octokit({ debug: true });
 const server = express();
@@ -129,7 +129,6 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
-  // github.gists.getForuser({ username })
 
   // Sean
   // 1. Encode our secretKey back to base64
@@ -143,6 +142,7 @@ server.get('/setkey:keyString', (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO:
+    
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
@@ -178,20 +178,13 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   const UTFDecode = nacl.util.decodeUTF8(UTFEncode);
   const files = { [name]: { content: encodedContent } };
   
-  res.send({
-    encodedContent,
-    decodedContent,
-    UTFEncode,
-    UTFDecode
+  github.gists.create({ files, public: false })
+  .then((response) => {
+    res.json(response.data);
+  })
+  .catch((err) => {
+    res.json(err);
   });
-  
-  // github.gists.create({ files, public: false })
-  // .then((response) => {
-  //   res.json(response.data);
-  // })
-  // .catch((err) => {
-  //   res.json(err);
-  // });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
