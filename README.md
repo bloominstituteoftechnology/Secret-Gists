@@ -1,81 +1,87 @@
 # Secret Gists
-Save and read secure notes using GitHub gists
 
+* Save and read secure notes using GitHub gists using OAuth
+* learn how to use authenticated REST API
+* Learn client-side encryption and decryption
 
-## Audience and Purpose
-
-Audience: Node.js developers, CS students, security enthusiasts
-
-* Learn about OAuth
-* Learn how to use an authenticated REST API
-* Learn how to do simple client-side encryption/decryption using existing libraries
-
-## Tasks
-
-Create a token with Github to access your gists and save it in the .env file (see below)
-
-Run the provided code (yarn start then navigate to `localhost:3000/` in your browser)
-
-Review the functionality implemented in this temporary test page. 
-
-Use the existing functionality as a guide to implement new features making use of encryption.
-
-Stretch: Redo the test page so the user can access the same functionality in a sleek react app with a nice UI/UX.
 
 ## Getting started
 
-Authentication (logging a user in and ensuring they and only they have access to their information) is one of the most important security aspects of a modern Web application. A common practice is to use [OAuth](https://en.wikipedia.org/wiki/OAuth), which allows your application to depend on a trusted provider that manages user logins and the associated issues (multifactor authentication, password recovery, etc.). [Many major tech companies provide this](https://en.wikipedia.org/wiki/List_of_OAuth_providers) - for our purposes we're building an app to store and read secret gists (snippets of text stored on GitHub), so we'll be using GitHub as a provider.
+Authentication - aka logging in - very important to security
+  O-Auth - trusted provider that handles logins and associated issues.
+  Many companies provide O-Auth services
+  Today we are using GitHub as an OAuth provider to store and read secret gists (snippets of text stored on GitHub)
 
-Start by [reading the GitHub REST v3 API authentication info](https://developer.github.com/v3/guides/basics-of-authentication/) -
-it's okay if some of it doesn't make sense yet, but the general idea is you'll need to use tokens that certify your identity, and send the appropriate HTTP requests with them. The documentation uses Ruby/Rails in some examples, but [there is a Node.js example](https://github.com/github/platform-samples/tree/master/api/javascript/es2015-nodejs) that you should definitely look at as well.
+1. Start by [reading the GitHub REST v3 API authentication info](https://developer.github.com/v3/guides/basics-of-authentication/) -
+  1. the general idea is you'll need to use tokens that certify your identity, and send the appropriate HTTP requests with them. 
+  2. The documentation uses Ruby/Rails in some examples, but [there is a Node.js example](https://github.com/github/platform-samples/tree/master/api/javascript/es2015-nodejs) that you should definitely look at as well.
 
-For developing our app we'll use the [official Node.js GitHub library](https://github.com/octokit/node-github).
+2. For developing our app we'll use the [official Node.js GitHub library](https://github.com/octokit/node-github).
 
 
-## Interactively using a REST API
+## Using Github's REST API
 
-The [GitHub REST v3 API documentation](https://developer.github.com/v3/) shows the range of operations you can perform, and before development you should try playing with a few of the examples using `curl` (should be available in whatever package manager your operating system uses). Many of the basic operations don't require authentication, as they just retrieve public data. For an example, try running:
+The [GitHub REST v3 API documentation](https://developer.github.com/v3/) shows the range of operations you can perform
+
+### Try playing with it like below.  Just type into terminal
 
 ```
 curl -i "https://api.github.com/repos/vmg/redcarpet/issues?state=closed"
 ```
 
-This should cause a bunch of JSON (the format the API uses to return data) to scroll by, with various descriptive fields like `created_at` and `url`.
+This should cause a bunch of JSON to scroll by, with various descriptive fields like `created_at` and `url`.
 
-After a few non-authenticated operations, the next step is to authenticate. The most basic way to do this:
+### Authenticate - the most basic way to do this:
 
 ```
 curl -u username https://api.github.com/user
 ```
 
-Replace `username` with your GitHub username (keep the /user in the path the same), and after running that command you'll be asked for your password. Enter it and you should see returned some JSON with information about you as a GitHub user. If you have [Postman](https://www.getpostman.com) or similar installed you can also try this workflow using a GUI.
+1. Replace `username` with your GitHub username (keep the /user in the path the same) and press enter
+2. You'll be asked for your password. Enter it and you should see returned some JSON with information about you as a GitHub user. 
+3. If you have [Postman](https://www.getpostman.com) you can try this workflow using a GUI.
 
-Interactively typing your password is burdensome and not a great practice - a better way to authorize is with an OAuth token. The simplest way to do this is to [generate a token manually](https://github.com/settings/tokens) and then run:
+### Use Token Instead of Password
+
+Typing your password each time is annoying, a better way to authorize is with an OAuth token
+1. [Generate a token manually](https://github.com/settings/tokens)
+2. run:  * Replace `username` and `token` with yours.
 
 ```
 curl -u username:token https://api.github.com/user
 ```
 
-Replace `username` and `token` as appropriate, and the rest should be the same as the request where you logged in with a password. Note that this token really is just as sensitive as your password - you don't want to share it in plaintext or check it in to your git repository.
+
+## Starting Steps
+
+1. Create a token with Github to access your gists and save it in the .env file (see below)
+2. Run the provided code (yarn start then navigate to `localhost:3000/` in your browser)
+3. Do the stuff below
+4. Stretch - Redo the test page so the user can access the same functionality in a sleek react app with a nice UI/UX.
 
 ## Building an application using a REST API
 
-REST APIs accept HTTP requests and return (usually) JSON - in principle you can use the HTTP functionality built in to your language/framework and program the API interactions "from scratch." This is a good exercise, but in practice most well-supported APIs have official libraries that build the requests for you and expose objects and methods so you can interact with them naturally in your code.
+- REST APIs accept HTTP requests and return (usually) JSON 
+  - You can use the HTTP functionality built in to your language/framework and program the API interactions "from scratch." This is a good exercise
+  - But most well-supported APIs have libraries that build the requests for you and expose objects and methods so you can interact with them naturally in your code.
 
-We will build our application using Express. The first step will be to register a new OAuth token. [Do so from the GitHub webpage](https://github.com/settings/tokens) - you should set it to have permission to create gists.
-
-You will then see a page with a personal access token that will only ever
-display once - copy it somewhere safe, and treat it as a password! That it, don't paste it into your code to check in, don't send over chat/email, etc. Instead, you should set it as an environment variable:
-
-To use it, set the token in a `.env` file in the repository. The starter file has some help with this task.  Open the file called `dotenv`, paste in your token as described in the file, and resave the file with a new name of `.env`.  Be sure to not check in the  `.env` file! It's already in `.gitignore` but could still end up explicitly added if you  really try to push it.
-
-Environment variables can also be declared in the terminal, such as the example below:
+- We will build our application using Express. 
+  
+1. The first step will be to register a new OAuth token. [Do so from the GitHub webpage](https://github.com/settings/tokens)
+   - you should set it to have permission to create gists.
+   - this token only displays once!!!  Treat it like a password
+2. Set the token in a `.env` file in the repository. The starter file has some help with this task.  
+   - Open the file called `dotenv`, paste in your token as described in the file
+   - Resave the file with a new name of `.env`.  
+   - Be sure to not check in the  `.env` file! It's already in `.gitignore`
+3. How to use your Token
+   - Environment variables can be declared in the terminal, such as the example below:
 
 ```
 export GITHUB_TOKEN="yourtoken"
 ```
 
-The token will be accessible within node as `process.env.GITHUB_TOKEN`, and can be used to authenticate the GitHub client:
+   - The token will be accessible within node as `process.env.GITHUB_TOKEN`, and can be used to authenticate the GitHub client:
 
 ```
 const GitHubApi = require('github');
@@ -87,7 +93,10 @@ github.authenticate({
 });
 ```
 
-Inspect the client you get back, and you'll see that it supports a variety of operations. Most of these return promises - this is because performing API requests means asking for data from a machine you don't immediately control over a network, and you can't depend on the timing (when it will return). Your code needs to account for this, for example to get user information:
+4. Run yarn start in terminal
+    1. Inspect the client you get back, and you'll see that it supports a variety of operations. 
+    2. Most of these return promises - this is because performing API requests means asking for data from a machine you don't immediately control over a network.
+    3. Your code needs to account for this, for example to get user information:
 
 ```
 let handle = "k33g";
@@ -96,12 +105,14 @@ github.users.getForUser({username: handle}).then(response => {
 });
 ```
 
-The general pattern is `github.noun.verb()` - essentially every entity and action possible on GitHub is accessible in this fashion, so you can explore and use your imagination. You can retrieve stars, followers, repositories, or other things on a user basis, and if you're authorized you can also take actions (check stars on things, create repositories or gists, follow users, etc.). Read the [documentation on the API provided by this package](https://octokit.github.io/node-github/) for more details.
+  5. The general pattern of github is `github.noun.verb()` - essentially every entity and action possible on GitHub is accessible in this fashion
+      1. You can retrieve stars, followers, repositories, or other things on a user basis
+      2. If you're authorized you can also take actions (check stars on things, create repositories or gists, follow users, etc.). 
+      3. Read the [documentation on the API provided by this package](https://octokit.github.io/node-github/) for more details on how to access github
 
 ## Adding client-side encryption
 
-We will be using [TweetNaCL](https://github.com/dchest/tweetnacl-js#usage). nacl is a fairly simple cryptosystem - it makes good default decisions using modern but well-tested algorithms. The included `package.json` also installs
-`tweetnacl-util`, which provides utilities for encoding between strings and bytes. You can load both in your code as follows:
+We will be using [TweetNaCL](https://github.com/dchest/tweetnacl-js#usage). NaCl is a fairly simple cryptosystem - it makes good default decisions using modern but well-tested algorithms. The included `package.json` also installs `tweetnacl-util`, which provides utilities for encoding between strings and bytes. Both are loaded into your code already with the code shown below.
 
 ```
 const nacl = require('tweetnacl');
