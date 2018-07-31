@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -26,13 +28,13 @@ let keypair = {};
 
 try {
   console.log('try has run');
-  keypair = fs.readFileSync('./config.json');
+  keypair = JSON.parse(fs.readFileSync('./config.json'));
+  console.log('file has been read');
   keypair.secretKey = nacl.util.decodeBase64(keypair.secretKey);
   console.log('try has completed');
 } catch (err) {
   const secretKey = nacl.randomBytes(32);
   keypair = { secretKey };
-  console.log(keypair);
   keypair.secretKey = nacl.util.encodeBase64(keypair.secretKey);
   fs.writeFileSync('./config.json', JSON.stringify(keypair));
   keypair.secretKey = nacl.util.decodeBase64(keypair.secretKey);
@@ -123,6 +125,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.send(nacl.util.encodeBase64(keypair.secretKey));
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -157,7 +160,10 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   const { name, content } = req.body;
-  const files = { [name]: { content } };
+  const nonce = nacl.randomBytes(24);
+  let encryptedContent = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, keypair.secretKey);
+  encryptedContent = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encryptedContent);
+  const files = { [name]: { content: encryptedContent } };
   github.gists.create({ files, public: false })
     .then((response) => {
       res.json(response.data);
