@@ -19,5 +19,9 @@
   },
   "devDependencies": {
     "nodemon": "^1.18.3"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "arrowParens": "always"
   }
 }
