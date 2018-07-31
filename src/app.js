@@ -10,6 +10,11 @@ const username = 'mister-corn'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
+// Dirty Global State
+const state = {
+  secretKey: nacl.util.decodeBase64(process.env.SECRET_KEY) || nacl.randomBytes(32),
+};
+
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
@@ -21,11 +26,16 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-
-const state = {
-  secretKey: nacl.util.decodeBase64(process.env.SECRET_KEY) || nacl.randomBytes(32),
-};
-
+try {
+  // https://stackoverflow.com/a/13060087 for below tip
+  // const appRoot = process.cwd();
+  // Use this to double check where exactly the root folder of node's process
+  jsonStr = fs.readFileSync('./src/config.json', 'utf8');
+  const { SECRET_KEY } = JSON.parse(jsonStr);
+  console.log('SECRET_KEY:', SECRET_KEY);
+} catch (err) {
+  console.log('readFileSync error:', err);
+}
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
   res.send(`
@@ -116,7 +126,7 @@ server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
   res.send(`
   <html>
-    <header><title>Keypair</title></header>
+    <header><title>Secret Key of Secrets</title></header>
     <body>
       <h1>Secret Key</h1>
       <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
