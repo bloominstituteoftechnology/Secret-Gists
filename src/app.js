@@ -150,6 +150,8 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.query.id;
+  console.log(id);
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -166,8 +168,21 @@ server.post('/create', urlencodedParser, (req, res) => {
 });
 
 server.post('/createsecret', urlencodedParser, (req, res) => {
-  // TODO:  Create a private and encrypted gist with given name/content
+  // Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const message = nacl.util.decodeUTF8(content);
+  const box = nacl.secretbox(message, nonce, secretKey);
+  const blob = nacl.util.encodeBase64(box) + nacl.util.encodeBase64(nonce);
+  const file = { [name]: { content: blob } };
+  github.gists.create({ files: file, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json({ Error: err.message });
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
