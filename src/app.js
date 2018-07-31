@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -8,7 +10,12 @@ nacl.util = require('tweetnacl-util');
 
 const username = 'AmyShackles'; // TODO: Replace with your username
 // The object you'll be interfacing with to communicate with github
-const key = process.env.SECRET_KEY;
+let key
+if (process.env.NEW_SECRET_KEY) {
+  key = process.env.NEW_SECRET_KEY
+} else {
+  key = process.env.SECRET_KEY;
+}
 const github = octokit({ debug: true });
 const server = express();
 
@@ -105,7 +112,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  secretKey = nacl.util.decodeBase64(key);
+  secretKey = nacl.util.decodeBase64(process.env.SECRET_KEY);
   const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
   // Display both keys as strings
   res.send(`
@@ -136,16 +143,30 @@ server.get('/gists', (req, res) => {
 });
 
 server.get('/key', (req, res) => {
-  res.json(key);
+  let key;
+  if (!process.env.NEW_SECRET_KEY) {
+    key = process.env.SECRET_KEY
+  } else {
+    key = process.env.NEW_SECRET_KEY
+  }
+  res.send(`<div> Your key is: ${key} </div>`);
   // TODO: Display the secret key used for encryption of secret gists
 });
 
 server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
   const keyString = req.query.keyString;
-  secretKey = nacl.util.encodeBase64(keyString);
+  // work in progress
   try {
     // keypair = nacl.box.fromSecretKey(secretKey)
+    secretKey = nacl.util.encodeBase64(keyString)
+    if (!process.env.NEW_SECRET_KEY) {
+      fs.appendFile('./.env', `\nNEW_SECRET_KEY=${secretKey}`, (error) => {
+        if (error) throw error;
+      })
+    }
+    res.send(`<div> Your secret key is: ${secretKey} </div>`)
+
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
@@ -153,6 +174,17 @@ server.get('/setkey:keyString', (req, res) => {
 });
 
 server.get('/fetchmessagefromself:id', (req, res) => {
+  // const { id } = req.query
+  // github.gists.get({ gist_id: id })
+  //   .then((response) => {
+  //     let { name, content } = response.data
+  //     content = nacl.util.decodeBase64(content)
+
+  //   })
+  //   .catch((error) => {
+  //     res.json(error)
+  //   })
+  // Work in progress!
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
 });
 
@@ -173,8 +205,8 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   const { name, content } = req.body;
   const nonce = nacl.randomBytes(24);
-  temp_key = nacl.util.decodeBase64(process.env.SECRET_KEY)
-  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, temp_key);
+  secretKey = nacl.util.decodeBase64(process.env.SECRET_KEY);
+  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
   const message = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(ciphertext);
   const files = { [name]: { content: message } };
   github.gists
@@ -222,4 +254,11 @@ server.post('/login', (req, res) => {
   - Let the user pass in their private key via POST
 */
 
-server.listen(3000);
+server.listen(3000, (error) => {
+  if (error) {
+    console.log(error)
+  }
+  else {
+    console.log('Up and running on Port 3000')
+  }
+});
