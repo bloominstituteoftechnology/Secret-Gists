@@ -32,27 +32,16 @@ let privateKey;
 try {
   const config = require('../config.json');
   privateKey = config.key ? nacl.util.decodeBase64(config.key) : nacl.randomBytes(32);
-  console.log(privateKey);
 } catch (error) {
   /* if there are not config.json file */
   // Generates a random Unit8Array of 32 bytes
-  const randomValue = nacl.randomBytes(32);
+  const keyUnit8Array = nacl.randomBytes(32);
+  const keyBase64 = nacl.util.encodeBase64(keyUnit8Array);
   // pass it to Base64 -> a mor human redable encoding.
-  const keyBase64 = nacl.util.encodeBase64(randomValue);
-  // put it in an object -> this will be the content of the config.json
-  const configFileContent = {
-    key: keyBase64,
-    keyLength: keyBase64.length,
-    keyUnit8Array: randomValue,
-    keyUnit8ArrayLenght: randomValue.length,
-  };
-  // Create the file in the root-folder with the content created before.
-  fs.writeFile('./config.json', JSON.stringify(configFileContent), err => {
-    if (err) throw new Error('Fail to write secret to file');
-  });
+  writeToConfigJson(keyBase64);
 
   // Pass a reference to the Unit8Array to the 'secretKey' variable -> so we can refer to that later on the code.
-  privateKey = randomValue;
+  privateKey = keyUnit8Array;
 }
 
 server.get('/', (req, res) => {
@@ -150,22 +139,15 @@ server.get('/setkey:keyString', (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO:
-    // console.log(keyString.length > 32);
-    if (keyString.length > 32) {
-      throw new Error();
-    } else {
-      // console.log('1');
-      privateKey = nacl.util.decodeBase64(keyString);
-      // console.log('2');
-      res.status(200).json('New secret key created');
-      // console.log('3');
-    }
+    const keyHashed = hash256.update(keyString);
+    const keyBase64 = keyHashed.digest('base64');
+    console.log(keyBase64.length);
+    writeToConfigJson(keyBase64);
+    res.status(200).json({ key: 'created' });
   } catch (err) {
     // failed
     console.log(err);
-    res.send(
-      'Failed to set key.  Key string appears invalid. allowed alfanumeric characters: A-Z, a-z and 0-9.\n Minimun 4 characters'
-    );
+    res.send({ status: 'Failed to set key. Try again', error: err });
   }
 });
 
@@ -198,19 +180,33 @@ server.post('/login', (req, res) => {
 });
 
 /*
-  Still want to write code? Some possibilities:
-  - Pretty templates! More forms!
-  - Better management of gist IDs, use/display other gist fields
-  - Support editing/deleting existing gists
-  - Switch from symmetric to asymmetric crypto
-  - Exchange keys, encrypt messages for each other, share them
-  - Let the user pass in their private key via POST
+Still want to write code? Some possibilities:
+- Pretty templates! More forms!
+- Better management of gist IDs, use/display other gist fields
+- Support editing/deleting existing gists
+- Switch from symmetric to asymmetric crypto
+- Exchange keys, encrypt messages for each other, share them
+- Let the user pass in their private key via POST
 */
 
 /**
  * UTILS: helper functions
  */
+function writeToConfigJson(keyBase64) {
+  // put it in an object -> this will be the content of the config.json
+  const configFileContent = {
+    key: keyBase64,
+    keyLength: keyBase64.length,
+  };
+  // Create the file in the root-folder with the content created before.
+  fs.writeFile('./config.json', JSON.stringify(configFileContent), err => {
+    if (err) throw new Error('Fail to write secret to file');
+  });
+}
 function saltSecretKey(key) {
+  /**
+   * DEPRECATED: This function will not be used, all the logic has changed.
+   */
   // TODO: Salt a passed 'key' so its length will be 32 bytes.
   if (key.length < 32) {
     const salt = 32 - key.length;
