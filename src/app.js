@@ -160,6 +160,18 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const { id } = req.query;
+  github.gists.get({ id })
+    .then((response) => {
+      const { content } = Object.values(response.data.files)[0]
+      const encrypted = nacl.util.deccodedBase64(content.slice(0, -24))
+      const nonce = nacl.util.decodeBase64(content.slice(-24))
+      const decrypted = nacl.secretbox.open(encrypted, nonce, secretKey)
+      res.send(decrypted);
+    })
+    .catch((error) => {
+      res.json(error);
+    });
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -207,6 +219,7 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  
 });
 
 /* OPTIONAL - if you want to extend functionality */
@@ -227,4 +240,4 @@ server.post('/login', (req, res) => {
   - Let the user pass in their private key via POST
 */
 
-server.listen(3000);
+server.listen(3000, () => console.log('listening on port 3000'));
