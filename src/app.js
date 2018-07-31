@@ -118,34 +118,43 @@ server.get('/key', (req, res) => {
 });
 
 server.get('/setkey:keyString', (req, res) => {
-  // TODO: Set the key to one specified by the user or display an error if invalid
-  const keyString = req.query.keyString;
-  try {
-    // TODO:
-  } catch (err) {
-    // failed
-    res.send('Failed to set key.  Key string appears invalid.');
-  }
+    // TODO: Set the key to one specified by the user or display an error if invalid
+    const keyString = req.query.keyString;
+    try {
+      // TODO:
+      // Set our secretKey var to be whatever the user passed in
+      secretKey = nacl.util.decodeUTF8(keyString);
+      const keyObject = { secretKey: keyString };
+      fs.writeFile('../config.json', JSON.stringify(keyObject), (ferr) => {
+        if (ferr) {
+          console.log('Error writing secret key to config file: ', ferr.message);
+          return;
+        }
+      });
+      res.send(`<div>Key set to new value: ${keyString}</div>`);
+    } catch (err) {
+      // failed
+      res.send('Failed to set key. Key string appears invalid.');
+    }
 });
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
   // console.log(req.query.id)
-  const { id } = req.query;
+  const id  = req.query.id;
   github.gists.get({ id })
     .then((response) => {
       // console.log(response.data)
       const { content } = Object.values(response.data.files)[0]
-      // console.log(response.data)
-      console.log(content)
-      const encryptedContent = nacl.util.decodeBase64(content.slice(0, -24))
-      // console.log(encryptedContent)
-      const nonce = nacl.util.decodeBase64(content.slice(-24))
-      console.log(nonce)
-      console.log(secretKey)
+      console.log('CONTENT: ' + content)
+      const encryptedContent = nacl.util.decodeBase64(content.slice(0, -32))
+      // console.log(nacl.util.encodeBase64(encryptedContent))
+      const nonce = nacl.util.decodeBase64(content.slice(-32))
+      // console.log(nacl.util.encodeBase64(nonce))
+      // console.log(nacl.util.encodeBase64(secretKey))
       const originalMessage = nacl.secretbox.open(encryptedContent, nonce, secretKey)
-      // console.log(originalMessage)
-      res.send(originalMessage);
+      console.log(originalMessage)
+      res.send(nacl.util.encodeUTF8(originalMessage));
     })
 
     .catch((err) => {
@@ -166,6 +175,7 @@ server.post('/create', urlencodedParser, (req, res) => {
     });
 });
 
+let ciphertext;
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
@@ -174,7 +184,7 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
 
   // E N C R Y P T I O N
   const nonce = nacl.randomBytes(24);
-  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey); // Returns an encrypted and authenticated message
+  ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey); // Returns an encrypted and authenticated message
   const blob = nacl.util.encodeBase64(ciphertext) + nacl.util.encodeBase64(nonce);
   content = blob;
 
