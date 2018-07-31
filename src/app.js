@@ -8,7 +8,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = process.env.GITHUB_USERNAME; // TODO: Replace with your username
 // The object you'll be interfacing with to communicate with github
 const github = octokit({ debug: true });
 const server = express();
@@ -24,6 +24,33 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+// const keypair = {};
+// const secretKey = nacl.randomBytes(32);
+let secretKey; // Our secret key as a Uint8Array
+
+try {
+  // try to read the config file
+  const data = fs.readFileSync('./config.json');
+  // parse the data that we read from the json file
+  const keyObject = JSON.parse(data);
+  // saves key
+  secretKey = nacl.util.decodeBase64(keyObject.secretKey);
+} catch (error) {
+  const keyObject = nacl.box.keyPair();
+  // secretKey = nacl.randomBytes(32);
+  // console.log('secretKey base 64: ', nacl.util.encodeBase64(secretKey));
+  // console.log('secretKey UTF8: ', nacl.util.encodeUTF8(secretKey));
+  const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+
+  // write this keyObject to config.json
+  fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+    if (ferr) {
+      // console.log('Error writing secretKey to config file: ', ferr.message);
+      return;
+    }
+  });
+}
+
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -80,7 +107,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-
+  const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
   // Display both keys as strings
   res.send(`
     <html>
@@ -110,6 +137,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.send(nacl.util.encodeBase64(secretKey));
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -117,6 +145,15 @@ server.get('/setkey:keyString', (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO:
+    // Set secretKey to be whatever the user passes through input
+    secretKey = nacl.util.decodeBase64(keyString);
+    const keyObject = { secretKey: keyString };
+    fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+      if (ferr) {
+        return;
+      }
+    });
+    res.send(`<div>Key set to new value: ${secretKey}</div>`);
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
@@ -143,6 +180,24 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  // Read the name and content off the url params
+  const { name, content } = req.body;
+  // initialize nonce
+  const nonce = nacl.randomBytes(24);
+  // decode UTF8 content, then encrypt contents of gist
+  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+  // Make nonce persistent until decryption at a later time
+  const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(ciphertext);
+  // format blob and name in format for Github API
+  const file = { [name]: { content: blob } };
+  // send POST to Github
+  github.gists.create({ files: file, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((error) => {
+      res.json(error);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
