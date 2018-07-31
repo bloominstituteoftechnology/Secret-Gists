@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const server = require('express')();
 const bodyParser = require('body-parser');
-const middleware = require('./middleware');
+const { getKeypair, readOnlyKeypair } = require('./middleware');
 const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
@@ -69,7 +69,7 @@ server.get('/', (req, res) => {
   `);
 });
 
-server.get('/keyPairGen', middleware.getKeypair, (req, res) => {
+server.get('/keyPairGen', getKeypair, (req, res) => {
   // Display both keys as strings
   const keypair = req.keypair;
   res.send(`
@@ -99,7 +99,7 @@ server.get('/gists', (req, res) => {
     });
 });
 
-server.get('/key', middleware.readOnlyKeypair, (req, res) => {
+server.get('/key', readOnlyKeypair, (req, res) => {
   // Display the secret key used for encryption of secret gists
   const keypair = req.keypair;
 
@@ -129,12 +129,11 @@ server.get('/key', middleware.readOnlyKeypair, (req, res) => {
 });
 
 server.get('/setkey:keyString', (req, res) => {
-  // TODO: Set the key to one specified by the user or display an error if invalid
+  // Set the key to one specified by the user or display an error if invalid
   const keyString = req.query.keyString;
   try {
-    // TODO:
+    // TODO
   } catch (err) {
-    // failed
     res.send('Failed to set key.  Key string appears invalid.');
   }
 });
@@ -157,9 +156,42 @@ server.post('/create', urlencodedParser, (req, res) => {
     });
 });
 
-server.post('/createsecret', urlencodedParser, (req, res) => {
-  // TODO:  Create a private and encrypted gist with given name/content
-  // NOTE - we're only encrypting the content, not the filename
+server.post('/createsecret', urlencodedParser, readOnlyKeypair, (req, res) => {
+  // Create a private and encrypted gist with given name/content
+  const keypair = req.keypair;
+
+  if (keypair) {
+    const { name, content } = req.body;
+    const nonce = nacl.randomBytes(nacl.box.nonceLength); // Uint8Array
+    const gistContent = nacl.util.encodeBase64(nonce) + content; // String
+    const encryptedGist = nacl.util.encodeBase64(
+      nacl.box(
+        nacl.util.decodeUTF8(gistContent),
+        nonce,
+        keypair.publicKey,
+        keypair.secretKey
+      )
+    ); // String
+    const files = { [name]: { content: encryptedGist } };
+    github.gists
+      .create({ files, public: false })
+      .then((response) => {
+        res.json(response.data);
+      })
+      .catch((err) => {
+        res.json(err);
+      });
+  } else {
+    res.send(`
+      <html>
+        <header><title>Secret Key Does Not Exist</title></header>
+        <body>
+          <h1>Secret Key Does Not Exist</h1>
+          <div>You do not have a secret key yet. <i><a href="/keyPairGen">Generate a keypair.</a></i></div>
+        </body>
+      </html>
+    `);
+  }
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
