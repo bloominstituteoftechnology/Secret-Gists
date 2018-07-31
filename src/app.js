@@ -33,13 +33,15 @@ const secretKeyGetter = () => {
     return SECRET;
   } else {
     let SECRET = nacl.randomBytes(32);
+    const buffer = `\nMY_SECRET=${nacl.util.encodeBase64(SECRET)}\n`;
+
     fs.open('./.env', 'a', (err, fd) => {
       if (err) {
         console.log({ err });
       } else {
         console.log(".env file opened successfully!");
       }
-      fs.write(fd, `\nMY_SECRET=${nacl.util.encodeBase64(SECRET)}\n`, (error, written = 32, str) => {
+      fs.write(fd, buffer, (error, written = 32, str) => {
         if (error) {
           console.log({ error });
         } else {
@@ -53,7 +55,7 @@ const secretKeyGetter = () => {
           }
         });
       });
-      SECRET = nacl.util.encodeBase64(SECRET);
+      SECRET = nacl.util.encodeBase64(process.env.MY_SECRET);
       return SECRET;
     });
   }
@@ -113,27 +115,21 @@ server.get('/', (req, res) => {
 });
 
 server.get('/keyPairGen', (req, res) => {
-  const keypair = nacl.box.keyPair.fromSecretKey(MY_SECRET);
-  keypair
-    .then(() => {
-      res.status(200).json(
-        `
-        <html>
-          <header><title>Keypair</title></header>
-          <body>
-            <h1>Keypair</h1>
-            <div>Share your public key with anyone you want to be able to leave you secret messages.</div>
-            <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
-            <br/>
-            <div>Public Key: ${keypair.publicKey}</div>
-            <div>Secret Key: ${keypair.secretKey}</div>
-          </body>
-        </html>
-      `);
-    })
-    .catch((err) => {
-      res.status(500).json({ Error: err });
-    });
+  const keypair = nacl.box.keyPair();
+  res.send(
+    `
+    <html>
+      <header><title>Keypair</title></header>
+      <body>
+        <h1>Keypair</h1>
+        <div>Share your public key with anyone you want to be able to leave you secret messages.</div>
+        <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
+        <br/>
+        <div>Public Key: ${nacl.util.encodeBase64(keypair.publicKey)}</div>
+        <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
+      </body>
+    </html>
+  `);
 });
 
 server.get('/gists', (req, res) => {
@@ -147,7 +143,7 @@ server.get('/gists', (req, res) => {
     });
 });
 
-server.get('/key', (req, res) => { 
+server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
   console.log(nacl.util.encodeBase64(secretKeyGetter()));
   res.send(nacl.util.encodeBase64(secretKeyGetter()));
@@ -157,7 +153,6 @@ server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
   const keyString = req.query.keyString;
   try {
-    
     res.send(`Key is: ${keyString}`);
   } catch (err) {
     // failed
