@@ -28,13 +28,13 @@ let config
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
 try {
-  config = require('./config.json');
+  config = JSON.parse(require('./config.json'));
 }
 catch (err) {
   config = { "secret_key": nacl.randomBytes(32) }
   fs.writeFile('config.json', JSON.stringify(config), 'utf8', () => { });
 }
-console.log(config)
+console.log(config.secret_key)
 
 
 server.get('/', (req, res) => {
@@ -155,6 +155,20 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content } = req.body;
+  const uncoded = nacl.util.decodeUTF8(content);
+  const nonce = nacl.randomBytes(24);
+  const coded = nacl.secretbox(uncoded, nonce, config.secret_key);
+  const files = { [name]: { "content": nacl.util.encodeBase64(coded) } };
+
+
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
