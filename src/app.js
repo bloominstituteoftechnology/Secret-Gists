@@ -227,7 +227,7 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   const encrpyedGist = nacl.box(contentUTF8, nonce, theirPublic,secretKey)
   const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encrpyedGist)
   const files = { [name]: {content: blob}}
-  console.log(files)
+  // console.log(files)
   github.gists.create({ files, public: true })
     .then(response => {
       console.log(response.data.id)
@@ -243,6 +243,32 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const friendString = req.query.messageString;
+  const theirPublic = friendString.slice(0,44)
+  const gist_id = friendString.slice(44, friendString.length)
+
+  github.gists.get({id: gist_id})
+    .then(response => {
+      encrpyedGist = response.data.files[Object.keys(response.data.files)[0]]
+      console.log(encrpyedGist)
+      // it seems that randomBytes(24) when encodeBase64 takes up 32 characters.
+      const encoded_nonce = encrpyedGist.content.slice(0,32)
+      const encoded_content = encrpyedGist.content.slice(32, encrpyedGist.content.length)
+
+      // nacl.box.open(box, nonce, theirPublicKey, mySecretKey)
+      const opened_box = nacl.box.open(nacl.util.decodeBase64(encoded_content), nacl.util.decodeBase64(encoded_nonce), 
+                                                                    nacl.util.decodeBase64(theirPublic), secretKey)
+      console.log('encoded_content',encoded_content)
+      console.log('encoded_nonce',encoded_nonce)
+      console.log('theirPublic',theirPublic)
+      console.log('secretKey',secretKey)
+      console.log('opened_box', opened_box)
+      res.json({title: encrpyedGist.filename, content: nacl.util.encodeUTF8(opened_box)})
+    })
+    .catch(err => {
+      console.log(err)
+      res.json(err)
+    })
 });
 
 /* OPTIONAL - if you want to extend functionality */
