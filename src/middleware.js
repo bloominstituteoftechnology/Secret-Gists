@@ -33,6 +33,7 @@ const getKeypair = (req, res, next) => {
         );
         req.keypair = nacl.box.keyPair.fromSecretKey(decodedSecretKey);
         next();
+        return;
       }
     }
 

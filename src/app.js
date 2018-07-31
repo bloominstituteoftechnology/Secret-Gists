@@ -115,17 +115,17 @@ server.get('/key', middleware.getKeypair, (req, res) => {
       </body>
     </html>
   `);
+  } else {
+    res.send(`
+      <html>
+        <header><title>Secret Key</title></header>
+        <body>
+          <h1>Secret Key</h1>
+          <div>You do not have a secret key yet. <i><a href="/keyPairGen">Generate a keypair.</a></i></div>
+        </body>
+      </html>
+    `);
   }
-
-  res.send(`
-    <html>
-      <header><title>Secret Key</title></header>
-      <body>
-        <h1>Secret Key</h1>
-        <div>You do not have a secret key yet. <i><a href="/keyPairGen">Generate a keypair.</a></i></div>
-      </body>
-    </html>
-  `);
 });
 
 server.get('/setkey:keyString', (req, res) => {
