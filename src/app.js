@@ -8,7 +8,7 @@ nacl.util = require('tweetnacl-util');
 
 const username = 'AmyShackles'; // TODO: Replace with your username
 // The object you'll be interfacing with to communicate with github
-const key = process.env.USER_MADE_SECRET_KEY || process.env.SECRET_KEY
+const key = process.env.SECRET_KEY;
 const github = octokit({ debug: true });
 const server = express();
 
@@ -44,12 +44,11 @@ fs.readFile('./config.json', (noConfig, data) => {
     keyObject = JSON.parse(data);
     secretKey = nacl.util.decodeBase64(keyObject.secretKey);
     if (!process.env.SECRET_KEY) {
-      secretKey = nacl.util.encodeBase64(secretKey)
-      fs.appendFile('./.env', `\nSECRET_KEY=${keyObject.secretKey}`)
+      secretKey = nacl.util.encodeBase64(secretKey);
+      fs.appendFile('./.env', `\nSECRET_KEY=${keyObject.secretKey}`);
     }
   }
 });
-
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -61,43 +60,43 @@ server.get('/', (req, res) => {
         <div>This is an educational implementation.  Do not use for truly valuable information</div>
         <h2>Supported operations:</h2>
         <ul>
-          <li><i><a href="/keyPairGen">Show Keypair</a></i>: generate a keypair from your secret key.  Share your public key for other users of this app to leave encrypted gists that only you can decode with your secret key.</li>
-          <li><i><a href="/gists">GET /gists</a></i>: retrieve a list of gists for the authorized user (including private gists)</li>
-          <li><i><a href="/key">GET /key</a></i>: return the secret key used for encryption of secret gists</li>
+          <li><i><a href='/keyPairGen'>Show Keypair</a></i>: generate a keypair from your secret key.  Share your public key for other users of this app to leave encrypted gists that only you can decode with your secret key.</li>
+          <li><i><a href='/gists'>GET /gists</a></i>: retrieve a list of gists for the authorized user (including private gists)</li>
+          <li><i><a href='/key'>GET /key</a></i>: return the secret key used for encryption of secret gists</li>
         </ul>
         <h3>Set your secret key to a specific key</h3>
-        <form action="/setkey:keyString" method="get">
-          Key String: <input type="text" name="keyString"><br>
-          <input type="submit" value="Submit">
+        <form action='/setkey:keyString' method='get'>
+          Key String: <input type='text' name='keyString'><br>
+          <input type='submit' value='Submit'>
         </form>
         <h3>Create an *unencrypted* gist</h3>
-        <form action="/create" method="post">
-          Name: <input type="text" name="name"><br>
-          Content:<br><textarea name="content" cols="80" rows="10"></textarea><br>
-          <input type="submit" value="Submit">
+        <form action='/create' method='post'>
+          Name: <input type='text' name='name'><br>
+          Content:<br><textarea name='content' cols='80' rows='10'></textarea><br>
+          <input type='submit' value='Submit'>
         </form>
         <h3>Create an *encrypted* gist for yourself</h3>
-        <form action="/createsecret" method="post">
-          Name: <input type="text" name="name"><br>
-          Content:<br><textarea name="content" cols="80" rows="10"></textarea><br>
-          <input type="submit" value="Submit">
+        <form action='/createsecret' method='post'>
+          Name: <input type='text' name='name'><br>
+          Content:<br><textarea name='content' cols='80' rows='10'></textarea><br>
+          <input type='submit' value='Submit'>
         </form>
         <h3>Retrieve an *encrypted* gist you posted for yourself</h3>
-        <form action="/fetchmessagefromself:id" method="get">
-          Gist ID: <input type="text" name="id"><br>
-          <input type="submit" value="Submit">
+        <form action='/fetchmessagefromself:id' method='get'>
+          Gist ID: <input type='text' name='id'><br>
+          <input type='submit' value='Submit'>
         </form>
         <h3>Create an *encrypted* gist for a friend to decode</h3>
-        <form action="/postmessageforfriend" method="post">
-          Name: <input type="text" name="name"><br>
-          Friend's Public Key String: <input type="text" name="publicKeyString"><br>
-          Content:<br><textarea name="content" cols="80" rows="10"></textarea><br>
-          <input type="submit" value="Submit">
+        <form action='/postmessageforfriend' method='post'>
+          Name: <input type='text' name='name'><br>
+          Friend's Public Key String: <input type='text' name='publicKeyString'><br>
+          Content:<br><textarea name='content' cols='80' rows='10'></textarea><br>
+          <input type='submit' value='Submit'>
         </form>
         <h3>Retrieve an *encrypted* gist a friend has posted</h3>
-        <form action="/fetchmessagefromfriend:messageString" method="get">
-          String From Friend: <input type="text" name="messageString"><br>
-          <input type="submit" value="Submit">
+        <form action='/fetchmessagefromfriend:messageString' method='get'>
+          String From Friend: <input type='text' name='messageString'><br>
+          <input type='submit' value='Submit'>
         </form>
       </body>
     </html>
@@ -106,7 +105,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  let secretKey = nacl.util.decodeBase64(key)
+  secretKey = nacl.util.decodeBase64(key);
   const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
   // Display both keys as strings
   res.send(`
@@ -126,7 +125,8 @@ server.get('/keyPairGen', (req, res) => {
 
 server.get('/gists', (req, res) => {
   // Retrieve a list of all gists for the currently authed user
-  github.gists.getForUser({ username })
+  github.gists
+    .getForUser({ username })
     .then((response) => {
       res.json(response.data);
     })
@@ -143,28 +143,9 @@ server.get('/key', (req, res) => {
 server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
   const keyString = req.query.keyString;
-  console.log('keystring:', req.query.keyString)
-  let secretKey = nacl.util.encodeBase64(keyString)
+  secretKey = nacl.util.encodeBase64(keyString);
   try {
-    // TODO:
-    fs.appendFile('./.env', `\nUSER_MADE_SECRET_KEY=${secretKey}`, (error) => {
-      if (error) throw error
-    })
-    decodedKey = nacl.util.decodeBase64(secretKey)
-    keypair = nacl.box.keyPair.fromSecretKey(decodedKey)
-    res.send(`
-    <html>
-      <header><title>Keypair</title></header>
-      <body>
-        <h1>Keypair</h1>
-        <div>Share your public key with anyone you want to be able to leave you secret messages.</div>
-        <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
-        <br/>
-        <div>Public Key: ${nacl.util.encodeBase64(keypair.publicKey)}</div>
-        <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
-      </body>
-    </html>
-  `);
+    // keypair = nacl.box.fromSecretKey(secretKey)
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
@@ -179,7 +160,8 @@ server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
   const { name, content } = req.body;
   const files = { [name]: { content } };
-  github.gists.create({ files, public: false })
+  github.gists
+    .create({ files, public: false })
     .then((response) => {
       res.json(response.data);
     })
@@ -189,6 +171,20 @@ server.post('/create', urlencodedParser, (req, res) => {
 });
 
 server.post('/createsecret', urlencodedParser, (req, res) => {
+  const { name, content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  temp_key = nacl.util.decodeBase64(process.env.SECRET_KEY)
+  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, temp_key);
+  const message = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(ciphertext);
+  const files = { [name]: { content: message } };
+  github.gists
+    .create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
 });
@@ -200,9 +196,13 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // NOTE - we're only encrypting the content, not the filename
 });
 
-server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
-  // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
-});
+server.get(
+  '/fetchmessagefromfriend:messageString',
+  urlencodedParser,
+  (req, res) => {
+    // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  }
+);
 
 /* OPTIONAL - if you want to extend functionality */
 server.post('/login', (req, res) => {
