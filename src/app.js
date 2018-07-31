@@ -41,6 +41,8 @@ try {
   // https://stackoverflow.com/a/13060087 for below tip
   // const appRoot = process.cwd();
   // Use this to double check where exactly is the root folder of node's process
+  // For example you can console.log it
+  // or go `${appRoot}/config.json`, and see the full exact path in the error message 
   const jsonStr = fs.readFileSync('./src/config.json');
   state = JSON.parse(jsonStr);
   state = {
@@ -189,8 +191,7 @@ server.get('/setkey:keyString', (req, res) => {
       <header><title>Set keyString</title></header>
       <body>
         <h1>ERROR: set keyString</h1>
-        <div>Key is updated in memory, but could NOT be saved to config.json.</div>
-        <div>
+        <div>Key is temporarily updated, but could NOT be saved permanently.
           This key will be lost upon server restart. Please ensure you have this key copied.
           <br/>
           Key: ${keyString}
@@ -226,6 +227,8 @@ server.get('/fetchmessagefromself:id', (req, res) => {
       const key = Object.keys(response.data.files)[0];
       const { content, filename } = response.data.files[key];
       // Define inputs
+      // First 32 characters: nonce
+      // All characters thereafter: encrypted message ('box')
       const nonce = nacl.util.decodeBase64(content.slice(0, 32));
       const box = nacl.util.decodeBase64(content.slice(32));
       // Decrypt message then encode in UTF8
@@ -269,13 +272,12 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   const { name, content } = req.body;
-
   // Generate nonce and cipher version of content
   const nonce = nacl.randomBytes(24);
   const cipherContent = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, state.secretKey);
   // Combine nonce and cipher content into a single string
   const nonceAndCipherContent = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(cipherContent);
-
+  // Create postObject and post to Github Gists
   const files = { [name]: { content: nonceAndCipherContent } };
   github.gists.create({ files, public: false })
     .then((response) => {
@@ -291,10 +293,54 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content, publicKeyString } = req.body;
+  // Generate nonce and cipher version of content. Decode publicKeyString to UInt8 Array.
+  const nonce = nacl.randomBytes(24);
+  const theirPublicKey = nacl.util.decodeBase64(publicKeyString);
+  const cipherContent = nacl.box(nacl.util.decodeUTF8(content), nonce, theirPublicKey, state.secretKey);
+  // Combine *personal* public key, nonce, and cipher content into a single string
+  // We used our *personal private key* to help encrypt the cipher content.
+  // They'll need our *personal public key* to decrypt it.
+  const pubkeyNonceCipherContentCombined = nacl.util.encodeBase64(state.publicKey) + nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(cipherContent);
+
+  const files = { [name]: { content: pubkeyNonceCipherContentCombined } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const { messageString } = req.query;
+  // Derive inputs from messageString
+  // First 44 characters: publicKey given by sender
+  // Next 32 characters: nonce
+  // All characters thereafter: encrypted message ('box')
+  const theirPublicKey = nacl.util.decodeBase64(messageString.slice(0, 44));
+  const nonce = nacl.util.decodeBase64(messageString.slice(44, 76));
+  const box = nacl.util.decodeBase64(messageString.slice(76));
+  // Decrypt box and encode message to UTF8 (if any)
+  const result = nacl.box.open(box, nonce, theirPublicKey, state.secretKey);
+  const message = result ? nacl.util.encodeUTF8(result) : null;
+  // Render response
+  res.send(`
+  <html>
+    <header><title>Friend's Message Result | Gist</title></header>
+    <body>
+      <h1>Message from Friend</h1>
+      <h2>Decryption Result</h2>
+      <div>
+        ${message || '<em>No message. Decryption may have failed.</em>'}
+      </div>
+      <br/>
+      <a href="/">Go home.</a>
+    </body>
+  </html>
+  `);
 });
 
 /* OPTIONAL - if you want to extend functionality */
