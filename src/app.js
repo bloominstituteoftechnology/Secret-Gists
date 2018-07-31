@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+
 require('dotenv').config();
 
 const server = require('express')();
@@ -133,6 +135,15 @@ server.get('/setkey:keyString', (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO
+    secretKey = nacl.util.decodeUTF8(keyString);
+    const keyObject = { secretKey: keyString };
+    fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+      if (ferr) {
+        console.log('Error writing secret key to config file: ', ferr.message);
+        return;
+      }
+    });
+    res.send(`<div>Key set to new value: ${keyString}</div>`);
   } catch (err) {
     res.send('Failed to set key.  Key string appears invalid.');
   }
@@ -243,6 +254,7 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
+  // Grab the name, content, publicKeyString from params  
 });
 
 server.get(
