@@ -191,10 +191,15 @@ server.get('/fetchmessagefromself:id', (req, res) => {
       const key = Object.keys(response.data.files)[0];
       const { content, filename } = response.data.files[key];
       // Define inputs
+      console.log('Made it to line 194.');
+      console.log('content:', content);
+      console.log('content length:', content.length);
       const box = nacl.util.decodeBase64(content.slice(32));
       const nonce = nacl.util.decodeBase64(content.slice(0, 32));
       const secretKey = nacl.util.decodeBase64(keypair.esecretKey);
       // Decrypt message then encode in UTF8
+      console.log('Made it to line 199.');
+      console.log("1", box, "2", nonce, "3", secretKey)
       const result = nacl.secretbox.open(box, nonce, secretKey);
       const message = result ? nacl.util.encodeUTF8(result) : null;
       // Render response
