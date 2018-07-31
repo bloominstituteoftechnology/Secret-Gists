@@ -57,3 +57,5 @@ typings/
 # dotenv environment variables file
 .env
 
+# used to store secret key
+config.json

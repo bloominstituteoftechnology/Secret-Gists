@@ -12,7 +12,7 @@ Generate the public key from the secret key, and display both.
 
 **Status**
 
-Incomplete
+Complete
 
 # GET/Gists
 
@@ -32,7 +32,7 @@ Return a base64 string of the user's secretKey
 
 **Status**
 
-Incomplete
+Complete
 
 # Set Key
 
@@ -42,7 +42,7 @@ Set the user's secret key to the string they enter.
 
 **Status**
 
-Incomplete
+Complete
 
 # Create an unencrypted gist
 
@@ -64,7 +64,7 @@ The nonce + encrypted string should be saved.
 
 **Status**
 
-Incomplete
+Complete
 
 # Retrieve an encrypted gist for yourself
 
