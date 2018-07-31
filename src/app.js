@@ -22,9 +22,22 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-let secretKey = nacl.randomBytes(32);
-console.log('secretKey', secretKey)
-console.log('decodedKey', nacl.util.encodeBase64(secretKey))
+
+let secretKey
+try{
+  const data = fs.readFileSync('./config.json');
+  const keyObject = JSON.parse(data);
+  secretKey = nacl.util.decodeBase64(keyObject.secretKey)
+} catch (err){
+  secretKey = nacl.randomBytes(32);
+  const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) }
+  fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+    if (ferr) {
+      console.log('Error writing secret key to confing file: ', ferr.message)
+      return;
+    }
+  })
+}
 
 
 server.get('/', (req, res) => {
@@ -112,6 +125,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.send(nacl.util.encodeBase64(secretKey))
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -119,6 +133,14 @@ server.get('/setkey:keyString', (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO:
+    secretKey = nacl.util.decodeBase64(keyString)
+    res.send(`<div>Key set to new value: ${keyString}</div>`)
+    fs.writeFile('./config.json', JSON.stringify(keyString), (ferr) => {
+      if (ferr) {
+        console.log('Error writing secret key to confing file: ', ferr.message)
+        return;
+      }
+    })
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
@@ -127,6 +149,22 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const gist_id = req.query.id
+  // console.log(gist_id)
+  github.gists.get({id: gist_id})
+    .then(response => {
+      encrpyedGist = response.data.files[Object.keys(response.data.files)[0]]
+      // it seems that randomBytes(24) when encodeBase64 takes up 32 characters.
+      const encoded_nonce = encrpyedGist.content.slice(0,32)
+      const encoded_content = encrpyedGist.content.slice(32, encrpyedGist.content.length)
+      const opened_box = nacl.secretbox.open(nacl.util.decodeBase64(encoded_content), nacl.util.decodeBase64(encoded_nonce), secretKey)
+      console.log(opened_box)
+      res.json({title: encrpyedGist.filename, content: nacl.util.encodeUTF8(opened_box)})
+    })
+    .catch(err => {
+      console.log(err)
+      res.json(err)
+    })
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -146,10 +184,12 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
   const { name, content } = req.body;
-  const nonce = nacl.randomBytes(nacl.box.nonceLength)
+  const nonce = nacl.randomBytes(24)
   const contentUTF8 = nacl.util.decodeUTF8(content)
   const encrpyedGist = nacl.secretbox(contentUTF8, nonce, secretKey)
-  const files = { [name]: {content: `${encrpyedGist}`}}
+  const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encrpyedGist)
+
+  const files = { [name]: {content: blob}}
   console.log('nonce',name)
   console.log('contentUTF8',contentUTF8)
   console.log('encrpyedGist',encrpyedGist)
@@ -157,7 +197,9 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
 
   github.gists.create({ files, public: false })
     .then(response => {
-      res.json(response.data);
+      console.log(response.data)
+      // this isnt working
+      res.json(response.data.files[name].content);
     })
     .catch(err => {
       res.json(err);
@@ -169,6 +211,34 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
+  // { name: 'test encrypt',
+  // publicKeyString: 'test',
+  // content: 'test' }
+  const { name, publicKeyString, content } = req.body
+  // my public key needs to give in order to decode
+  const myPublic = nacl.util.encodeBase64(nacl.box.keyPair.fromSecretKey(secretKey).publicKey)
+
+  //stuff being put in blob
+  const nonce = nacl.randomBytes(24)
+  const contentUTF8 = nacl.util.decodeUTF8(content)
+  const theirPublic = nacl.util.decodeBase64(publicKeyString)
+
+  // using box needs nacl.box(message, nonce, theirPublicKey, mySecretKey)
+  const encrpyedGist = nacl.box(contentUTF8, nonce, theirPublic,secretKey)
+  const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encrpyedGist)
+  const files = { [name]: {content: blob}}
+  console.log(files)
+  github.gists.create({ files, public: true })
+    .then(response => {
+      console.log(response.data.id)
+      
+      res.json(myPublic + response.data.id);
+    })
+    .catch(err => {
+      res.json(err);
+    })
+  
+
 });
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
