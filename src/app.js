@@ -8,7 +8,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = process.env.GITHUB_USERNAME; // TODO: Replace with your username
+const username = 'ilhokim'; // TODO: Replace with your username
 // The object you'll be interfacing with to communicate with github
 const github = octokit({ debug: true });
 const server = express();
@@ -24,10 +24,6 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-// 1. Try to read the config.json file
-// 2. If the config.json exists and the key is in there, initialize `secretKey` variable to be the value in the file
-// 3. If we fail to read the config.json, generate a new random secretKey
-
 let secretKey;  // Our secret key as a Uint8Array
 
 try {
@@ -104,7 +100,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  const keypair = nacl.box.keyPair();
+  const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
 
   // Sean
   // const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
@@ -138,7 +134,6 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
-  github.gists.getForuser({ username })
 
   // Sean
   // 1. Encode our secretKey back to base64
@@ -169,6 +164,22 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.query.id;
+
+  github.gists.get({ id })
+    .then(data => {
+      console.log(data);
+      res.send({ data });
+    })
+    .catch(err => {
+      console.log(err);
+      res.send({ err });
+    });
+
+  // try{
+
+  //   secretKey = 
+  // }
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
