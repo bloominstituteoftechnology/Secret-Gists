@@ -109,6 +109,18 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  const keypair = nacl.box.keyPair();
+
+  res.send(`
+    <html>
+      <header><title>Secret Key</title></header>
+      <body>
+        <h1>Secret Key</h1>
+        <br/>
+        <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
+      </body>
+    </html>
+  `);
 });
 
 server.get('/setkey:keyString', (req, res) => {
