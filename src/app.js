@@ -22,7 +22,21 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-let secretKey = nacl.randomBytes(32);
+let secretKey;
+try {
+  const data = fs.readFileSync('./config.json');
+  const keyObject = JSON.parse(data);
+  secretKey = nacl.util.decodeBase64(keyObject.secretKey);
+} catch (err) {
+  secretKey = nacl.randomBytes(32);
+  const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+  fs.writeFile('./config.json', JSON.stringify(keyObject), (error) => {
+    if (error) {
+      console.log('Error writing secret key to config file: ', err.message);
+      return;
+    }
+  });
+}
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -40,7 +54,7 @@ server.get('/', (req, res) => {
         </ul>
         <h3>Set your secret key to a specific key</h3>
         <form action="/setkey:keyString" method="get">
-          Key String: <input type="text" name="keyString"><br>
+          Key String: <input type="text" name="keyString" minlength="32" maxlength="32" size="32"><br>
           <input type="submit" value="Submit">
         </form>
         <h3>Create an *unencrypted* gist</h3>
@@ -80,6 +94,7 @@ server.get('/', (req, res) => {
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
   const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
+  // console.log(keypair.publicKey);
 
   // Display both keys as strings
   res.send(`
@@ -110,19 +125,19 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
-  res.send(`
-    <html>
-      <header><title>Secret Key</title></header>
-      <body>
-        <h1>Secret key</h1>
-        <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
-        <br/>
-        <div>Secret Key: ${nacl.util.encodeBase64(secretKey)}</div>
-      </body>
-    </html>
-  `);
-  // const privateKeyString = nacl.util.encodeBase64(secretKey);
-  // res.status(200).json({ secretKey: privateKeyString });
+  // res.send(`
+  //   <html>
+  //     <header><title>Secret Key</title></header>
+  //     <body>
+  //       <h1>Secret key</h1>
+  //       <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
+  //       <br/>
+  //       <div>Secret Key: ${nacl.util.encodeBase64(secretKey)}</div>
+  //     </body>
+  //   </html>
+  // `);
+  const privateKeyString = nacl.util.encodeBase64(secretKey);
+  res.status(200).json({ secretKey: privateKeyString });
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -130,11 +145,19 @@ server.get('/setkey:keyString', (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO:
-    secretKey = nacl.util.encodeBase64(keyString);
-    res.status(200).json({ newsecretKey: secretKey });
+    // Set our secretKey var to be whatever the user passed in
+    secretKey = nacl.util.decodeUTF8(keyString);
+    const keyObject = { secretKey: keyString };
+    fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+      if (ferr) {
+        console.log('Error writing secret key to config file: ', ferr.message);
+        return;
+      }
+    });
+    res.send(`<div>Key set to new value: ${keyString}</div>`);
   } catch (err) {
     // failed
-    res.send('Failed to set key.  Key string appears invalid.');
+    res.send('Failed to set key. Key string appears invalid.');
   }
 });
 
