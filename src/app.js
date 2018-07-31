@@ -9,7 +9,7 @@ const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
 
-const username = 'Sam-Park'; // TODO: Replace with your username
+const username = process.env.GITHUB_USERNAME; // TODO: Replace with your username
 // The object you'll be interfacing with to communicate with github
 const github = octokit({ debug: true });
 const server = express();
@@ -174,6 +174,25 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.query.id;
+
+  github.gists.get({ id }).then((response) => {
+    const fetchedGist = response.data.files;
+
+    const file = Object.keys(fetchedGist.files)[0];
+    const blob = fetchedGist.files[file].content;
+
+    let [nonce, cipherText] = blob.split(' ');
+
+    cipherText = nacl.util.decodeBase64(cipherText);
+    nonce = nacl.util.decodeBase64(nonce);
+
+    const decodedText = nacl.secretbox.open(cipherText, nonce, secretKey);
+    res.send(nacl.util.encodeUTF8(decodedText));
+  })
+  .catch((err) => {
+    res.json(err);
+  });
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -195,22 +214,22 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // Read the name and content of URL params
   const { name, content } = req.body;
   // init nonce
-  const nonce = nacl.randomBytes(24)
+  const nonce = nacl.randomBytes(24);
   // decode UTF8  content then encrypt it
-  const cypherText = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+  const cipherText = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
   // nonce needs to persist
   // add nonce to encrypted content
-  const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(cypherText);
+  const blob = `${nacl.util.encodeBase64(nonce)} + ' ' + ${nacl.util.encodeBase64(cipherText)}`;
   // format the blob and name in github api format
-  const file = { [name]: { content: blob } }
+  const file = { [name]: { content: blob } };
   // send post req to github api
   github.gists.create({ files: file, public: false })
     .then((response) => {
-      res.json(response.data)
+      res.json(response.data);
     })
     .catch((err) => {
-      res.json(err)
-    })
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
@@ -243,3 +262,4 @@ server.post('/login', (req, res) => {
 */
 
 server.listen(3000);
+console.log('Server listening on port: 3000');
