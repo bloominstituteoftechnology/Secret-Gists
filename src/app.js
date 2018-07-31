@@ -22,20 +22,21 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-// let keypair = { secretKey: 'WIqG9RRfNP0+jMF7xwyZfQLCKWnR+ZIYKpbSEmkMeFQ=' };
-// keypair.secretKey = nacl.util.encodeBase64(keypair.secretKey);
-const secretKey = nacl.randomBytes(32);
-// const keypair = nacl.util.encodeBase64(secretKey);
+let keypair = {};
 
-// try {
-//   keypair = fs.readFileSync('./config.json');
-// } catch (err) {
-//   let secretKey = nacl.randomBytes(32);
-//   secretKey = nacl.util.encodeBase64(secretKey);
-//   keypair = { secretKey };
-//   keypair = JSON.stringify(keypair);
-//   fs.writeFileSync('./config.json', keypair);
-// }
+try {
+  console.log('try has run');
+  keypair = fs.readFileSync('./config.json');
+  keypair.secretKey = nacl.util.decodeBase64(keypair.secretKey);
+  console.log('try has completed');
+} catch (err) {
+  const secretKey = nacl.randomBytes(32);
+  keypair = { secretKey };
+  console.log(keypair);
+  keypair.secretKey = nacl.util.encodeBase64(keypair.secretKey);
+  fs.writeFileSync('./config.json', JSON.stringify(keypair));
+  keypair.secretKey = nacl.util.decodeBase64(keypair.secretKey);
+}
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -92,10 +93,7 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  // console.log(keypair.secretKey);
-  // keypair.secretKey = nacl.util.decodeBase64(keypair.secretKey);
-  // keypair = nacl.box.keyPair.fromSecretKey(keypair.secretKey);
-  const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
+  keypair = nacl.box.keyPair.fromSecretKey(keypair.secretKey);
   // Display both keys as strings
   res.send(`
     <html>
@@ -124,7 +122,6 @@ server.get('/gists', (req, res) => {
 });
 
 server.get('/key', (req, res) => {
-  res.json({ nSecretKey: nacl.util.encodeBase64(secretKey) });
   // TODO: Display the secret key used for encryption of secret gists
 });
 
