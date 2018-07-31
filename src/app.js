@@ -8,7 +8,7 @@ const octokit = require( '@octokit/rest' );
 const nacl = require( 'tweetnacl' );
 nacl.util = require( 'tweetnacl-util' );
 
-const username = April7229; // TODO: Replace with your username
+const username = process.env.GITHUB_USERNAME; // TODO: Replace with your username
 // The object you'll be interfacing with to communicate with github
 const github = octokit( { debug: true } );
 const server = express();
@@ -70,49 +70,36 @@ server.get( '/', ( req, res ) =>
         </ul>
         <h3>Set your secret key to a specific key</h3>
         <form action="/setkey:keyString" method="get">
-          Key String: <input type="text" name="keyString">
-
+          Key String: <input type="text" name="keyString"><br>
           <input type="submit" value="Submit">
         </form>
         <h3>Create an *unencrypted* gist</h3>
         <form action="/create" method="post">
-          Name: <input type="text" name="name">
-
-          Content:
-<textarea name="content" cols="80" rows="10"></textarea>
-
+          Name: <input type="text" name="name"><br>
+          Content:<br><textarea name="content" cols="80" rows="10"></textarea><br>
           <input type="submit" value="Submit">
         </form>
         <h3>Create an *encrypted* gist for yourself</h3>
         <form action="/createsecret" method="post">
-          Name: <input type="text" name="name">
-
-          Content:
-<textarea name="content" cols="80" rows="10"></textarea>
-
+          Name: <input type="text" name="name"><br>
+          Content:<br><textarea name="content" cols="80" rows="10"></textarea><br>
           <input type="submit" value="Submit">
         </form>
         <h3>Retrieve an *encrypted* gist you posted for yourself</h3>
         <form action="/fetchmessagefromself:id" method="get">
-          Gist ID: <input type="text" name="id">
-
+          Gist ID: <input type="text" name="id"><br>
           <input type="submit" value="Submit">
         </form>
         <h3>Create an *encrypted* gist for a friend to decode</h3>
         <form action="/postmessageforfriend" method="post">
-          Name: <input type="text" name="name">
-
-          Friend's Public Key String: <input type="text" name="publicKeyString">
-
-          Content:
-<textarea name="content" cols="80" rows="10"></textarea>
-
+          Name: <input type="text" name="name"><br>
+          Friend's Public Key String: <input type="text" name="publicKeyString"><br>
+          Content:<br><textarea name="content" cols="80" rows="10"></textarea><br>
           <input type="submit" value="Submit">
         </form>
         <h3>Retrieve an *encrypted* gist a friend has posted</h3>
         <form action="/fetchmessagefromfriend:messageString" method="get">
-          String From Friend: <input type="text" name="messageString">
-
+          String From Friend: <input type="text" name="messageString"><br>
           <input type="submit" value="Submit">
         </form>
       </body>
