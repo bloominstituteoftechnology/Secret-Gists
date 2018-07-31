@@ -127,6 +127,15 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  // console.log(req.query.id)
+  const { id } = req.query;
+  github.gists.get({ id })
+    .then((response) => {
+      res.send(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -145,19 +154,19 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
-  let { name, content } = req.body;
+  let { content } = req.body;
+  const { name } = req.body;
 
   // E N C R Y P T I O N
   const nonce = nacl.randomBytes(24);
-  const encryptedContent = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey) // Returns an encrypted and authenticated message
-  const encryptedNonceAndContent = nacl.util.encodeBase64(encryptedContent) + ' nonce: ' + nacl.util.encodeBase64(nonce)
-  content = encryptedNonceAndContent
-  
-  const files = { [name]: { content } };
+  const encryptedContent = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey); // Returns an encrypted and authenticated message
+  const encryptedNonceAndContent = nacl.util.encodeBase64(encryptedContent) + nacl.util.encodeBase64(nonce);
+  content = encryptedNonceAndContent;
 
+  const files = { [name]: { content } };
   github.gists.create({ files, public: false })
     .then((response) => {
-      res.json(response.data)
+      res.json(response.data);
     })
     .catch((err) => {
       res.json(err);
