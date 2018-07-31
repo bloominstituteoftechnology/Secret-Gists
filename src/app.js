@@ -138,8 +138,48 @@ server.get('/setkey:keyString', (req, res) => {
   }
 });
 
-server.get('/fetchmessagefromself:id', (req, res) => {
+server.get('/fetchmessagefromself:id', readOnlyKeypair, (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const keypair = req.keypair;
+
+  if (keypair) {
+    const gistId = req.query.id;
+
+    github.gists
+      .get({ id: gistId })
+      .then((response) => {
+        const { filename, content } = Object.entries(response.data.files)[0][1];
+        const decodedContent = nacl.util.decodeBase64(content); // Uint8Array
+        const nonce = decodedContent.slice(0, nacl.box.nonceLength);
+        const box = decodedContent.slice(nacl.box.nonceLength);
+        const decryptedGist = nacl.util.encodeUTF8(
+          nacl.box.open(box, nonce, keypair.publicKey, keypair.secretKey)
+        );
+
+        res.status(200).send(`
+          <html>
+            <header><title>${filename}</title></header>
+            <body>
+              <h1>${filename}</h1>
+              <div>${decryptedGist}</div>
+            </body>
+          </html>
+        `);
+      })
+      .catch((err) => {
+        res.status(500).json(err);
+      });
+  } else {
+    res.status(401).send(`
+      <html>
+        <header><title>401: Unauthorized</title></header>
+        <body>
+          <h1>401: Unauthorized</h1>
+          <div>This action requires user authentication. <i><a href="/keyPairGen">Generate a keypair.</a></i></div>
+        </body>
+      </html>
+    `);
+  }
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -163,16 +203,20 @@ server.post('/createsecret', urlencodedParser, readOnlyKeypair, (req, res) => {
   if (keypair) {
     const { name, content } = req.body;
     const nonce = nacl.randomBytes(nacl.box.nonceLength); // Uint8Array
-    const gistContent = nacl.util.encodeBase64(nonce) + content; // String
-    const encryptedGist = nacl.util.encodeBase64(
-      nacl.box(
-        nacl.util.decodeUTF8(gistContent),
-        nonce,
-        keypair.publicKey,
-        keypair.secretKey
-      )
-    ); // String
-    const files = { [name]: { content: encryptedGist } };
+    const gistContent = nacl.util.decodeUTF8(content); // Uint8Array
+    const encryptedGist = nacl.box(
+      gistContent,
+      nonce,
+      keypair.publicKey,
+      keypair.secretKey
+    ); // Uint8Array
+    const encodedNonceGist = new Uint8Array(
+      `${nonce.join(',')},${encryptedGist.join(',')}`.split(',')
+    ); // Uint8Array
+    const files = {
+      [name]: { content: nacl.util.encodeBase64(encodedNonceGist) }
+    };
+
     github.gists
       .create({ files, public: false })
       .then((response) => {
