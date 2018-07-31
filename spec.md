@@ -12,7 +12,7 @@ Generate the public key from the secret key, and display both.
 
 **Status**
 
-Incomplete
+COMPLETE
 
 # GET/Gists
 
@@ -32,7 +32,7 @@ Return a base64 string of the user's secretKey
 
 **Status**
 
-Incomplete
+COMPLETE
 
 # Set Key
 
@@ -42,7 +42,7 @@ Set the user's secret key to the string they enter.
 
 **Status**
 
-Incomplete
+COMPLETE
 
 # Create an unencrypted gist
 
@@ -51,6 +51,7 @@ Incomplete
 Create a public gist in the hardcoded user's github account.
 
 **Status**
+COMPLETE
 
 AFTER username is hardcoded in app.js AND a valid Github token is properly saved in .env - Functions as expected.  Upon success, a large json object is returned from github and displayed to the user.  This can be investigated for clues, such as how to find the ids of gists.
 
@@ -64,7 +65,7 @@ The nonce + encrypted string should be saved.
 
 **Status**
 
-Incomplete
+COMPLETE
 
 # Retrieve an encrypted gist for yourself
 
