@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -26,10 +27,10 @@ let secretKey; // the linter made me do this
 try {
   const data = fs.readFileSync('./config.json'); // get the info
   const temp = JSON.parse(data); // jsonify it
-  secretKey = nacl.util.decodeBase64(temp.SECRET_KEY);
+  secretKey = nacl.util.decodeBase64(temp.secretKey);
 } catch (err) {
   secretKey = nacl.randomBytes(32);
-  const temp = { SECRET_KEY: nacl.util.encodeBase64(secretKey) };
+  const temp = { secretKey: nacl.util.encodeBase64(secretKey) };
   fs.writeFileSync('./config.json', JSON.stringify(temp));
 }
 
@@ -141,12 +142,12 @@ server.get('/fetchmessagefromself:id', (req, res) => {
       const filename = Object.keys(gist.files)[0];
       const blob = gist.files[filename].content;
       let [nonce, ciphertext] = blob.split(' ');
-
       nonce = nacl.util.decodeBase64(nonce);
       ciphertext = nacl.util.decodeBase64(ciphertext);
-
+      console.log('nonce', nonce);
+      console.log('ciphertext', ciphertext);
       const plaintext = nacl.secretbox.open(ciphertext, nonce, secretKey);
-
+      console.log('plaintext', plaintext);
       res.send(nacl.util.encodeUTF8(plaintext));
     })
     .catch((err) => {
