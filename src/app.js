@@ -174,16 +174,22 @@ server.get('/setkey:keyString', (req, res) => {
 });
 
 server.get('/fetchmessagefromself:id', (req, res) => {
-  // const { id } = req.query
-  // github.gists.get({ gist_id: id })
-  //   .then((response) => {
-  //     let { name, content } = response.data
-  //     content = nacl.util.decodeBase64(content)
+  const { id } = req.query
+  github.gists.get({ id })
+    .then((response) => {
+      const gist = Object.values(response.data.files)[0].content;
+      let nonce = gist.slice(0, 32);
+      let ciphertext = gist.slice(32, gist.length);
+      nonce = nacl.util.decodeBase64(nonce);
+      ciphertext = nacl.util.decodeBase64(ciphertext);
+      key = nacl.util.decodeBase64(process.env.SECRET_KEY)
+      let decodedMessage = nacl.secretbox.open(ciphertext, nonce, key);
+      res.send(nacl.util.encodeUTF8(decodedMessage));
 
-  //   })
-  //   .catch((error) => {
-  //     res.json(error)
-  //   })
+    })
+    .catch((error) => {
+      res.json(error)
+    })
   // Work in progress!
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
 });
