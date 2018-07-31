@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 
-require('dotenv').config();
+// require('dotenv').config(); This didn't work for me, so I just used bash
 const fs = require('fs');
 const bodyParser = require('body-parser');
 const express = require('express');
@@ -8,7 +8,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'wajnurfes'; // TODO: Replace with your username
 // The object you'll be interfacing with to communicate with github
 const github = octokit({ debug: true });
 const server = express();
@@ -18,12 +18,23 @@ const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
+
 github.authenticate({
   type: 'oauth',
   token: process.env.GITHUB_TOKEN
 });
 
+let config
+
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+try {
+  config = JSON.parse(require('./config.json'));
+}
+catch (err) {
+  config = { "secret_key": nacl.randomBytes(32) }
+  fs.writeFile('config.json', JSON.stringify(config), 'utf8', () => { });
+}
+
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -80,6 +91,9 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
+  keypair = nacl.box.keyPair.fromSecretKey(config.secret_key)
+
+
 
   // Display both keys as strings
   res.send(`
@@ -109,14 +123,18 @@ server.get('/gists', (req, res) => {
 });
 
 server.get('/key', (req, res) => {
-  // TODO: Display the secret key used for encryption of secret gists
+  const key = nacl.util.encodeBase64(config.secret_key)
+  res.json({ key })
 });
 
 server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
   const keyString = req.query.keyString;
+
   try {
-    // TODO:
+    config.secret_key = nacl.util.decodeBase64(keyString)
+    fs.writeFile('config.json', JSON.stringify(config), 'utf8', () => { });
+    res.send('Key set!');
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
@@ -143,6 +161,20 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content } = req.body;
+  const uncoded = nacl.util.decodeUTF8(content);
+  const nonce = nacl.randomBytes(24);
+  const coded = nonce + nacl.secretbox(uncoded, nonce, config.secret_key);
+  const files = { [name]: { "content": nacl.util.encodeBase64(coded) } };
+
+
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
