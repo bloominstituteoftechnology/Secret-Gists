@@ -24,7 +24,7 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-const keypair = {};
+//const keypair = {};
 
 let secretKey = nacl.randomBytes(32);
 
@@ -85,7 +85,8 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  let keypair
+  let keypair = nacl.box.keyPair.fromSecretKey(secretKey)
+  
   // Display both keys as strings
   res.send(`
     <html>
@@ -132,6 +133,7 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -156,8 +158,7 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   const nonce = nacl.randomBytes(24);
   const encryptedMessage = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey)
   content = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encryptedMessage)
-  
-  // console.log('this is encrypted message: ', noncePlusEncryptedMessage)
+
   let files = { [name]: { content } };
 
   github.gists.create({ files, public: false })
