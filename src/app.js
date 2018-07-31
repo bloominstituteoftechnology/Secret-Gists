@@ -138,6 +138,17 @@ server.get('/setkey:keyString', (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO:
+    secretKey = nacl.util.decodeUTF8(keyString);
+    const keyObject = {
+      secretKey: keyString
+    };
+    fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+      if (ferr) {
+        console.log('Error writing secret key to config file: ', ferr.message);
+        return;
+      }
+    });
+    res.send(`<div>Key set to new value: ${keyString}</div>`);
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
