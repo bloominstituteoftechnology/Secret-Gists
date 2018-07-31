@@ -1,52 +1,19 @@
 require('dotenv').config();
 
-const fs = require('fs');
-const path = require('path');
+const server = require('express')();
 const bodyParser = require('body-parser');
-const express = require('express');
+const middleware = require('./middleware');
 const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
 const username = 'd-vail';
 const github = octokit({ debug: true });
-const server = express();
-
-// Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
-// Generate an access token: https://github.com/settings/tokens
-// Set it to be able to create gists
 github.authenticate({
   type: 'oauth',
   token: process.env.GITHUB_TOKEN
-});
-
-const configPath = path.join(__dirname, './config.json');
-let keypair = {};
-fs.readFile(configPath, 'utf8', (readErr, contents) => {
-  if (readErr) {
-    // TODO: Break out into a function
-    const generatedKeys = nacl.box.keyPair();
-    keypair = {
-      publicKey: generatedKeys.publicKey,
-      secretKey: generatedKeys.secretKey
-    };
-    fs.writeFile(
-      configPath,
-      JSON.stringify({ secretKey: nacl.util.encodeBase64(keypair.secretKey) }),
-      'utf8',
-      (writeErr) => {
-        if (writeErr) throw writeErr;
-        console.log('A new config.json file has been generated');
-      }
-    );
-  } else {
-    // TODO: If a secret key is not found, generate one and save
-    const encodedSecretKey = JSON.parse(contents);
-    const decodedSecretKey = nacl.util.decodeBase64(encodedSecretKey.secretKey);
-    keypair = nacl.box.keyPair.fromSecretKey(decodedSecretKey);
-  }
 });
 
 server.get('/', (req, res) => {
@@ -102,10 +69,9 @@ server.get('/', (req, res) => {
   `);
 });
 
-server.get('/keyPairGen', (req, res) => {
-  // TODO:  Generate a keypair from the secretKey and display both
-
+server.get('/keyPairGen', middleware.getKeypair, (req, res) => {
   // Display both keys as strings
+  const keypair = req.keypair;
   res.send(`
     <html>
       <header><title>Keypair</title></header>
