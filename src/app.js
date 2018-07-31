@@ -22,6 +22,30 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+// 1. Try to read the config.json file.
+// 2. If the config.json file exists and the key is in there, initialize 'secreyKey' variable to be the value in the file.
+// 3. If we fail to read the config.json, generate a new random secretKey
+
+let secretKey; // Our secret key as a Uint8Array
+
+try {
+  // Try to read the config file
+  const data = fs.readFileSync('./config.json');
+  // Parse the data that we read from the json file
+  const keyObject = JSON.parse(data);
+  secretKey = nacl.util.decodedBase64(keyObject.secretKey);
+} catch (err) {
+  secretKey = nacl.randomBytes(32);
+  // Create the keyObject, encoding the secretKey as a string
+  const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+  // Write this object to config.json
+  fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+    if (ferr) {
+      console.log('Error writing secret key to config file: ', ferr.message);
+      return;
+    }
+  });
+}
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -78,7 +102,8 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  const keypair = nacl.box.keyPair();
+  // const keypair = nacl.box.keyPair();
+  const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
 
   // Display both keys as strings
   res.send(`
@@ -109,18 +134,9 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
-  const keypair = nacl.box.keyPair();
-
-  res.send(`
-    <html>
-      <header><title>Secret Key</title></header>
-      <body>
-        <h1>Secret Key</h1>
-        <br/>
-        <div>Secret Key: ${nacl.util.encodeBase64(keypair.secretKey)}</div>
-      </body>
-    </html>
-  `);
+  // 1. Encode our secretKey back to base 64
+  // 2. Send it as our response
+  res.send(nacl.util.encodeBase64(secretKey));
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -128,6 +144,16 @@ server.get('/setkey:keyString', (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO:
+    // Set our secretKey var to be whatever the user passed in
+    secretKey = nacl.util.decodeUTF8(keyString);
+    const keyObject = { secretKey: keyString };
+    fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+      if (ferr) {
+        console.log('Error writing secret key to config file: ', ferr.message);
+        return;
+      }
+    });
+    res.send(`<div>Key set to new value: ${keyString}</div>`);
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
@@ -154,6 +180,25 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  // Read the name and content off the url params
+  const { name, content } = req.body;
+  // Initialize a nonce
+  const nonce = nacl.randomBytes(24);
+  // Decode the UTF8 content and then encrypt it
+  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+  // Somehow the nonce needs to be persisted until we're looking to decrypt this 
+  // Append (or prepend) the nonce to our encrypted content
+  const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(ciphertext);
+  // Format the blob and name in the format that the GitHub API expects
+  const file = { [name]: { content: blob } };
+  // Send the post request to the GitHub API
+  github.gists.create({ files: file, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
