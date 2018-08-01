@@ -16,5 +16,9 @@
   },
   "scripts": {
     "start": "eslint src/*.js && node src/app.js"
-  }
+  },
+  "main": "index.js",
+  "repository": "https://github.com/Hopperb/Secret-Gists.git",
+  "author": "Brandon Hopper <brandonhopper0@gmail.com>",
+  "license": "MIT"
 }
