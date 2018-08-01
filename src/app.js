@@ -1,5 +1,3 @@
-/* eslint-disable no-console */
-
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -164,20 +162,35 @@ server.get('/key', (req, res) => {
 server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
   const keyString = req.query.keyString;
-  if (keyString.length < 64) {
-    res.send(`<div>() => alert${keyString} not appropriate length</div>`);
-  }
   try {
     // TODO:
+    // ** make it so we sanitize the input/ adjust the input to conform***
+    secretKey = nacl.util.decodeBase64(keyString);
+    res.send(`<div> Key set to new value: ${keyString} </div>`);
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
   }
 });
 
+// ******** */
 server.get('/fetchmessagefromself:id', (req, res) => {
-  // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  // Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.query.id;
+  github.gists.get({ id }).then((response) => {
+    const gist = response.data;
+    // Assuming gist has only 1 file and/or we only care about that file
+    const filename = Object.keys(gist.files)[0];
+    const blob = gist.files[filename].content;
+    // Assume nonce is first 24 bytes of blob, split and decrypt remainder
+    // N.B. 24 byte nonce == 32 characters encoded in Base64
+    const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
+    const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
+    const plaintext = nacl.secretbox.open(ciphertext, nonce, secretKey);
+    res.send(nacl.util.encodeUTF8(plaintext));
+  });
 });
+// ****** */
 
 server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
