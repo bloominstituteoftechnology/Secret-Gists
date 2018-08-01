@@ -75,7 +75,7 @@ Retrieve the secret gist with the given ID, decrypt, and display.
 
 **Status**
 
-Incomplete
+COMPLETE
 
 # Create an encrypted gist for a friend to decode
 

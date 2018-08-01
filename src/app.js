@@ -3,6 +3,9 @@
 /* eslint-disable no-else-return */
 /* eslint-disable quotes */
 /* eslint-disable dot-notaton */
+/* eslint-disable no-constant-condition */
+/* eslint-disable no-lonely-if */
+/* eslint-disable camelcase */
 
 require('dotenv').config();
 const fs = require('fs');
@@ -12,7 +15,6 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'ckopecky'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 const MY_SECRET = process.env.MY_SECRET || process.env.MY_RANDOM_SECRET;
@@ -58,6 +60,10 @@ const secretKeyGetter = () => {
     })
     );
   }
+};
+
+const validatePW = (password) => {
+  return (password === process.env.GITHUB_PASSWORD ? true : console.log("password not correct"));
 };
 
 server.get('/', (req, res) => {
@@ -137,6 +143,7 @@ server.get('/keyPairGen', (req, res) => {
 
 server.get('/gists', (req, res) => {
   // Retrieve a list of all gists for the currently authed user
+  const username = process.env.GITHUB_USERNAME;
   github.gists.getForUser({ username })
     .then((response) => {
       res.json(response.data);
@@ -249,18 +256,93 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
+  const keypair = nacl.box.keyPair.fromSecretKey(MY_SECRET);
+  const { name, publicKeyString, content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const ciphertext = nacl.box(nacl.util.decodeUTF8(content), nonce,
+    nacl.util.decodeBase64(publicKeyString), nacl.util.decodeBase64(MY_SECRET));
+  // To save, we need to keep both encrypted content and nonce
+  const resContent = nacl.util.encodeBase64(nonce) +
+        nacl.util.encodeBase64(ciphertext);
+  const files = { [name]: { content: resContent } };
+  github.gists.create({ files, public: true })
+    .then((response) => {
+      // Display a string that is the messager's public key + encrypted message blob
+      // to share with the friend.
+      const messageString = nacl.util.encodeBase64(keypair.publicKey) + response.data.id;
+      res.send(`
+        <html>
+          <header><title>Message Saved</title></header>
+          <body>
+            <div>
+            <h1>Message Saved!</h1>
+            <div>Give this string to your friend for decoding:</div>
+            <div>${messageString}</div>
+            </div>
+          </body>
+        </html>
+      `);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const messageString = req.query.messageString;
+  const friendPublicString = messageString.slice(0, 44);
+  const id = messageString.slice(44, messageString.length);
+
+  github.gists.get({ id }).then((response) => {
+    const gist = response.data;
+    const resFile = Object.keys(gist.files)[0];
+    const resContent = gist.files[resFile].content;
+    const nonce = nacl.util.decodeBase64(resContent.slice(0, 32));
+    const ciphertext = nacl.util.decodeBase64(resContent.slice(32, resContent.length));
+    const plaintext = nacl.box.open(ciphertext, nonce,
+      nacl.util.decodeBase64(friendPublicString),
+      nacl.util.decodeBase64(MY_SECRET)
+    );
+    res.send(nacl.util.encodeUTF8(plaintext));
+  });
 });
 
+
 /* OPTIONAL - if you want to extend functionality */
-server.post('/login', (req, res) => {
+server.post('/login', (req, res) => { //pretty sure this doesn't work. thought I would try anyway. 
+  console.log(req.body);
   // TODO log in to GitHub, return success/failure response
   // This will replace hardcoded username from above
-  // const { username, oauth_token } = req.body;
-  res.json({ success: false });
+  const { username, password } = req.body;
+  if (!username || !password) {
+    res.status(400).json({ message: "login/username and password are required to login" });
+  } else {
+    ({ username })
+      .then((user) => {
+        if (user) {
+          user
+            .validatePW(password)
+            .then((passwordsMatch) => {
+              if (passwordsMatch) {
+                github.authorization.create({ note: "personal access token" })
+                .then((result) => {
+                  res.status(200).json(`Welcome ${username}. Have a secret. ${MY_SECRET}`);
+                })
+                .catch((err) => {
+                  res.status(500).json(err.message);
+                });
+              }
+            })
+            .catch((err) => {
+              res.status(500).json(err.message);
+            });
+        }
+      })
+      .catch((err) => {
+        res.status(500).json(err.message);
+      });
+  }
 });
 
 /*
