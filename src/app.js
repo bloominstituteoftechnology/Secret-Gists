@@ -121,7 +121,7 @@ server.get('/', (req, res) => {
 });
 
 server.get('/keyPairGen', (req, res) => {
-  const keypair = (nacl.box.keyPair());
+  const keypair = (nacl.box.keyPair.fromSecretKey(nacl.util.decodeBase64(MY_SECRET)));
   console.log(
     "keypair", { public: nacl.util.encodeBase64(keypair.publicKey),
       private: nacl.util.encodeBase64(keypair.secretKey) });
@@ -307,10 +307,8 @@ server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res)
     res.send(nacl.util.encodeUTF8(plaintext));
   });
 });
-
-
 /* OPTIONAL - if you want to extend functionality */
-server.post('/login', (req, res) => { //pretty sure this doesn't work. thought I would try anyway. 
+server.post('/login', (req, res) => { // pretty sure this doesn't work. thought I would try anyway.
   console.log(req.body);
   // TODO log in to GitHub, return success/failure response
   // This will replace hardcoded username from above
