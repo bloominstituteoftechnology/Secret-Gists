@@ -200,19 +200,51 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // NOTE - we're only encrypting the content, not the filename
   const { name, content, publicKeyString } = req.body;
   const nonce = nacl.randomBytes24;
-  const ciphertext = nacl.box(nacl.util.decodeUTF8(content), nonce, nacl.util.decode64(publicKeyString), secretKey);
-  const blob = nacl.util.encode64(nonce) + nacl.util.encode64(ciphertext);
+  const ciphertext = nacl.box(nacl.util.decodeUTF8(content), nonce, nacl.util.decodeBase64(publicKeyString), secretKey);
+  const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(ciphertext);
   const files = { [name]: { content: blob } };
-  github.gists.create({ files, public: false })
+  github.gists.create({ files, public: true })
     .then((response) => {
-      res.json(response.data)
+// pretty much everything after this point came from the solution lecture
+// I just wanted to try it out myself
+      const messageString = nacl.util.encodeBase64(publicKeyString) + response.data.id;
+      res.send(`
+        <html>
+          <header><title>Message Saved</title></header>
+          <body>
+            <h1>Message Saved</h1>
+            <div>Give this string to your friend for decryption</div>
+            <div>${messageString}</div>
+          </body>
+        </html>
+      `);
+    })
     .catch((err) => {
       res.json(err);
     });
-    });
 });
+
+// This whole fetchmessagefromfriend came from the solution lecture
+// I just wanted to try it out myself
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const messageString = req.query.messageString;
+  const friendPublicKey = messageString.slice(0, 44);
+  const id = messageString.slice(44);
+
+  github.gists.get({ id })
+    .then((response) => {
+      const gist = response.data;
+      const filename = Object.keys(gist.files)[0];
+      const blob = gist.files[filename].content;
+      const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
+      const ciphertext = nacl.util.decodeBase64(blob.slice(32));
+      const plaintext = nacl.box.open(ciphertext, nonce, nacl.decodeBase64(friendPublicKey), secretKey);
+      res.send(nacl.util.encodeUTF8(plaintext));
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 /* OPTIONAL - if you want to extend functionality */
