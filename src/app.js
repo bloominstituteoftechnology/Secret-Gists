@@ -279,13 +279,28 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
     });
 });
 
-server.get(
-  '/fetchmessagefromfriend:messageString',
-  urlencodedParser,
-  (req, res) => {
-    // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
-  }
-);
+server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
+  // Retrieve and decrypt the secret gist corresponding to the given ID
+  const messageString = req.query.messageString;
+  const friendPublicString = messageString.slice(0, 44);
+  const id = messageString.slice(44, messageString.length);
+
+  github.gists.get({ id }).then((response) => {
+    const gist = response.data;
+    // Assuming gist has only 1 file and/or we only care about that file
+    const filename = Object.keys(gist.files)[0];
+    const blob = gist.files[filename].content;
+    // Assume nonce is first 24 bytes of blob, split and decrypt remainder
+    // N.B. 24 byte nonce == 32 characters encoded in Base64
+    const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
+    const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
+    const plaintext = nacl.box.open(ciphertext, nonce,
+      nacl.util.decodeBase64(friendPublicString),
+      secretKey
+    );
+    res.send(nacl.util.encodeUTF8(plaintext));
+  });
+});
 
 /* OPTIONAL - if you want to extend functionality */
 server.post('/login', (req, res) => {
