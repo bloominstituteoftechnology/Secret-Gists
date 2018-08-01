@@ -6,7 +6,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = process.env.GITHUB_USERNAME; // TODO: Replace with your username
+const username = process.env.GITHUB_USERNAME;
 
 // ***The object you'll be interfacing with to communicate with github***
 const github = octokit({ debug: true });
@@ -26,34 +26,36 @@ github.authenticate({
 // 3. If we fail to read the config.json, generate a new random secretKey
 
 let secretKey; // Our secret key as a Uint8Array
+let publicKey; // Uint8Array
 
 try {
   // try to read the config file
-  const data = fs.readFileSync('./config.json');
-  // parse the data that we read from the json file
+  const data = fs.readFileSync('../config.json'); // data is in json
+  // parse the data that we read from the json file so it's readable base64
   const keyObject = JSON.parse(data);
 
   // console.log('data: ', data);
   // console.log('keyObject: ', keyObject);
 
-  secretKey = nacl.util.decodeBase64(keyObject.secretKey);
+  secretKey = nacl.util.decodeBase64(keyObject.secretKey); // decode base64 to Uint8
+  publicKey = nacl.box.keyPair.fromSecretKey(secretKey).publicKey; // use secret key to make public key
+  // console.log('Public Key: ', publicKey);
 
   // console.log('secretKey: ', secretKey);
   // console.log('random: ', nacl.randomBytes(32));
 } catch (err) {
   secretKey = nacl.randomBytes(32);
+  publicKey = nacl.box.keyPair.fromSecretKey(secretKey).publicKey;
   // Create the keyObject, encoding the secretKey as a string
   const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
   // Write this keyObject to config.json
-  fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+  fs.writeFile('../config.json', JSON.stringify(keyObject), (ferr) => {
     if (ferr) {
       console.log('Error writing secret key to config file: ', ferr.message);
       return;
     }
   });
 }
-
-// console.log(secretKey);
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -164,7 +166,7 @@ server.get('/setkey:keyString', (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO:
-    // ** make it so we sanitize the input/ adjust the input to conform***
+    // ** DONE but make it so we sanitize the input/ adjust the input to conform***
     secretKey = nacl.util.decodeBase64(keyString);
     res.send(`<div> Key set to new value: ${keyString} </div>`);
   } catch (err) {
@@ -173,24 +175,27 @@ server.get('/setkey:keyString', (req, res) => {
   }
 });
 
-// ******** */
 server.get('/fetchmessagefromself:id', (req, res) => {
   // Retrieve and decrypt the secret gist corresponding to the given ID
   const id = req.query.id;
-  github.gists.get({ id }).then((response) => {
-    const gist = response.data;
-    // Assuming gist has only 1 file and/or we only care about that file
-    const filename = Object.keys(gist.files)[0];
-    const blob = gist.files[filename].content;
-    // Assume nonce is first 24 bytes of blob, split and decrypt remainder
-    // N.B. 24 byte nonce == 32 characters encoded in Base64
-    const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
-    const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
-    const plaintext = nacl.secretbox.open(ciphertext, nonce, secretKey);
-    res.send(nacl.util.encodeUTF8(plaintext));
-  });
+  github.gists
+    .get({ id })
+    .then((response) => {
+      const gist = response.data;
+      // Assuming gist has only 1 file and/or we only care about that file
+      const filename = Object.keys(gist.files)[0];
+      const blob = gist.files[filename].content;
+      // Assume nonce is first 24 bytes of blob, split and decrypt remainder
+      // N.B. 24 byte nonce == 32 characters encoded in Base64
+      const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
+      const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
+      const plaintext = nacl.secretbox.open(ciphertext, nonce, secretKey);
+      res.send(nacl.util.encodeUTF8(plaintext));
+    })
+    .catch((err) => {
+      console.log(err);
+    });
 });
-// ****** */
 
 server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
