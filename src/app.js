@@ -30,6 +30,7 @@ github.authenticate({
 //   secretKey: ''
 // };
 let secretKey;
+let publicKey;
 try {
   const data = fs.readFileSync('./config.json');
   const keyObject = JSON.parse(data);
@@ -155,6 +156,21 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.query.id;
+  github.gists.get({ id })
+    .then((response) => {
+      console.log('response: ', response);
+      const gist = response.data;
+      const filename = Object.keys(gist.files)[0];
+      const blob = gist.files[filename].content;
+      const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
+      const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
+      const plaintext = nacl.secretbox.open(ciphertext, nonce, secretKey);
+      res.send(nacl.util.encodeUTF8(plaintext));
+    })
+    .catch((err) => {
+      console.log(err);
+    });
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -193,10 +209,45 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content, publicKeyString } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const ciphertext = nacl.box(nacl.util.decodeUTF8(content), nonce, nacl.util.decodeBase64(publicKeyString), secretKey);
+  const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(ciphertext);
+  const files = { [name]: { content: blob } };
+  github.gists.create({ files, public: true })
+    .then((response) => {
+      const messageString = nacl.util.encodeBase64(publicKey) + response.data.id;
+      res.send(`
+      <html> 
+        <header><title>Message Saved</title></header>
+        <body>
+          <h1>Message Saved</h1>
+          <div> Give this string to your friend for decryypting</div>
+          <div>${messageString}</div>
+        </body>
+      </html>
+      `);
+    });
 });
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const messageString = req.params.messageString;
+  const friendPublicKey = messageString.slice(0, 44);
+  const gistId = messageString.slice(44);
+  github.gists.get({ id: gistId })
+    .then((response) => {
+      const gist = response.data;
+      const filename = Object.keys(gist.files)[0];
+      const blob = gist.files[filename].content;
+      const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
+      const ciphertext = nacl.util.decodeBase64(blob.slice(32));
+      const plaintext = nacl.box.open(ciphertext, nonce, nacl.decodeBase64(friendPublicKey), secretKey);
+      res.send(nacl.util.encodeUTF8(plaintext));
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 /* OPTIONAL - if you want to extend functionality */
