@@ -261,7 +261,7 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
       // Display a string that is the messager's public key + encrypted message blob
       // to share with the friend.
       const messageString =
-        nacl.util.encodeBase64(keypair.publicKey) + response.data.id;
+        nacl.util.encodeBase64(publicKey) + response.data.id;
       res.send(`
         <html>
           <header><title>Message Saved</title></header>
