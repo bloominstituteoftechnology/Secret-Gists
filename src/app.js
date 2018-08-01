@@ -283,7 +283,7 @@ server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res)
   // Retrieve and decrypt the secret gist corresponding to the given ID
   const messageString = req.query.messageString;
   const friendPublicString = messageString.slice(0, 44);
-  const id = messageString.slice(44, messageString.length);
+  const id = messageString.slice(44);
 
   github.gists.get({ id }).then((response) => {
     const gist = response.data;
@@ -293,7 +293,7 @@ server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res)
     // Assume nonce is first 24 bytes of blob, split and decrypt remainder
     // N.B. 24 byte nonce == 32 characters encoded in Base64
     const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
-    const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
+    const ciphertext = nacl.util.decodeBase64(blob.slice(32));
     const plaintext = nacl.box.open(ciphertext, nonce,
       nacl.util.decodeBase64(friendPublicString),
       secretKey
