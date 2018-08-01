@@ -15,6 +15,6 @@
     "tweetnacl-util": "^0.15.0"
   },
   "scripts": {
-    "start": "node src/app.js"
+    "start": "eslint src/*.js && node src/app.js"
   }
 }
