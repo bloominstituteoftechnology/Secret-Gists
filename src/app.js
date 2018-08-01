@@ -2,6 +2,7 @@
 /* eslint-disable no-console */
 /* eslint-disable no-else-return */
 /* eslint-disable quotes */
+/* eslint-disable dot-notaton */
 
 require('dotenv').config();
 const fs = require('fs');
@@ -35,7 +36,7 @@ github.authenticate({
 const secretKeyGetter = () => {
   if (MY_SECRET) {
     const SECRET = nacl.util.encodeBase64(MY_SECRET);
-    return SECRET;
+    console.log(`You already have a secret ${SECRET}`);
   } else {
     const SECRET = nacl.box.keyPair().secretKey;
     const data = fs.readFileSync('./.env');
@@ -187,7 +188,19 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
-  const { id } = req.params;
+  // Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.query.id;
+  github.gists.get({ id }).then((response) => {
+    const gist = response.data;
+    const resFile = Object.keys(gist.files)[0];
+    const resContent = gist.files[resFile].content;
+    const MY_SECRET_OPEN = nacl.util.decodeBase64(MY_SECRET);
+    const nonce = nacl.util.decodeBase64(resContent.slice(0, 32));
+    const ciphertext = nacl.util.decodeBase64(resContent.slice(32, resContent.length));
+    const plaintext = nacl.secretbox.open(ciphertext, nonce, MY_SECRET_OPEN);
+    console.log(plaintext);
+    res.send(nacl.util.encodeUTF8(plaintext));
+  });
 });
 server.post('/create', urlencodedParser, (req, res) => {
   // Create a private gist with name and content given in post request
@@ -212,7 +225,7 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // encrypt the content only
   const decodeContent = nacl.util.decodeUTF8(content);
   console.log('decodeContent', decodeContent);
-  const secretkey = (nacl.box.keyPair().secretKey);
+  const secretkey = nacl.util.decodeBase64(MY_SECRET);
   console.log('secretkey encryptedgist', secretkey);
   const ciphertext = nacl.secretbox(decodeContent, nonce, secretkey);
   // append or prepend nonce to our encrypted content.
