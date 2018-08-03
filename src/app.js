@@ -235,8 +235,11 @@ server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res)
   github.gists.get({ id })
     .then((response) => {
       const gist = response.data;
+      console.log(response.data);
       const filename = Object.keys(gist.files)[0];
+      console.log('filename', filename);
       const blob = gist.files[filename].content;
+      console.log('blob', blob);
       const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
       const ciphertext = nacl.util.decodeBase64(blob.slice(32));
       const plaintext = nacl.box.open(ciphertext, nonce, nacl.decodeBase64(friendPublicKey), secretKey);
