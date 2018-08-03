@@ -35,12 +35,14 @@ try {
   const data = fs.readFileSync('./config.json');
   // Parse the data that we read from the json file
   const keyObject = JSON.parse(data);
-  secretKey = nacl.util.decodedBase64(keyObject.secretKey);
+  // Decode the data from base 64 to utf8
+  secretKey = nacl.util.decodeBase64(keyObject.secretKey);
 } catch (err) {
+  // Generate a secret key since we don't have on saved in the config file
   secretKey = nacl.randomBytes(32);
   // Create the keyObject, encoding the secretKey as a string
   const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
-  // Write this object to config.json
+  // Write the data/ this object to "config.json" file, stringifying the object
   fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
     if (ferr) {
       console.log('Error writing secret key to config file: ', ferr.message);
@@ -104,6 +106,8 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
+  // Display both keys as strings
+  // Grab the keypair given the secret key
   // const keypair = nacl.box.keyPair();
   const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
 
@@ -148,13 +152,13 @@ server.get('/setkey:keyString', (req, res) => {
     // TODO:
     // Set our secretKey var to be whatever the user passed in
     secretKey = nacl.util.decodeUTF8(keyString);
-    const keyObject = { secretKey: keyString };
-    fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
-      if (ferr) {
-        console.log('Error writing secret key to config file: ', ferr.message);
-        return;
-      }
-    });
+    // const keyObject = { secretKey: keyString };
+    // fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+    //   if (ferr) {
+    //     console.log('Error writing secret key to config file: ', ferr.message);
+    //     return;
+    //   }
+    // });
     res.send(`<div>Key set to new value: ${keyString}</div>`);
   } catch (err) {
     // failed
@@ -164,6 +168,19 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.query.id;
+  github.gists.get({ id }).then((response) => {
+    const gist = response.data;
+    // Assuming gist has only 1 file and/or we only care about that file
+    const filename = Object.keys(gist.files)[0];
+    const blob = gist.files[filename].content;
+    // Assume nonce is first 24 bytes of blob, split and decrypt remainder
+    // NB: 24 byte nonce = 32 characters encoded in Base64
+    const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
+    const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
+    const plaintext = nacl.secretbox.open(ciphertext, nonce, secretKey);
+    res.send(nacl.util.encodeUTF8(plaintext));
+  });
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -208,10 +225,57 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
+  const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
+  const { name, publicKeyString, content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const ciphertext = nacl.box.keyPair(nacl.util.decodeUTF8(content), nonce,
+    nacl.util.decodeBase64(publicKeyString), secretKey);
+  // To save, we need to keep both encrypted content and nonce
+  const blob = nacl.util.encodeBase64(nonce) +
+    nacl.util.encodeBase64(ciphertext);
+  const files = { [name]: { content: blob } };
+  github.gists.create({ files, public: true })
+    .then((response) => {
+      // Display a string that is the messenger's public key + encrypted message blob
+      // to share with a friend.
+      const messageString = nacl.util.encodeBase64(keypair.publicKey) + response.data.id;
+      res.send(`
+        <html>
+          <header><title>Message Saved</title></header>
+          <body>
+            <h1>Message Saved</h1>
+            <div>Give this string to your friend for decoding.</div>
+            <div>${messageString}</div>
+            <div>
+          </body>
+        </html>
+      `);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const messageString = req.query.messageString;
+  const friendPublicString = messageString.slice(0, 44);
+  const id = messageString.slice(44, messageString.length);
+
+  github.gists.get({ id }).then((response) => {
+    const gist = response.data;
+    // Assuming gist has only 1 file and/or we only care about that file
+    const filename = Object.keys(gist.files)[0];
+    const blob = gist.files[filename].content;
+    // Assume nonce is first 24 bytes of blob, split and decrypt remainder
+    // NB: 24 byte nonce == 32 chatracters encoded in Base64
+    const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
+    const ciphertext = nacl.box.open(ciphertext, nonce,
+      nacl.util.decodeBase64(friendPublicString),
+      secretKey
+    );
+    res.send(nacl.util.encodeUTF8(plaintext));
+  });
 });
 
 /* OPTIONAL - if you want to extend functionality */
