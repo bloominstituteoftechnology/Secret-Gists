@@ -270,7 +270,8 @@ server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res)
     // Assume nonce is first 24 bytes of blob, split and decrypt remainder
     // NB: 24 byte nonce == 32 chatracters encoded in Base64
     const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
-    const ciphertext = nacl.box.open(ciphertext, nonce,
+    const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
+    const plaintext = nacl.box.open(ciphertext, nonce,
       nacl.util.decodeBase64(friendPublicString),
       secretKey
     );
