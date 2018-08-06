@@ -164,3 +164,29 @@ server.get('/setKey:keyString', (req, res) => {
     res.send('Failed to set key. Key string appears invalid.');
   }
 });
+
+server.get('/fetchmessagefromself:id', (req, res) => {
+  // TODO: Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.query.id;
+  github.gists.get({ id })
+    .then(({ data }) => {
+      console.log(data.files.encrypted.content);
+      res.send({ data });
+    })
+    .catch(err => {
+      console.log(err);
+      res.send({ err });
+    });
+});
+
+server.post('/createsecret', urlencodedParser, (req, res) => {
+  // TODO: Create a private and encrypted gist with given name/content
+  // NOTE - we're only encrypting the content, not the filename
+  // Read the name and content off the url params
+  const { name, content } = req.body;
+  // initialize a nonce
+  const nonce = nacl.randomBytes(24);
+  //decode the UTF8 content and then encrypt it
+  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8())
+})
+
