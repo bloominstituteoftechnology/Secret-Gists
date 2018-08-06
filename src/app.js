@@ -43,11 +43,11 @@ const key = process.env.SECRET_KEY // Our secret key as a Uint8Array
 //   // Create the keyObject, encoding the secretKey as a string
 //   const keyObject = { secretKey: nacl.util.encodeBase64( secretKey ) };
 //   // Write this keyObject to config.json
-//   fs.writeFile( './config.json', JSON.stringify( keyObject ), ( ferr ) =>
+//   fs.writeFile( './config.json', JSON.stringify( keyObject ), ( err ) =>
 //   {
 //     if ( ferr )
 //     {
-//       console.log( 'Error writing secret key to config file: ', ferr.message );
+//       console.log( 'Error writing secret key to config file: ', err.message );
 //       return;
 //     }
 //   } );

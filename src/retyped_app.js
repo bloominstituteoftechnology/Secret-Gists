@@ -26,5 +26,27 @@ github.authenticate( {
 // 3. If we fail to read the config.json, generate a new random secretKey
 
 const key = process.env.SECRET_KEY // OUR SECRET KEY AS A Uint8array
-    ? nacl.util.decodeBased64( process.env.SECRET_KEY )
+    ? nacl.util.decodeBased64( process.env.SECRET_KEY ) //Encodes Uint8Array or Array of bytes into string using Base-64 encoding.
     : nacl.randomBytes( 32 );
+try
+{
+    //try to read the config 
+    const data = fs.readFileSync( './config.json' );
+    //parse the data that we read from the file
+    const keyObject = JSON.parse( data );
+    secertKey = nacl.util.decodeBase64( keyObject.sercretKey );
+} catch ( err )
+{
+    secretKey = nacl.randomBytes( 32 );
+    //create the keyobject, encoding the secretkey as a string 
+    const keyObject = { secretKey: nacl.util.encodeBased64( secretKey ) };
+    //write this keyobject to config.json
+    fs.writeFile( "./config.json", JSON.Stringify( keyObject ), ( err ) =>
+    {
+        if ( err )
+        {
+            console.log( 'Error writing secret key to config file: ', err.message );
+            return;
+        }
+    }); //The JSON.stringify() method converts a JavaScript value to a JSON string
+}
