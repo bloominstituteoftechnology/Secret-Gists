@@ -27,8 +27,29 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-// setting the secret key to 32 bytes
-const secretKey = nacl.randomBytes(32);
+let secretKey;
+
+
+try {
+  //read and parese config.json file
+  const data = fs.readFileSync('./config.json');
+  const keyObject = JSON.parse(data);
+  // decode using secret key
+  secretKey = nacl.util.decodeBase64(keyObject, secretKey);
+} catch (err) {
+  // setting the secret key to 32 bytes
+  secretKey = nacl.randomBytes(32);
+  //assign secret key to keyObject
+  const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+  fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+    // return error message if there's an error writing to the config file
+    if (ferr) {
+      console.log('An error occured writing the secret key to config.json: ', ferr.message);
+      return;
+    }
+  });
+}
+
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
