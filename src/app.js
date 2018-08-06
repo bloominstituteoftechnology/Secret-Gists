@@ -8,9 +8,10 @@ const octokit = require( '@octokit/rest' );
 const nacl = require( 'tweetnacl' );
 nacl.util = require( 'tweetnacl-util' );
 
-const username = April7229; // TODO: Replace with your username
+const username = 'April7229'; // TODO: Replace with your username
 // The object you'll be interfacing with to communicate with github
 const github = octokit( { debug: true } );
+
 const server = express();
 
 // Create application/x-www-form-urlencoded parser
@@ -28,30 +29,30 @@ github.authenticate( {
 // 2. If the config.json exists and the key is in there, initialize `secretKey` variable to be the value in the file
 // 3. If we fail to read the config.json, generate a new random secretKey
 
-let secretKey;  // Our secret key as a Uint8Array
-
-try
-{
-  // try to read the config file
-  const data = fs.readFileSync( './config.json' );
-  // parse the data that we read from the json file
-  const keyObject = JSON.parse( data );
-  secretKey = nacl.util.decodeBase64( keyObject.secretKey );
-} catch ( err )
-{
-  secretKey = nacl.randomBytes( 32 );
-  // Create the keyObject, encoding the secretKey as a string
-  const keyObject = { secretKey: nacl.util.encodeBase64( secretKey ) };
-  // Write this keyObject to config.json
-  fs.writeFile( './config.json', JSON.stringify( keyObject ), ( ferr ) =>
-  {
-    if ( ferr )
-    {
-      console.log( 'Error writing secret key to config file: ', ferr.message );
-      return;
-    }
-  } );
-}
+const key = process.env.SECRET_KEY ?  // Our secret key as a Uint8Array
+  nacl.util.decodeBase64( process.env.SECRET_KEY ) : nacl.randomBytes( 32 );    
+// try
+// {
+//   // try to read the config file
+//   const data = fs.readFileSync( './config.json' );
+//   // parse the data that we read from the json file
+//   const keyObject = JSON.parse( data );
+//   secretKey = nacl.util.decodeBase64( keyObject.secretKey );
+// } catch ( err )
+// {
+//   secretKey = nacl.randomBytes( 32 );
+//   // Create the keyObject, encoding the secretKey as a string
+//   const keyObject = { secretKey: nacl.util.encodeBase64( secretKey ) };
+//   // Write this keyObject to config.json
+//   fs.writeFile( './config.json', JSON.stringify( keyObject ), ( ferr ) =>
+//   {
+//     if ( ferr )
+//     {
+//       console.log( 'Error writing secret key to config file: ', ferr.message );
+//       return;
+//     }
+//   } );
+// }
 
 server.get( '/', ( req, res ) =>
 {
