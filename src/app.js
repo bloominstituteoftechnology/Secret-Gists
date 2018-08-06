@@ -1,7 +1,7 @@
-/* eslint-disable no-console */
+
 
 require( 'dotenv' ).config();
-const fs = require( 'fs' );
+//const fs = require( 'fs' );
 const bodyParser = require( 'body-parser' );
 const express = require( 'express' );
 const octokit = require( '@octokit/rest' );
@@ -175,28 +175,28 @@ server.get( '/secretgist/:id', ( req, res ) =>
 });
     // TODO:
     // Set our secretKey var to be whatever the user passed in
-    secretKey = nacl.util.decodeUTF8( keyString );
-    const keyObject = { secretKey: keyString };
-    fs.writeFile( './config.json', JSON.stringify( keyObject ), ( ferr ) =>
-    {
-      if ( ferr )
-      {
-        console.log( 'Error writing secret key to config file: ', ferr.message );
-        return;
-      }
-    } );
-    res.send( `<div>Key set to new value: ${ keyString }</div>` );
-  } catch ( err )
-  {
-    // failed
-    res.send( 'Failed to set key. Key string appears invalid.' );
-  }
-} );
+//     secretKey = nacl.util.decodeUTF8( keyString );
+//     const keyObject = { secretKey: keyString };
+//     fs.writeFile( './config.json', JSON.stringify( keyObject ), ( ferr ) =>
+//     {
+//       if ( ferr )
+//       {
+//         console.log( 'Error writing secret key to config file: ', ferr.message );
+//         return;
+//       }
+//     } );
+//     res.send( `<div>Key set to new value: ${ keyString }</div>` );
+//   } catch ( err )
+//   {
+//     // failed
+//     res.send( 'Failed to set key. Key string appears invalid.' );
+//   }
+// } );
 
-server.get( '/fetchmessagefromself:id', ( req, res ) =>
-{
-  // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
-} );
+// server.get( '/fetchmessagefromself:id', ( req, res ) =>
+// {
+//   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+// } );
 
 server.post( '/create', urlencodedParser, ( req, res ) =>
 {
@@ -241,37 +241,58 @@ server.post( '/createsecret', urlencodedParser, ( req, res ) =>
     } );
 } );
 
-server.post( '/postmessageforfriend', urlencodedParser, ( req, res ) =>
-{
-  // TODO:  Create a private and encrypted gist with given name/content
-  // using someone else's public key that can be accessed and
-  // viewed only by the person with the matching private key
-  // NOTE - we're only encrypting the content, not the filename
-} );
+// server.post( '/postmessageforfriend', urlencodedParser, ( req, res ) =>
+// {
+//   const { name, content } = req.body;
+//   const nonce = nacl.randomBytes( 24 );
+//   const ciphertext = nacl.secretbox( nacl.util.decodeUTF8( content ), nonce, key );
+//   const blob = nacl.util.encodeBase64( nonce ) +
+//     nacl.util.encodeBase64( ciphertext );
+//   const files = { [ name ]: { content: blob } };
+//   github.gist.create( { files, public: false } )
+//     .then( ( response ) =>
+//     {
+//       res.json( response.data );
+//     } )
+//     .catch( ( err ) =>
+//     {
+//       res.json( response.data );
+//     } )
+//     .catch( ( err ) =>
+//     {
+//       res.json( err );
+//     } );
+// } );
 
-server.get( '/fetchmessagefromfriend:messageString', urlencodedParser, ( req, res ) =>
-{
-  // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
-} );
-
-/* OPTIONAL - if you want to extend functionality */
-server.post( '/login', ( req, res ) =>
-{
-  // TODO log in to GitHub, return success/failure response
-  // This will replace hardcoded username from above
-  // const { username, oauth_token } = req.body;
-  res.json( { success: false } );
-} );
-
-/*
-  Still want to write code? Some possibilities:
-  - Pretty templates! More forms!
-  - Better management of gist IDs, use/display other gist fields
-  - Support editing/deleting existing gists
-  - Switch from symmetric to asymmetric crypto
-  - Exchange keys, encrypt messages for each other, share them
-  - Let the user pass in their private key via POST
-*/
+//   // TODO:  Create a private and encrypted gist with given name/content
+//   // using someone else's public key that can be accessed and
+//   // viewed only by the person with the matching private key
+//   // NOTE - we're only encrypting the content, not the filename
 
 
-server.listen( 3000, () => console.log( 'listening on port 3000' ) );
+// server.get( '/fetchmessagefromfriend:messageString', urlencodedParser, ( req, res ) =>
+// {
+//   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+// } );
+
+// /* OPTIONAL - if you want to extend functionality */
+// server.post( '/login', ( req, res ) =>
+// {
+//   // TODO log in to GitHub, return success/failure response
+//   // This will replace hardcoded username from above
+//   // const { username, oauth_token } = req.body;
+//   res.json( { success: false } );
+// } );
+
+// /*
+//   Still want to write code? Some possibilities:
+//   - Pretty templates! More forms!
+//   - Better management of gist IDs, use/display other gist fields
+//   - Support editing/deleting existing gists
+//   - Switch from symmetric to asymmetric crypto
+//   - Exchange keys, encrypt messages for each other, share them
+//   - Let the user pass in their private key via POST
+// */
+
+
+server.listen( 3000 );
