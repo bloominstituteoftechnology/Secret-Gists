@@ -147,17 +147,45 @@ server.get('/key', (req, res) => {
 });
 
 server.get('/setkey:keyString', (req,res) => {
-  const keyString = req.query.keyString;
+  const keyString = req.query.keyString; //Set the key to one specified by a user
   try {
-  const keyObject = nacl.util.decodeUFT8(keyString);
+  const keyObject = nacl.util.decodeUFT8(keyString); //decode keyObject
   fs.writeFile('./config.json', JSON.stringify(keyObject), err => {
-    if (err) {
+    //if there is a error, write a console.log
+    if (err) { 
       console.log('Error writing secret key to config file ', err.message);
       return;
     }
   });
+  // send a response object with the decoded keyObject in a div
     res.send(`<div>Key set to new value: ${keyString}</div>`);
   } catch (err) {
+  // send a response when catch block is activated
     res.send('Failed to set key. Key string appears invalid');
-    }
+    };
   });
+
+  server.get('/fetchmessagefromself: id', (req, res) => {
+   // fetch the id from the query aram
+   const id = req.query.id; //id from the query
+   github.gists.get({ id })//search for the  data you want via the id
+    .then((response) => {
+      console.log('response ', response);
+      const gist = response.data; //Assume that the gist only contains one file. gist now references we want in a specific part of he response object
+      const filename = Object.keys(gist.files)[0] //make filename the first index in the data object
+      const blob = gist.files[filename].content; //Grab the encrypted content and nonce
+      //Nonce is the first 24 bits;  splice that many bytes off the blob
+      // 24 bytes nonse translates to 32 characters once we encode in base 64
+      const nonce = nacl.util.decodeBase64(blob.slice(0,32)); // The remaining numbers not sliced the ciphertext
+      const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length)); //Grab the cipher text from the rest of the blob
+      const plaintext = nacl.secretbox.open(ciphertext, nonce, secretkey)// Decrypt the ciphertext into plaintext
+      res.send(nacl.util.encodeUTF8(plaintext))//send the plaintext in the response
+    })
+    .catch((err) => {
+      if (err) { //if the promise fails, return a error
+        console.log(err);
+      }
+    });
+  });
+
+
