@@ -27,9 +27,8 @@ github.authenticate({
 // TODO: Attempt to load the key from config.json. If it is not found, create a new 32 byte key.
 let secretKey; // Our secret key as a Unit8Array
 
-// 1. Try to read the config.json file
 try {
-  // try to read the config file
+  // 1. try to read the config.json file
   const data = fs.readFileSync('./config.json');
   // parse the data that we read from the json file
   const keyObject = JSON.parse(data);
@@ -122,3 +121,46 @@ server.get('/keyPairGen', (req, res) => {
   `);
 })
 
+server.get('/gists', (req, res) => {
+  // Retrieve a list of all gists for the currently authed user
+  github.gists.getForUser({ username }) // using github rest api, getForUser by username in promise style
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
+});
+
+server.get('/key', (req, res) => {
+  // TODO: Display the secret key used for encryption of secret gists
+  // 1. Encode our secretKey back to base64
+  //    nacl.util.encodeBase64(secretKey)
+  // 2. send it as our response
+  //    res.send()
+  res.send(nacl.util.encodeBase64(secretKey));
+});
+
+server.get('/setKey:keyString', (req, res) => {
+  // TODO: Set the key to one specified by the user or display an error if invalid
+  const keyString = req.query.keyString; // req.query returns an object of query keys and their values
+  try {
+    // TODO:
+    // Set our secretKey var to be whatever the user passed in
+    secretKey = nacl.util.decodeUTF8(keyString);
+    const keyObject = { secretKey: keyString }; // creatae keyObject
+    // make keyObject string and try to write in config.json file
+    fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+      // show error message in console if writing secret key in config file fails
+      if (ferr) {
+        console.log('Error writing secret key to config file: ', ferr.message);
+        return;
+      }
+    });
+    // show keyString on browser
+    res.send(`<div>Key set to new value: ${keyString}</div>`);
+  } catch (err) {
+    // failed
+    res.send('Failed to set key. Key string appears invalid.');
+  }
+});
