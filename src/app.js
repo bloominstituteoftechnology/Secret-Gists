@@ -27,7 +27,11 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-const keypair = {};
+// setting the secret key to 32 bytes
+const keypair = {
+  publicKey: '',
+  secretKey:'',
+};
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -84,7 +88,9 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-
+  // return a key pair with public key corresponding to the secret key
+  const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
+  
   // Display both keys as strings
   res.send(`
     <html>
