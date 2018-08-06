@@ -142,9 +142,9 @@ server.get('/setkey:keyString', (req, res) => {
     const keyObject = {
       secretKey: keyString
     };
-    fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
-      if (ferr) {
-        console.log('Error writing secret key to config file: ', ferr.message);
+    fs.writeFile('./config.json', JSON.stringify(keyObject), (error) => {
+      if (error) {
+        console.log('Error writing secret key to config file: ', error.message);
         return;
       }
     });
