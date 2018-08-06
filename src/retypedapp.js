@@ -141,3 +141,18 @@ server.get('gists', (req, res) => {
             res.json(err); // Throws an error if the promise is rejected
         });
 });
+
+server.get('/key', (req, res) => {
+    // TODO: Display the secret key used for encryption of secret gists
+});
+
+server.get('/setkey:keyString', (req, res) => {
+    // TODO: Set the key to one specified by the user or display an error if invalid
+    const keyString = req.query.keyString;
+    try {
+        //TODO:
+    } catch (err) {
+        //if it fails
+        res.send('Failed to set key. Key string is invalid!')
+    }
+})
