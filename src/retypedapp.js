@@ -131,4 +131,13 @@ server.get('/keyPairGen', (req, res) => {
     `);
 });
 
-server.get
+server.get('gists', (req, res) => {
+    // TODO: retrieve a list of all gists for the currently authorized user
+    github.gists.getForUser({ username }) // in this case I am the authorized user
+        .then((response) => { //executes a promise once I have retrieved the gists
+            res.json(response.data);
+        })
+        .catch((err)= {
+            res.json(err); // Throws an error if the promise is rejected
+        });
+});
