@@ -115,3 +115,24 @@ server.get('/keyPairGen', (req, res) => {
     </html>
   `);
 });
+
+server.get('/gists', (req, res) => {
+  // Retrieve a list of all gists for the currently authed user
+  github.gists.getForUser({
+      username
+    })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
+});
+
+server.get('/key', (req, res) => {
+  // TODO: Display the secret key used for encryption of secret gists
+  res.send(nacl.util.encodeBase64(secretKey)); // use express and pass a string encoding utility from nacl that takes the secret key as a parameter
+  console.log(nacl.util.encodeBase64(secretKey))
+});
+
+server.listen(3000);
