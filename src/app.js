@@ -164,8 +164,15 @@ server.get( '/secretgist/:id', ( req, res ) =>
   github.gist.get( { id } ).then( ( response ) =>
   {
     const gist = response.data;
-  })
-})
+    const filename = Object.keys( gist.files )[ 0 ];
+    const blob = gist.files[ filename ].content;
+    const nonce = nacl.util.decodeBase64( blob.slice( 0, 32 ) );
+    const ciphertext = nacl.util.decodeBase64( blob.sloce( 32, blob.lenght ) );
+    const plaintext = nacl.secrectbox.open( ciphertext, nonce, key );
+    res.send( nacl.util.encodeUTF8( plaintext ) );
+
+  } );
+});
     // TODO:
     // Set our secretKey var to be whatever the user passed in
     secretKey = nacl.util.decodeUTF8( keyString );
