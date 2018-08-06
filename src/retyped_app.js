@@ -137,10 +137,13 @@ server.get('/keyPairGen', (req, res) => {
 server.get('/gists', (req, res) => {
   // the github object has access to the user's data
   github.gists
+    // for this github user
     .getForUser({ username })
+    // the response is the user's gists
     .then((response) => {
       res.json(response.data);
     })
+    // catch an error, should there be one
     .catch((err) => {
       res.json(err);
     });
@@ -150,4 +153,25 @@ server.get('/gists', (req, res) => {
 server.get('/key', (req, res) => {
   // Send an encoded secret key as the response
   res.send(nacl.util.encodeBase64(secretKey));
+});
+
+// Set the key to the one specified by the user or display an error if invalid
+server.get('/setkey:keyString', (req, res) => {
+  const keyString = req.query.keyString;
+  try {
+    // set secretKey variable to be whatever the user passed in
+    secretKey = nacl.util.decodeUTF8(keyString);
+    const keyObj = { secretKey: nacl.util.encodeBase64(secretKey) };
+    // write keyObj to config.json
+    fs.writeFile('./config.json', JSON.stringify(keyObj), (error) => {
+      if (error) {
+        console.log('Error writing Secret Key to the config file. More Details: ', error.message);
+        return;
+      }
+    });
+    // send some html to display the encoded key
+    res.send(`<div>Key set to new value: ${keyString}</div>`);
+  } catch (err) {
+    res.send('Failed to set Key. Key String appears invalid');
+  }
 });
