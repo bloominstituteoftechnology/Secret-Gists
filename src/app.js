@@ -108,7 +108,7 @@ server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
   // return a key pair with public key corresponding to the secret key
   const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
-  
+
   // Display both keys as strings
   res.send(`
     <html>
@@ -145,6 +145,10 @@ server.get('/setkey:keyString', (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO:
+    // assigning the secret key to be the string submitted/encoded
+    const encodeString = nacl.util.decodeUTF8(keyString);
+    const hashedString = nacl.hash(encodeString);
+    console.log(hashedString);
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
