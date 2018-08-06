@@ -132,7 +132,119 @@ server.get('/gists', (req, res) => {
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
   res.send(nacl.util.encodeBase64(secretKey)); // use express and pass a string encoding utility from nacl that takes the secret key as a parameter
-  console.log(nacl.util.encodeBase64(secretKey))
+  console.log(nacl.util.encodeBase64(secretKey)) // console logging for testing wanna see what exactly is returned.
+});
+
+server.get('/setkey:keyString', (req, res) => {
+  // TODO: Set the key to one specified by the user or display an error if invalid
+  const keyString = req.query.keyString;
+  try {
+    // TODO:
+    secretKey = nacl.util.decodeUTF8(keyString);
+    const keyObject = {
+      secretKey: keyString
+    };
+    fs.writeFile('./config.json', JSON.stringify(keyObject), (error) => {
+      if (error) {
+        console.log('Error writing secret key to config file: ', error.message);
+        return;
+      }
+    });
+    res.send(`<div>Key set to new value: ${keyString}</div>`);
+  } catch (err) {
+    // failed
+    res.send('Failed to set key.  Key string appears invalid.');
+  }
+});
+
+server.get('/fetchmessagefromself:id', (req, res) => {
+  // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.query.id;
+  github.gists.get({
+    id
+  }).then((response) => { // we get the id for the github gist which then retrieves the data for all the variables defined below and uses nacl to encrypt them
+    const gist = response.data;
+    const filename = Object.keys(gist.files)[0];
+    const blob = gist.files[filename].content;
+    const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
+    const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
+    const plaintext = nacl.secretbox.open(ciphertext, nonce, secretKey);
+    res.send(nacl.util.encodeUTF8(plaintext));
+  });
+});
+
+server.post('/create', urlencodedParser, (req, res) => {
+  // Create a private gist with name and content given in post request
+  const {
+    name,
+    content
+  } = req.body;
+  const files = {
+    [name]: {
+      content
+    }
+  };
+  github.gists.create({
+      files,
+      public: false
+    })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
+});
+
+server.post('/createsecret', urlencodedParser, (req, res) => {
+  // TODO:  Create a private and encrypted gist with given name/content
+  // NOTE - we're only encrypting the content, not the filename
+  // sets up the gist with pseudo random data encryption for the nonce and creates a var to store that data that is now encrypted using the secretBox fnc.and sets the gist to private instead of public.
+  const {
+    name,
+    content
+  } = req.body;
+  const nonce = nacl.randomBytes(24); // sets nonce to random data of 24 bytes
+  const ciphertext = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey); // creates a var that encrypts decrypts using the nonce and secretkey
+  const blob = nacl.util.encodeBase64(nonce) + // binary blob of data that is encoded from the content of the gist
+    nacl.util.encodeBase64(ciphertext);
+  console.log(nacl.util.encodeBase64(ciphertext)); // testing stuff 
+  const files = {
+    [name]: {
+      content: blob
+    }
+  };
+  github.gists.create({
+      files,
+      public: false
+    })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
+});
+
+server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
+  // TODO:  Create a private and encrypted gist with given name/content
+  // using someone else's public key that can be accessed and
+  // viewed only by the person with the matching private key
+  // NOTE - we're only encrypting the content, not the filename
+});
+
+server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
+  // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+});
+
+/* OPTIONAL - if you want to extend functionality */
+server.post('/login', (req, res) => {
+  // TODO log in to GitHub, return success/failure response
+  // This will replace hardcoded username from above
+  // const { username, oauth_token } = req.body;
+  res.json({
+    success: false
+  });
 });
 
 server.listen(3000);
