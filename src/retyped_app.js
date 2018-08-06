@@ -145,3 +145,9 @@ server.get('/gists', (req, res) => {
       res.json(err);
     });
 });
+
+// Display the secret key used for encryption of secret gists
+server.get('/key', (req, res) => {
+  // Send an encoded secret key as the response
+  res.send(nacl.util.encodeBase64(secretKey));
+});
