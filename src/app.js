@@ -108,26 +108,26 @@ server.get( '/', ( req, res ) =>
   `);
 } );
 
-server.get( '/keyPairGen', ( req, res ) =>
-{
-  // TODO:  Generate a keypair from the secretKey and display both
-  const keypair = nacl.box.keyPair.fromSecretKey( secretKey );
+// server.get( '/keyPairGen', ( req, res ) =>
+// {
+//   // TODO:  Generate a keypair from the secretKey and display both
+//   const keypair = nacl.box.keyPair.fromSecretKey( secretKey );
 
-  // Display both keys as strings
-  res.send( `
-    <html>
-      <header><title>Keypair</title></header>
-      <body>
-        <h1>Keypair</h1>
-        <div>Share your public key with anyone you want to be able to leave you secret messages.</div>
-        <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
-        <br/>
-        <div>Public Key: ${nacl.util.encodeBase64( keypair.publicKey ) }</div>
-        <div>Secret Key: ${nacl.util.encodeBase64( keypair.secretKey ) }</div>
-      </body>
-    </html>
-  `);
-} );
+//   // Display both keys as strings
+//   res.send( `
+//     <html>
+//       <header><title>Keypair</title></header>
+//       <body>
+//         <h1>Keypair</h1>
+//         <div>Share your public key with anyone you want to be able to leave you secret messages.</div>
+//         <div>Keep your secret key safe.  You will need it to decode messages.  Protect it like a passphrase!</div>
+//         <br/>
+//         <div>Public Key: ${nacl.util.encodeBase64( keypair.publicKey ) }</div>
+//         <div>Secret Key: ${nacl.util.encodeBase64( keypair.secretKey ) }</div>
+//       </body>
+//     </html>
+//   `);
+// } );
 
 server.get( '/gists', ( req, res ) =>
 {
@@ -148,15 +148,24 @@ server.get( '/key', ( req, res ) =>
   // TODO: Display the secret key used for encryption of secret gists
   // 1. Encode our secretKey back to base 64
   // 2. Send it as our response
-  res.send( nacl.util.encodeBase64( secretKey ) );
+  res.send( nacl.util.encodeBase64( key ) );
 } );
 
-server.get( '/setkey:keyString', ( req, res ) =>
+// server.get( '/setkey:keyString', ( req, res ) =>
+// {
+//   // TODO: Set the key to one specified by the user or display an error if invalid
+//   const keyString = req.query.keyString;
+//   try
+//   {
+
+server.get( '/secretgist/:id', ( req, res ) =>
 {
-  // TODO: Set the key to one specified by the user or display an error if invalid
-  const keyString = req.query.keyString;
-  try
+  const id = req.params.id;
+  github.gist.get( { id } ).then( ( response ) =>
   {
+    const gist = response.data;
+  })
+})
     // TODO:
     // Set our secretKey var to be whatever the user passed in
     secretKey = nacl.util.decodeUTF8( keyString );
