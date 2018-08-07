@@ -174,19 +174,18 @@ server.get('/fetchmessagefromself:id', (req, res) => {
   github.gists.get({ id })
     .then((response) => {
       const gist = response.data;
-      // Assume that the gist only has one file
-      console.log('files', gist.files);
+      // Assume that the gist only has one file      
       const filename = Object.keys(gist.files)[0];
       // Grab the encrypted content and nonce
       const blob = gist.files[filename].content;
-      // slice Nonce which is 24 byts
-      // 24 byte is equivalent to 32 chars in base 64
-      const nonce = nacl.util.decodeBase64(blob.slice(0, 32));      
+      // Slice Nonce which is first 24 bytes of blob then decrypt the rest
+      // 24 byte is equivalent to 32 chars encoded in base 64
+      const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
       const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
       // authenticates and decrypts using the key and the nonce
       // returns the original message or null if authentication fails
-      const plaintext = nacl.secretbox.open(ciphertext, nonce, key);
-      // send/return message in plain text
+      const plaintext = nacl.secretbox.open(ciphertext, nonce, secretKey);
+      // decrypt the remainder
       res.send(nacl.util.encodeUTF8(plaintext));
     })
     // catch error
