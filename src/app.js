@@ -23,24 +23,25 @@ const urlencodedParser = bodyParser.urlencoded({ extended: false });
 // Set it to be able to create gists
 github.authenticate({
   type: 'oauth',
-  token: process.env.GITHUB_TOKEN
+  token: process.env.GITHUB_TOKEN //token saved in .env file
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
+// secret key in Uint8array format
 let secretKey;
 
-
 try {
-  //read and parese config.json file
+  // read and parse config.json file
   const data = fs.readFileSync('./config.json');
   const keyObject = JSON.parse(data);
-  // decode using secret key
-  secretKey = nacl.util.decodeBase64(keyObject, secretKey);
+  // decode secret key from Uint8Array format
+  secretKey = nacl.util.decodeBase64(keyObject.secretKey);
 } catch (err) {
-  // setting the secret key to 32 bytes
+  // setting the secret key to random 32 bytes if no json file is found
   secretKey = nacl.randomBytes(32);
-  //assign secret key to keyObject
+  // initialize secret key which is a string and assign it to keyObject
   const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+  // Write the keyObject to config.json
   fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
     // return error message if there's an error writing to the config file
     if (ferr) {
@@ -49,7 +50,6 @@ try {
     }
   });
 }
-
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -138,6 +138,8 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  // Encrypt the secret key to base 64
+  res.send(nacl.util.encodeBase64(secretKey));
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -174,7 +176,7 @@ server.post('/create', urlencodedParser, (req, res) => {
 
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
-  // NOTE - we're only encrypting the content, not the filename
+
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
