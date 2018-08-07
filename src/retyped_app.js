@@ -38,7 +38,6 @@ try {
   //deleted redundant code
   fs.writeFile('./config.json', JSON.stringify(keyObject), (error) => {
     if (error) {
-      console.log('error:', error.message);
       return error;
     }
   });
@@ -146,7 +145,6 @@ server.get('/setkey:keyString', (req, res) => {
     };
     fs.writeFile('./config.json', JSON.stringify(keyObject), (error) => {
       if (error) {
-        console.log('Error writing secret key to config file: ', error.message);
         return;
       }
     });
@@ -231,10 +229,47 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
+  const keypair = nacl.box.keyPair.fromSecretKey(secretKey); // posts key pair
+  const blob = nacl.util.encodeBase64(nonce) +
+    nacl.util.encodeBase64(ciphertext); // uses the nacl encodebase64 method to encrypt using the nonce and cipher
+  const files = { // sets the content data from the blob 
+    [name]: {
+      content: blob
+    }
+  };
+  const {
+    name,
+    publicKeyString,
+    content
+  } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const ciphertext = nacl.box(nacl.util.decodeUTF8(content), nonce,
+    nacl.util.decodeBase64(publicKeyString), secretKey);
 });
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const messageString = req.query.messageString;
+  const friendPublicString = messageString.slice(0, 44);
+  const id = messageString.slice(44, messageString.length);
+
+  github.gists.get({
+    id
+  }).then((response) => {
+    const gist = response.data;
+    // Assuming gist has only 1 file and/or we only care about that file
+    const filename = Object.keys(gist.files)[0];
+    const blob = gist.files[filename].content;
+    // Assume nonce is first 24 bytes of blob, split and decrypt remainder
+    // N.B. 24 byte nonce == 32 characters encoded in Base64
+    const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
+    const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
+    const plaintext = nacl.box.open(ciphertext, nonce,
+      nacl.util.decodeBase64(friendPublicString),
+      secretKey
+    );
+    res.send(nacl.util.encodeUTF8(plaintext));
+  });
 });
 
 /* OPTIONAL - if you want to extend functionality */
