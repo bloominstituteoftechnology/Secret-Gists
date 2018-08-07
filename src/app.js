@@ -27,12 +27,18 @@ github.authenticate({
 let secretKey;
 
 try {
+  // reading data from config file
   const data = fs.readFileSync('./config.json');
+  // Parsing data that is read from the config file
   const keyObject = JSON.parse(data);
+  // Decoding data from the base 64 to the UTF8
   secretKey = nacl.util.decodeBase64(keyObject.secretKey);
 } catch (err) {
+  // secret key generator so we have one saved to the config file
   secretKey = nacl.randomBytes(32);
+  // creating key object
   const keyObject = { secretKey: nacl.util.encodeBase64(secretKey) };
+  // Writing data to config file stringifying the object
   fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
     if (ferr) {
       console.log('error writing secretKey to config file: ', ferr.message);
@@ -98,8 +104,9 @@ server.get('/', (req, res) => {
 
 server.get('/keyPairGen', (req, res) => {
   // TODO:  Generate a keypair from the secretKey and display both
-  const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
+  // grab the keypair from the secret key
   // Display both keys as strings
+  const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
   res.send(`
     <html>
       <header><title>Keypair</title></header>
