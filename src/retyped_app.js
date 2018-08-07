@@ -25,7 +25,6 @@ const github = octokit({ debug: true });
 const server = express();
 // create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
-
 // initalize Secret and Public Key variables
 let secretKey;
 let publicKey;
@@ -254,11 +253,55 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // format the content for the Github API
   const file = { [name]: { content: encryptedContent } };
   github.gists
-    // using the formatted content, create the file
+    // using the formatted content, create the file, make it private
     .create({ files: file, public: false })
     // send it up to Github
     .then((response) => {
       res.json(response.data);
+    })
+    // catch an error
+    .catch((err) => {
+      res.json(err);
+    });
+});
+
+// Create a private and encrypted gist with given name/content
+// using someone else's public key that can be accessed and
+// viewed only by the person with the matching private key
+server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
+  // accepts name/content as well as a public key
+  const { name, content, publicKeyString } = req.body;
+  // create a random 24 byte nonce
+  const nonce = nacl.randomBytes(24);
+  // decode the content with an associated nonce, also associated public and secret keys
+  const cipherTxt = nacl.box(
+    nacl.util.decodeBase64(content),
+    nonce,
+    nacl.util.decodeBase64(publicKeyString),
+    secretKey);
+  // encode the nonce, and encode the cipher
+  const encryptedContent = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(cipherTxt);
+  // format content for Github
+  const file = { [name]: { content: encryptedContent } };
+  github.gists
+    // using the formatted file, create the gist, but make it public
+    // so somone with the correct key can decode it.
+    .create({ files: file, public: true })
+    // send the data to Github
+    .then((response) => {
+      // make a code to give someone to access the private gist
+      const friendCode = nacl.util.encodeBase64(publicKey) + response.data.id;
+      // send some HTML that has the code for a friend to decode the gist
+      res.send(`
+        <html>
+         <header><title>Message Saved</title></header>
+         <body>
+           <h1>Message Saved!</h1>
+           <div>Give this to your friends to decrypt:</div>
+           <div>${friendCode}</div>
+         </body>
+        </html>
+      `);
     })
     // catch an error
     .catch((err) => {
