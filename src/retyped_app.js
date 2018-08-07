@@ -33,7 +33,7 @@ let publicKey;
 // in .env and use that to authenticate a session
 github.authenticate({
   type: 'oauth',
-  token: process.env.GUTHUB_TOKEN
+  token: process.env.GITHUB_TOKEN
 });
 
 // Load a Secret Key in config.json using a try/catch
