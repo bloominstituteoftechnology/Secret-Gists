@@ -2,15 +2,21 @@
 
 // configure a .env
 require('dotenv').config();
-
-// Dependency Variable Index
+// file system
 const fs = require('fs');
+// In order to read HTTP POST data , we have to use "body-parser"
+// node module.body-parser is a piece of express middleware that reads
+// a form's input and stores it as a javascript object accessible through
+// req.body
 const bodyParser = require('body-parser');
+// web framework for Node.js
 const express = require('express');
+// GitHub REST API client for Node.js
 const octokit = require('@octokit/rest');
+// high-security cryptographic library
 const nacl = require('tweetnacl');
+// string encoding/decoding utilities
 nacl.util = require('tweetnacl-util');
-
 // for privacy, username is stored in .env
 const username = process.env.USER_NAME;
 // create a github variable to interface with to communicate with Github
@@ -212,5 +218,24 @@ server.get('/fetchmessagefrommyself:id', (req, res) => {
     .catch((err) => {
       console.log(err);
       res.send(err);
+    });
+});
+
+// Create a private gist with name and content given in post request
+server.post('/create', urlencodedParser, (req, res) => {
+  // recieves name and content input
+  const { name, content } = req.body;
+  // formats it for Github
+  const files = { [name]: { content } };
+  github.gists
+    // create the gist and make it private
+    .create({ files, public: false })
+    // send it to github
+    .then((response) => {
+      res.json(response.data);
+    })
+    // catch an error
+    .catch((err) => {
+      res.json(err);
     });
 });
