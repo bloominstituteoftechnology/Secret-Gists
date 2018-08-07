@@ -50,7 +50,9 @@ try {
   const keyObj = { secretKey: nacl.util.encodeBase64(secretKey) };
   // create a config.json populated with the encoded secret key.
   fs.writeFile('./config.json', JSON.stringify(keyObj), (error) => {
+    // error handling
     if (error) {
+      // descriptive error message with a detailed error log to go with it
       console.log('Error writing secret key to the Config file. More Details: ', error.message);
       return;
     }
@@ -137,7 +139,7 @@ server.get('/keyPairGen', (req, res) => {
 server.get('/gists', (req, res) => {
   // the github object has access to the user's data
   github.gists
-    // for this github user
+    // for this github user(username is in .env)
     .getForUser({ username })
     // the response is the user's gists
     .then((response) => {
@@ -157,13 +159,16 @@ server.get('/key', (req, res) => {
 
 // Set the key to the one specified by the user or display an error if invalid
 server.get('/setkey:keyString', (req, res) => {
+  // User input
   const keyString = req.query.keyString;
   try {
     // set secretKey variable to be whatever the user passed in
     secretKey = nacl.util.decodeUTF8(keyString);
+    // encode it
     const keyObj = { secretKey: nacl.util.encodeBase64(secretKey) };
     // write keyObj to config.json
     fs.writeFile('./config.json', JSON.stringify(keyObj), (error) => {
+      // let user know if theres an error with a message and more detailed error logging
       if (error) {
         console.log('Error writing Secret Key to the config file. More Details: ', error.message);
         return;
@@ -171,7 +176,41 @@ server.get('/setkey:keyString', (req, res) => {
     });
     // send some html to display the encoded key
     res.send(`<div>Key set to new value: ${keyString}</div>`);
-  } catch (err) {
+  } catch (err) { // catch the error, send a message explaining the error
     res.send('Failed to set Key. Key String appears invalid');
   }
+});
+
+// Retrieve and decrypt the secret gist corresponding to the given ID
+server.get('/fetchmessagefrommyself:id', (req, res) => {
+  // destructure the ID
+  const id = req.query.id;
+  // access the authorized user's gists
+  github.gists
+    // get the specific gist fed into the endpoint
+    .get({ id })
+    .then((response) => {
+      // assign the data to a variable named gist
+      const gist = response.data;
+      // assume the gist only contains one file
+      const filename = Object.keys(gist.files)[0];
+      // put the gist content on a variable
+      const encryptedContent = gist.files[filename].content;
+      // decode the encrypted content
+      const decrypted = nacl.util.decodeBase64(encryptedContent);
+      // the decrypted content needs to be spilt
+      // nonce is the first 24 bytes; splice that many bytes off
+      // 24 bytes translates to 32 characters once we encode in base64
+      const nonce = decrypted.slice(0, 24);
+      const messageContent = decrypted.slice(24);
+      // open the secretbox
+      const gistContent = nacl.secretbox.open(messageContent, nonce, secretKey);
+      // convert content to a string and send it
+      res.send(nacl.util.encodeUTF8(gistContent));
+    })
+    // basic catch error handling
+    .catch((err) => {
+      console.log(err);
+      res.send(err);
+    });
 });
