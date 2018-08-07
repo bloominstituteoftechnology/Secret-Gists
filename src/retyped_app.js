@@ -111,7 +111,71 @@ server.get('/keyPairGen', (req, res) => {
 server.get('/gists', (req, res) => {
   // Retrieve a list of all gists for the currently authed user
   github.gists
-    .getForUser({ username })
+    .getForUser({ username }) // grabbing gists for user with username passed in
+    .then((response) => {
+      // returns a promise that we treat with then and catch; if successful should return the list of gists
+      res.json(response.data);
+    })
+    .catch((err) => {
+      // in case of error
+      res.json(err);
+    });
+});
+
+server.get('/key', (req, res) => {
+  res.send(nacl.util.encodeBase64(secretKey)); // displays the secret key used for encryption of secret gists;
+});
+
+server.get('/setkey:keyString', (req, res) => {
+  // Set the key to one specified by the user or display an error if invalid
+  const keyString = req.query.keyString; // getting the keystring from the url parameter
+  try {
+    secretKey = nacl.util.decodeUTF8(keyString); // decode the keystring back into a Uint8array
+    const keyObject = { secretKey: keyString }; // set key object to contain a secret key equal to the string the user passed in.
+    fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+      // write over the keyObject in config.json
+      if (ferr) {
+        // error handling in case fs.writeFile is unsuccessful
+        process.stdout.write(
+          'Error writing secret key to config file: ',
+          ferr.message
+        );
+        return;
+      }
+    });
+    res.send(`<div>Key set to new value: ${keyString}</div>`); // display keyString to the screen on success
+  } catch (err) {
+    // in case anything in the try block does not work
+    res.send('Failed to set key.  Key string appears invalid.');
+  }
+});
+
+server.get('/fetchmessagefromself:id', (req, res) => {
+  // Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.query.id; // getting the id from the url parameter
+
+  github.gists
+    .get({ id })
+    .then((response) => {
+      const gist = response.data; // returning the gist object that corresponds to the given ID
+      const filename = Object.keys(gist.files)[0]; // grabbing the first file in the array returned
+      const blob = gist.files[filename].content; // grab the encrypted content and nonce
+      const nonce = nacl.util.decodeBase64(blob.slice(0, 32)); // nonce is the first 24 bytes; splice that many bytes off the blob (translates to 32 characters onced encoded in Base64)
+      const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length)); // grab the cipher text from the rest of the blob
+      const plaintext = nacl.secretbox.open(ciphertext, nonce, secretKey); // decrypt the cipher text into plain text (returns Uint8array)
+      res.send(nacl.util.encodeUTF8(plaintext)); // send the plaintext in response (encode into a human readable string)
+    })
+    .catch((err) => {
+      res.json({ err });
+    });
+});
+
+server.post('/create', urlencodedParser, (req, res) => {
+  // Create a private gist with name and content given in post request
+  const { name, content } = req.body;
+  const files = { [name]: { content } };
+  github.gists
+    .create({ files, public: false }) // send the post request to the GitHub API
     .then((response) => {
       res.json(response.data);
     })
@@ -120,6 +184,64 @@ server.get('/gists', (req, res) => {
     });
 });
 
-server.get('/key', (req, res) => {
-  res.send(nacl.util.encodeBase64(secretKey)); // displays the secret key used for encryption of secret gists;
+server.post('/createsecret', urlencodedParser, (req, res) => {
+  // Create a private and encrypted gist with given name/content
+  // NOTE - we're only encrypting the content, not the filename
+  const { name, content } = req.body;
+  // initialize a nonce
+  const nonce = nacl.randomBytes(24); // random one time use value used to encrypt and decrypt (like a salt)
+  const ciphertext = nacl.secretbox(
+    nacl.util.decodeUTF8(content),
+    nonce,
+    secretKey
+  ); // decode the UTF8 content and then encrypt it
+  // Somehow the nonce needs to be persisted until we're looking to decrypt this content
+  // Append (or prepend) the nonce to our encrypted content
+  const blob =
+    nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(ciphertext);
+  // format the blob and name in the format that the github API expects
+  const file = { [name]: { content: blob } };
+  // send the post request to the github API
+  github.gists
+    .create({ files: file, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
+
+server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
+  // Create a private and encrypted gist with given name/content using someone else's public key that can be accessed and viewed only by the person with the matching private key
+  // NOTE - we're only encrypting the content, not the filename
+  const { name, content, publicKeyString } = req.body;
+  const nonce = nacl.randomBytes(24); // random one time use value used to encrypt and decrypt (like a salt)
+  const ciphertext = nacl.box(
+    nacl.util.decodeUTF8(content),
+    nonce,
+    nacl.util.decodeBase64(publicKeyString),
+    secretKey
+  ); // decode the UTF8 content and Base64 publicKeyString and encrypt it
+  const blob =
+    nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(ciphertext); // Append (or prepend) the nonce to our encrypted content
+  const file = { [name]: { content: blob } }; // format the blob and name in the format that the github API expects
+  github.gists
+    .create({ files: file, public: true }) // send the post request to the github API
+    .then((response) => {
+      const messageString = nacl.util.encodeBase64() + response.data.id;
+    })
+    .catch((err) => {
+      res.json(err);
+    });
+});
+
+server.get(
+  '/fetchmessagefromfriend:messageString',
+  urlencodedParser,
+  (req, res) => {
+    // Retrieve and decrypt the secret gist corresponding to the given ID
+  }
+);
+
+server.listen(3000);
