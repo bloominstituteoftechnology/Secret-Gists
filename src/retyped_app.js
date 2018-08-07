@@ -29,14 +29,14 @@ const urlencodedParser = bodyParser.urlencoded({ extended: false });
 let secretKey;
 let publicKey;
 
-// Generate an access token on Github.com and put it
+// Generate an access token on Github and put it
 // in .env and use that to authenticate a session
 github.authenticate({
   type: 'oauth',
   token: process.env.GUTHUB_TOKEN
 });
 
-// Load a Secret Key in config.json.
+// Load a Secret Key in config.json using a try/catch
 // If config.json doesn't have a Secret key, create a new 32 byte key.
 // 1. Try and read config.json
 // 2. If config.json exists with a key indside, init a `secretKey` variable
@@ -308,3 +308,43 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
       res.json(err);
     });
 });
+
+// Retrieve and decrypt the secret gist corresponding to the given ID
+server.get('/fetchmessagefromfriend:friendCode', urlencodedParser, (req, res) => {
+  // accept a friend's code to check.
+  const friendCode = req.query.friendCode;
+  // split off the first 44 characters for the public key
+  const friendPublicKey = friendCode.slice(0, 44);
+  // what's left is the gistID
+  const gistID = friendCode.slice(44);
+  github.gists
+    // lookup the gist ID on Github
+    .get({ id: gistID })
+    .then((response) => {
+      // get the gist's encoded data, then break it down
+      const gist = response.data;
+      // assume there is only one file, and assign it to filename
+      const filename = Object.keys(gist.files[0]);
+      // we continue to destructure the encoded file
+      const file = gist.files[filename].content;
+      // here we split off the nonce from the file
+      const nonce = nacl.util.decodeBase64(file.slice(0, 32));
+      // what is left is the encoded content
+      const cipherTxt = nacl.util.decodeBase64(file.slice(32));
+      // using nacl.box.open, since we have all the keys, we can open the content
+      const plainTxt = nacl.box.open(
+        cipherTxt,
+        nonce,
+        nacl.decodeBase64(friendPublicKey),
+        secretKey);
+      // send the decrypted content to the user
+      res.send(nacl.util.encodeUTF8(plainTxt));
+    })
+    // catch an error
+    .catch((err) => {
+      res.json(err);
+    });
+});
+
+// have the server up on localhost:3000
+server.listen(3000);
