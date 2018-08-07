@@ -57,3 +57,5 @@ typings/
 # dotenv environment variables file
 .env
 
+# For the initial tasks, you'll generate a single secret key that is used for both encryption and decryption. You can save that in a `config.json` file that shouldn't be checked in to github.
+config.json
