@@ -153,7 +153,7 @@ server.get('/setkey:keyString', (req, res) => {
     });
     res.send(`<div>Key set to new value: ${keyString}</div>`);
   } catch (err) {
-    // failed
+    // run this catch block if failed
     res.send('Failed to set key. Key string appears invalid.');
   }
 });
@@ -164,7 +164,16 @@ server.get('/fetchmessagefromself:id', (req, res) => {
   github.gist
     .get({ id })
     .then((response) = {
-      res.send(nacl.util.encodeUTF8(id))
+      const gist = response.data;
+      // If gist has only 1 file we only care about that file
+      const filename = Object.keys(gist.files)[0];
+      const blob = gist.files[filename].content;
+      // here we assume nonce is the first 24 bytes of blob, split and decrypt remainder
+      // N.B.
+      const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
+      const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
+      const plaintext = nacl.secretbox.open(cipher, nonce, secretKey);
+      res.send(nacl.util.encodeUTF8(plaintext));
     })
     .catch((err) => {
       console.log(err)
@@ -187,6 +196,34 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  const keypair = nacl.box.keypair.fromSecretKey(secretKey);
+  const { name, publicKeyString, content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const ciphertext = nacl.box(nacl.util.decodeUTF8(content), nonce,
+    nacl.util.decodeBase64(publicKeyString), secretKey);
+  // to save we need to keep both encrypted content and nonce
+  const blob = nacl.util.encodeBase64(nonce) +
+    nacl.util.encodeBase64(ciphertext);
+  const files = { [name]: { content: blob } };
+  github.gist.create({ files, public: true })
+    .then((response) => {
+      // Display a string that is the messengers public key + encrypted message blob
+      // to share with the friend.
+      const messageString = nacl.util.encodeBase64(keypair.publicKey) + response.data.id;
+      res.send('
+        < html >
+        <header><title>Message Saved</title></header>
+        <body>
+          <h1>Message Saved</h1>
+          <div>Give this string to your friend for decoding.</div>
+          <div>${messageString}</div>
+        </body>
+          </html >
+        ');
+    })
+    .catch((err) => {
+      res.json(err);
+  })
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
@@ -194,10 +231,55 @@ server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // using someone else's public key that can be accessed and
   // viewed only by the person with the matching private key
   // NOTE - we're only encrypting the content, not the filename
+  const keypair = nacl.box.keypair.fromSecretKey(secretKey);
+  const { name, publicKeyString, content } = req.body;
+  const nonce = nacl.randomBytes(24);
+  const ciphertext = nacl.box(nacl.util.decodeUTF8(content), nonce,
+    nacl.util.decodeBase64(publicKeyString), secretKey);
+  // to save we need to keep both encrypted content and nonce
+  const blob = nacl.util.encodeBase64(nonce) +
+    nacl.util.encodeBase64(ciphertext);
+  const files = { [name]: { content: blob } };
+  github.gist.create({ files, public: true })
+    .then((response) => {
+      // Display a string that is the messengers public key + encrypted message blob
+      // to share with the friend.
+      const messageString = nacl.util.encodeBase64(keypair.publicKey) + response.data.id;
+      res.send('
+        < html >
+        <header><title>Message Saved</title></header>
+        <body>
+          <h1>Message Saved</h1>
+          <div>Give this string to your friend for decoding.</div>
+          <div>${messageString}</div>
+        </body>
+          </html >
+        ');
+    })
+    .catch((err) => {
+      res.json(err);
+    })
 });
 
 server.get('/fetchmessagefromfriend:messageString', urlencodedParser, (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const messageString = req.query.messageString;
+  const friendPublicString = messageString.slice(0, 44);
+  const id = messageString.slice(44, messageString.length);
+  github.gist.get({ id })
+    .then((response) => {
+      const gist = response.data;
+      // if gist has only 1 file we only care about that file
+      const filename = Object.keys(gist.files)[0];
+      const blob = gist.files[filename].content;
+      // if nonce is the first 24 bytes of blob, split and decrypt remainder
+      //  N.B.
+      const nonce = nacl.util.decodeBase64(blob.slice(0, 32));
+      const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
+      const plaintext = nacl.box.open(ciphertext, nonce,
+        nacl.util.decodeBase64(friendPublicString), secretKey);
+      res.send(nacl.util.encodeUTF8(plaintext));
+    })
 });
 
 /* OPTIONAL - if you want to extend functionality */
