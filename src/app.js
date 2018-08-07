@@ -23,7 +23,7 @@ const urlencodedParser = bodyParser.urlencoded({ extended: false });
 // Set it to be able to create gists
 github.authenticate({
   type: 'oauth',
-  token: process.env.GITHUB_TOKEN //token saved in .env file
+  token: process.env.GITHUB_TOKEN // token saved in .env file
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
@@ -169,6 +169,32 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  // fetch the id from the query param
+  const id = req.query.id;
+  github.gists.get({ id })
+    .then((response) => {
+      const gist = response.data;
+      // Assume that the gist only has one file
+      console.log('files', gist.files);
+      const filename = Object.keys(gist.files)[0];
+      // Grab the encrypted content and nonce
+      const blob = gist.files[filename].content;
+      // slice Nonce which is 24 byts
+      // 24 byte is equivalent to 32 chars in base 64
+      const nonce = nacl.util.decodeBase64(blob.slice(0, 32));      
+      const ciphertext = nacl.util.decodeBase64(blob.slice(32, blob.length));
+      // authenticates and decrypts using the key and the nonce
+      // returns the original message or null if authentication fails
+      const plaintext = nacl.secretbox.open(ciphertext, nonce, key);
+      // send/return message in plain text
+      res.send(nacl.util.encodeUTF8(plaintext));
+    })
+    // catch error
+    .catch((err) => {
+      if (err) {
+        console.log(err);
+      }
+    });
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -196,9 +222,9 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // append/prepend the nonce to the encrypcted content
   const blob = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(ciphertext);
   // format blob and name according to the format for github API
-  const file = { [name]: { content: blob } };
+  const files = { [name]: { content: blob } };
   // send the POST request to github
-  github.gists.create({ files: file, public: false })
+  github.gists.create({ files, public: false })
     .then((response) => {
       res.json(response.data);
     })
