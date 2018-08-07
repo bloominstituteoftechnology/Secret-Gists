@@ -239,3 +239,29 @@ server.post('/create', urlencodedParser, (req, res) => {
       res.json(err);
     });
 });
+
+// Create a private and encrypted gist with given name/content
+server.post('/createsecret', urlencodedParser, (req, res) => {
+  // read the name and content off the url params
+  const { name, content } = req.body;
+  // initialize a nonce as a random 24 byte string
+  const nonce = nacl.randomBytes(24);
+  // decode the UTF8 content and then encrypt it
+  const cipherTxt = nacl.secretbox(nacl.util.decodeBase64(content), nonce, secretKey);
+  // the nonce needs to be persisted until we are looking to decrypt this content
+  // Append (or prepend) the nonce to the encrypted content
+  const encryptedContent = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(cipherTxt);
+  // format the content for the Github API
+  const file = { [name]: { content: encryptedContent } };
+  github.gists
+    // using the formatted content, create the file
+    .create({ files: file, public: false })
+    // send it up to Github
+    .then((response) => {
+      res.json(response.data);
+    })
+    // catch an error
+    .catch((err) => {
+      res.json(err);
+    });
+});
