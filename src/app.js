@@ -147,15 +147,25 @@ server.get('/setkey:keyString', (req, res) => {
   const keyString = req.query.keyString;
   try {
     // TODO:
-    // assigning the secret key to be the string submitted/encoded
-    const encodeString = nacl.util.decodeUTF8(keyString);
-    const hashedString = nacl.hash(encodeString);
-    console.log(hashedString);
+    // setting the secret key to be the string submitted/passed in
+    secretKey = nacl.util.decodeUTF8(keyString);
+    const keyObject = { secretKey: keyString };
+    // write to json file and stringify keyObject
+    fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+      // send error message if writing to config fails
+      if (ferr) {
+        console.log('Error writing the secret key to config file: ', ferr.message);
+        return;
+      }
+    });
+    // return new keyString
+    res.send(`<div>Key set to new value: ${keyString}</div>`);
   } catch (err) {
-    // failed
+    // if new keyString failed, send this error
     res.send('Failed to set key.  Key string appears invalid.');
   }
 });
+
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
