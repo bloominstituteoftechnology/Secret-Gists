@@ -24,12 +24,15 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.on
-// I was present for last night's lecture and I just watched it again. I finally just looked at the solution.
+// I was present for last night's lecture and I just watched it again. I finally just looked at the solution
+// enough to make a secret key
+// I only barely have an inkling of what's going on, and I have no idea how I would've figured this out on my own.
 // I'm sorry it's very sad for me; I've been trying to read documentation for over three years now; and while
 // I am able to understand tons more than I could at first, I still sink when thrown in the deep end.
-// apologies.
+// apologies. Actually, on a positive note, I do occassionally make it out of the deep end, so let's 
+// keep exploring...
 const key = process.env.SECRET_KEY ?
-      nacl.util.decodeBase64(process.env.SECRET_KEY) : nacl.randomBytes(32);
+  nacl.util.decodeBase64(process.env.SECRET_KEY) : nacl.randomBytes(32);
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
   res.send(`
