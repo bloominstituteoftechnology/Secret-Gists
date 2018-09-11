@@ -18,6 +18,10 @@ const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
+// so I'm trying to follow the instructions on the repo and I see it imports and
+// instantiates github
+const GitHubApi = require('github');
+
 github.authenticate({
   type: 'oauth',
   token: process.env.GITHUB_TOKEN
@@ -29,8 +33,9 @@ github.authenticate({
 // I only barely have an inkling of what's going on, and I have no idea how I would've figured this out on my own.
 // I'm sorry it's very sad for me; I've been trying to read documentation for over three years now; and while
 // I am able to understand tons more than I could at first, I still sink when thrown in the deep end.
-// apologies. Actually, on a positive note, I do occassionally make it out of the deep end, so let's 
+// apologies. Actually, on a positive note, I do occassionally make it out of the deep end, so let's
 // keep exploring...
+const keypair = {};
 const key = process.env.SECRET_KEY ?
   nacl.util.decodeBase64(process.env.SECRET_KEY) : nacl.randomBytes(32);
 server.get('/', (req, res) => {
