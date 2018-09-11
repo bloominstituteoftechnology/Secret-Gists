@@ -20,8 +20,8 @@ const urlencodedParser = bodyParser.urlencoded({ extended: false });
 // Set it to be able to create gists
 // so I'm trying to follow the instructions on the repo and I see it imports and
 // instantiates github
-const GitHubApi = require('github');
-
+// const GitHubApi = require('github');
+// const github = new GitHubApi({ debug: true })
 github.authenticate({
   type: 'oauth',
   token: process.env.GITHUB_TOKEN
