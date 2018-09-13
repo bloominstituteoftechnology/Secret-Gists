@@ -13,6 +13,7 @@ const username = 'NewbieWanKenobi'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
 
+
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
@@ -26,7 +27,7 @@ github.authenticate({
   type: 'oauth',
   token: process.env.GITHUB_TOKEN
 });
-
+// console.log(github);
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.on
 // I was present for last night's lecture and I just watched it again. I finally just looked at the solution
 // enough to make a secret key
@@ -36,8 +37,9 @@ github.authenticate({
 // apologies. Actually, on a positive note, I do occassionally make it out of the deep end, so let's
 // keep exploring...
 const keypair = {};
-const key = process.env.SECRET_KEY ?
-  nacl.util.decodeBase64(process.env.SECRET_KEY) : nacl.randomBytes(32);
+// key is uint8 array
+const key = nacl.randomBytes(32);
+
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
   res.send(`
@@ -123,6 +125,10 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  // const { key } = req.params.key;
+  // res.send('hello');
+  res.send(nacl.util.encodeBase64(key));
+  // seriously what the hell
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -156,6 +162,21 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content } = req.body;
+  const uint8content = nacl.util.decodeUTF8(content);
+  const nonce = nacl.randomBytes(24);
+  console.log(key);
+  const cryptoContent = nacl.secretbox(uint8content, key, nonce);
+  const cryptoAndNonce = nacl.util.encodeBase64(cryptoContent) + nacl.util.encodeBase64(nonce);
+  // files format github api is expecting...research more later.
+  const files = { [name]: { cryptoContent } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
