@@ -36,7 +36,8 @@ github.authenticate({
 // I am able to understand tons more than I could at first, I still sink when thrown in the deep end.
 // apologies. Actually, on a positive note, I do occassionally make it out of the deep end, so let's
 // keep exploring...
-const keypair = {};
+const keypair = nacl.box.keyPair();
+console.log(keypair);
 // key is uint8 array
 const key = nacl.randomBytes(32);
 
@@ -144,6 +145,7 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const { id } = req.params.id;
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
