@@ -165,11 +165,11 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   const { name, content } = req.body;
   const uint8content = nacl.util.decodeUTF8(content);
   const nonce = nacl.randomBytes(24);
-  console.log(key);
-  const cryptoContent = nacl.secretbox(uint8content, key, nonce);
+  // console.log(key);
+  const cryptoContent = nacl.secretbox(uint8content, nonce, key);
   const cryptoAndNonce = nacl.util.encodeBase64(cryptoContent) + nacl.util.encodeBase64(nonce);
   // files format github api is expecting...research more later.
-  const files = { [name]: { cryptoContent } };
+  const files = { [name]: { content: cryptoAndNonce } };
   github.gists.create({ files, public: false })
     .then((response) => {
       res.json(response.data);
