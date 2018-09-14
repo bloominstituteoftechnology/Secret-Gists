@@ -169,6 +169,8 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   const nonce = nacl.randomBytes(24);
   // console.log(key);
   const cryptoContent = nacl.secretbox(uint8content, nonce, key);
+  // so why am I using the cryptoContent and nonce inside the files object that 
+  // I pass to the github api?
   const cryptoAndNonce = nacl.util.encodeBase64(cryptoContent) + nacl.util.encodeBase64(nonce);
   // files format github api is expecting...research more later.
   const files = { [name]: { content: cryptoAndNonce } };
