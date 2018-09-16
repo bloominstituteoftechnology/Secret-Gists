@@ -145,7 +145,21 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
-  const { id } = req.params.id;
+  const id = req.query.id;
+  github.gists.get({ id })
+    .then((response) => {
+      const gist = response.data;
+      const file = Object.keys(gist.files);
+      const box = gist.files[file].content;
+      const nonce = nacl.util.decodeBase64(box.slice(-32));
+      const ciphertext = nacl.util.decodeBase64(box.slice(0, -32));
+      const text = nacl.secretbox.open(ciphertext, nonce, key);
+      console.log(text);
+      res.send(nacl.util.encodeUTF8(text));
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -169,7 +183,7 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   const nonce = nacl.randomBytes(24);
   // console.log(key);
   const cryptoContent = nacl.secretbox(uint8content, nonce, key);
-  // so why am I using the cryptoContent and nonce inside the files object that 
+  // so why am I using the cryptoContent and nonce inside the files object that
   // I pass to the github api?
   const cryptoAndNonce = nacl.util.encodeBase64(cryptoContent) + nacl.util.encodeBase64(nonce);
   // files format github api is expecting...research more later.
