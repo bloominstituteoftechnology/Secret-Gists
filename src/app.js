@@ -8,22 +8,51 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'NewbieWanKenobi'; // TODO: Replace with your username
 // The object you'll be interfacing with to communicate with github
 const github = octokit({ debug: true });
 const server = express();
+
 
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
 // Generate an access token: https://github.com/settings/tokens
 // Set it to be able to create gists
+// so I'm trying to follow the instructions on the repo and I see it imports and
+// instantiates github
+// const GitHubApi = require('github');
+// const github = new GitHubApi({ debug: true })
 github.authenticate({
   type: 'oauth',
   token: process.env.GITHUB_TOKEN
 });
+// console.log(github);
+// TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.on
+// I was present for last night's lecture and I just watched it again. I finally just looked at the solution
+// enough to make a secret key
+// I only barely have an inkling of what's going on, and I have no idea how I would've figured this out on my own.
+// I'm sorry it's very sad for me; I've been trying to read documentation for over three years now; and while
+// I am able to understand tons more than I could at first, I still sink when thrown in the deep end.
+// apologies. Actually, on a positive note, I do occassionally make it out of the deep end, so let's
+// keep exploring...
+const keypair = {};
+let key;
+try {
+  const data = fs.readFileSync('./config.json');
+  const keyObject = JSON.parse(data);
+  key = nacl.util.decodeBase64(keyObject.key);
+} catch (err) {
+  key = nacl.randomBytes(32);
+  const keyObject = { key: nacl.util.encodeBase64(key) };
+  fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+    if (ferr) {
+      console.log('Error writing secret key to config file: ', ferr.message);
+      return;
+    }
+  });
+}
 
-// TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -110,6 +139,10 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  // const { key } = req.params.key;
+  // res.send('hello');
+  res.send(nacl.util.encodeBase64(key));
+  // seriously what the hell
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -125,6 +158,21 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const id = req.query.id;
+  github.gists.get({ id })
+    .then((response) => {
+      const gist = response.data;
+      const file = Object.keys(gist.files);
+      const box = gist.files[file].content;
+      const nonce = nacl.util.decodeBase64(box.slice(-32));
+      const ciphertext = nacl.util.decodeBase64(box.slice(0, -32));
+      const text = nacl.secretbox.open(ciphertext, nonce, key);
+
+      res.send(nacl.util.encodeUTF8(text));
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -143,6 +191,23 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  const { name, content } = req.body;
+  const uint8content = nacl.util.decodeUTF8(content);
+  const nonce = nacl.randomBytes(24);
+  // console.log(key);
+  const cryptoContent = nacl.secretbox(uint8content, nonce, key);
+  // so why am I using the cryptoContent and nonce inside the files object that
+  // I pass to the github api?
+  const cryptoAndNonce = nacl.util.encodeBase64(cryptoContent) + nacl.util.encodeBase64(nonce);
+  // files format github api is expecting...research more later.
+  const files = { [name]: { content: cryptoAndNonce } };
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
