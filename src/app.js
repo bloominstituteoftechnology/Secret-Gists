@@ -36,10 +36,23 @@ github.authenticate({
 // I am able to understand tons more than I could at first, I still sink when thrown in the deep end.
 // apologies. Actually, on a positive note, I do occassionally make it out of the deep end, so let's
 // keep exploring...
-const keypair = nacl.box.keyPair();
-console.log(keypair);
-// key is uint8 array
-const key = nacl.randomBytes(32);
+const keypair = {};
+let key;
+try {
+  const data = fs.readFileSync('./config.json');
+  const keyObject = JSON.parse(data);
+  key = nacl.util.decodeBase64(keyObject.key);
+} catch (err) {
+  key = nacl.randomBytes(32);
+  const keyObject = { key: nacl.util.encodeBase64(key) };
+  fs.writeFile('./config.json', JSON.stringify(keyObject), (ferr) => {
+    if (ferr) {
+      console.log('Error writing secret key to config file: ', ferr.message);
+      return;
+    }
+  });
+}
+
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -154,7 +167,7 @@ server.get('/fetchmessagefromself:id', (req, res) => {
       const nonce = nacl.util.decodeBase64(box.slice(-32));
       const ciphertext = nacl.util.decodeBase64(box.slice(0, -32));
       const text = nacl.secretbox.open(ciphertext, nonce, key);
-      console.log(text);
+
       res.send(nacl.util.encodeUTF8(text));
     })
     .catch((err) => {
