@@ -144,7 +144,6 @@ server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
 });
-
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // using someone else's public key that can be accessed and
